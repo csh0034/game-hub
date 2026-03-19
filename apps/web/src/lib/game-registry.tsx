@@ -13,3 +13,15 @@ const GAME_COMPONENTS: Record<GameType, React.LazyExoticComponent<ComponentType<
 export function getGameComponent(gameType: GameType) {
   return GAME_COMPONENTS[gameType];
 }
+
+const GomokuGame = GAME_COMPONENTS["gomoku"];
+const HoldemGame = GAME_COMPONENTS["texas-holdem"];
+
+export function GameRenderer({ gameType, roomId }: { gameType: GameType; roomId: string }) {
+  switch (gameType) {
+    case "gomoku":
+      return <GomokuGame roomId={roomId} />;
+    case "texas-holdem":
+      return <HoldemGame roomId={roomId} />;
+  }
+}

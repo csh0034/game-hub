@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import type { Room } from "@game-hub/shared-types";
 import { GAME_CONFIGS } from "@game-hub/shared-types";
 import { useGame } from "@/hooks/use-game";
-import { getGameComponent } from "@/lib/game-registry";
+import { GameRenderer } from "@/lib/game-registry";
 import type { GameSocket } from "@/lib/socket";
 import {
   ArrowLeft,
@@ -29,7 +29,6 @@ export function RoomView({ room, socket, onLeave, onToggleReady }: RoomViewProps
   const isPlaying = room.status === "playing" || !!gameState;
 
   if (isPlaying && gameState) {
-    const GameComponent = getGameComponent(room.gameType);
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -69,7 +68,7 @@ export function RoomView({ room, socket, onLeave, onToggleReady }: RoomViewProps
             </div>
           }
         >
-          <GameComponent roomId={room.id} />
+          <GameRenderer gameType={room.gameType} roomId={room.id} />
         </Suspense>
       </div>
     );

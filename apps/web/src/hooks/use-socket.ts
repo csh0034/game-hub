@@ -1,41 +1,59 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { getSocket, type GameSocket } from "@/lib/socket";
 
+let globalSocket: GameSocket | null = null;
+
+function subscribeSocket(callback: () => void) {
+  const socket = getSocket();
+  globalSocket = socket;
+  socket.on("connect", callback);
+  socket.on("disconnect", callback);
+  return () => {
+    socket.off("connect", callback);
+    socket.off("disconnect", callback);
+  };
+}
+
+function getSocketSnapshot(): GameSocket | null {
+  return globalSocket;
+}
+
 export function useSocket() {
-  const socketRef = useRef<GameSocket | null>(null);
+  const socket = useSyncExternalStore(subscribeSocket, getSocketSnapshot, () => null);
   const [isConnected, setIsConnected] = useState(false);
   const [playerCount, setPlayerCount] = useState(0);
+  const initializedRef = useRef(false);
 
   useEffect(() => {
-    const socket = getSocket();
-    socketRef.current = socket;
+    const s = getSocket();
+    globalSocket = s;
 
-    // Set nickname from localStorage
-    const savedNickname = localStorage.getItem("game-hub-nickname");
-    if (savedNickname) {
-      socket.once("connect", () => {
-        socket.emit("player:set-nickname", savedNickname);
-      });
+    if (!initializedRef.current) {
+      initializedRef.current = true;
+      const savedNickname = localStorage.getItem("game-hub-nickname");
+      if (savedNickname) {
+        s.once("connect", () => {
+          s.emit("player:set-nickname", savedNickname);
+        });
+      }
     }
 
-    socket.on("connect", () => setIsConnected(true));
-    socket.on("disconnect", () => setIsConnected(false));
-    socket.on("system:player-count", (count) => setPlayerCount(count));
+    s.on("connect", () => setIsConnected(true));
+    s.on("disconnect", () => setIsConnected(false));
+    s.on("system:player-count", (count) => setPlayerCount(count));
 
-    if (!socket.connected) {
-      socket.connect();
-    } else {
-      setIsConnected(true);
+    if (!s.connected) {
+      s.connect();
     }
 
     return () => {
-      socket.off("connect");
-      socket.off("disconnect");
-      socket.off("system:player-count");
+      s.off("connect");
+      s.off("disconnect");
+      s.off("system:player-count");
     };
   }, []);
 
-  return { socket: socketRef.current, isConnected, playerCount };
+  return { socket, isConnected, playerCount };
 }

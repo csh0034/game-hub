@@ -1,7 +1,11 @@
-import type { GameType } from "./game-types";
+import type { GameType, MinesweeperDifficulty } from "./game-types";
 import type { Player } from "./player-types";
 
 export type RoomStatus = "waiting" | "playing" | "finished";
+
+export interface GameOptions {
+  minesweeperDifficulty?: MinesweeperDifficulty;
+}
 
 export interface Room {
   id: string;
@@ -12,11 +16,13 @@ export interface Room {
   maxPlayers: number;
   status: RoomStatus;
   createdAt: number;
+  gameOptions?: GameOptions;
 }
 
 export interface CreateRoomPayload {
   name: string;
   gameType: GameType;
+  gameOptions?: GameOptions;
 }
 
 export interface JoinRoomPayload {

@@ -2,6 +2,7 @@ import type { Room, CreateRoomPayload, RoomStatus } from "@game-hub/shared-types
 import type { Player, GameType, GameState, GameMove, GameResult } from "@game-hub/shared-types";
 import { GomokuEngine } from "./gomoku-engine";
 import { HoldemEngine } from "./holdem-engine";
+import { MinesweeperEngine } from "./minesweeper-engine";
 import type { GameEngine } from "./engine-interface";
 
 export class GameManager {
@@ -10,10 +11,13 @@ export class GameManager {
   private engines: Map<GameType, GameEngine> = new Map();
   // Holdem: per-room engine instances for stateful deck management
   private holdemInstances: Map<string, HoldemEngine> = new Map();
+  // Minesweeper: per-room engine instances for hidden mine state
+  private minesweeperInstances: Map<string, MinesweeperEngine> = new Map();
 
   constructor() {
     this.engines.set("gomoku", new GomokuEngine());
     this.engines.set("texas-holdem", new HoldemEngine());
+    this.engines.set("minesweeper", new MinesweeperEngine());
   }
 
   createRoom(payload: CreateRoomPayload, host: Player): Room {
@@ -28,6 +32,7 @@ export class GameManager {
       maxPlayers: engine.maxPlayers,
       status: "waiting",
       createdAt: Date.now(),
+      gameOptions: payload.gameOptions,
     };
     this.rooms.set(id, room);
     return room;
@@ -51,6 +56,7 @@ export class GameManager {
       this.rooms.delete(roomId);
       this.gameStates.delete(roomId);
       this.holdemInstances.delete(roomId);
+      this.minesweeperInstances.delete(roomId);
       return null;
     }
     if (room.hostId === playerId) {
@@ -63,6 +69,7 @@ export class GameManager {
         room.status = "waiting";
         this.gameStates.delete(roomId);
         this.holdemInstances.delete(roomId);
+        this.minesweeperInstances.delete(roomId);
       }
     }
     return room;
@@ -93,6 +100,15 @@ export class GameManager {
       return state;
     }
 
+    if (room.gameType === "minesweeper") {
+      const difficulty = room.gameOptions?.minesweeperDifficulty ?? "beginner";
+      const minesweeperEngine = new MinesweeperEngine(difficulty);
+      this.minesweeperInstances.set(roomId, minesweeperEngine);
+      const state = minesweeperEngine.initState(room.players);
+      this.gameStates.set(roomId, state);
+      return state;
+    }
+
     const state = engine.initState(room.players);
     this.gameStates.set(roomId, state);
     return state;
@@ -107,6 +123,8 @@ export class GameManager {
     let engine: GameEngine;
     if (room.gameType === "texas-holdem") {
       engine = this.holdemInstances.get(roomId) || this.engines.get(room.gameType)!;
+    } else if (room.gameType === "minesweeper") {
+      engine = this.minesweeperInstances.get(roomId) || this.engines.get(room.gameType)!;
     } else {
       engine = this.engines.get(room.gameType)!;
     }
@@ -127,6 +145,7 @@ export class GameManager {
     room.players.forEach((p) => (p.isReady = false));
     this.gameStates.delete(roomId);
     this.holdemInstances.delete(roomId);
+    this.minesweeperInstances.delete(roomId);
     return room;
   }
 
@@ -148,6 +167,10 @@ export class GameManager {
 
   getHoldemEngine(roomId: string): HoldemEngine | null {
     return this.holdemInstances.get(roomId) || null;
+  }
+
+  getMinesweeperEngine(roomId: string): MinesweeperEngine | null {
+    return this.minesweeperInstances.get(roomId) || null;
   }
 
   private generateId(): string {

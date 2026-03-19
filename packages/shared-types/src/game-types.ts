@@ -1,6 +1,6 @@
 import type { Player } from "./player-types";
 
-export type GameType = "gomoku" | "texas-holdem";
+export type GameType = "gomoku" | "texas-holdem" | "minesweeper";
 
 export interface GameConfig {
   gameType: GameType;
@@ -27,6 +27,14 @@ export const GAME_CONFIGS: Record<GameType, GameConfig> = {
     minPlayers: 2,
     maxPlayers: 8,
     icon: "🃏",
+  },
+  minesweeper: {
+    gameType: "minesweeper",
+    name: "지뢰찾기",
+    description: "초급/중급/고급 난이도로 지뢰를 피해 모든 안전한 칸을 열면 승리",
+    minPlayers: 1,
+    maxPlayers: 1,
+    icon: "💣",
   },
 };
 
@@ -93,8 +101,51 @@ export interface HoldemMove {
   amount?: number;
 }
 
-export type GameState = GomokuState | HoldemPublicState;
-export type GameMove = GomokuMove | HoldemMove;
+// Minesweeper types
+export type MinesweeperDifficulty = "beginner" | "intermediate" | "expert";
+
+export interface MinesweeperDifficultyConfig {
+  rows: number;
+  cols: number;
+  mineCount: number;
+  label: string;
+}
+
+export const MINESWEEPER_DIFFICULTY_CONFIGS: Record<MinesweeperDifficulty, MinesweeperDifficultyConfig> = {
+  beginner: { rows: 9, cols: 9, mineCount: 10, label: "초급" },
+  intermediate: { rows: 16, cols: 16, mineCount: 40, label: "중급" },
+  expert: { rows: 16, cols: 30, mineCount: 99, label: "고급" },
+};
+
+export type MinesweeperCellStatus = "hidden" | "revealed" | "flagged";
+
+export interface MinesweeperPublicCell {
+  status: MinesweeperCellStatus;
+  adjacentMines?: number;
+  hasMine?: boolean;
+}
+
+export interface MinesweeperPublicState {
+  board: MinesweeperPublicCell[][];
+  rows: number;
+  cols: number;
+  mineCount: number;
+  flagCount: number;
+  revealedCount: number;
+  difficulty: MinesweeperDifficulty;
+  status: "playing" | "won" | "lost";
+  playerId: string;
+  startedAt: number | null;
+}
+
+export interface MinesweeperMove {
+  type: "reveal" | "flag" | "unflag";
+  row: number;
+  col: number;
+}
+
+export type GameState = GomokuState | HoldemPublicState | MinesweeperPublicState;
+export type GameMove = GomokuMove | HoldemMove | MinesweeperMove;
 
 export interface GameResult {
   winnerId: string | null; // null = draw

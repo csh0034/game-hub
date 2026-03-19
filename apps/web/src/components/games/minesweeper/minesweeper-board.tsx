@@ -1,0 +1,145 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { useGame } from "@/hooks/use-game";
+import { useSocket } from "@/hooks/use-socket";
+import type { MinesweeperPublicState, MinesweeperMove, MinesweeperDifficulty } from "@game-hub/shared-types";
+import { MINESWEEPER_DIFFICULTY_CONFIGS } from "@game-hub/shared-types";
+import type { GameComponentProps } from "@/lib/game-registry";
+
+const NUMBER_COLORS: Record<number, string> = {
+  1: "text-blue-600",
+  2: "text-green-600",
+  3: "text-red-600",
+  4: "text-indigo-800",
+  5: "text-amber-800",
+  6: "text-teal-600",
+  7: "text-gray-900",
+  8: "text-gray-500",
+};
+
+const CELL_SIZES: Record<MinesweeperDifficulty, number> = {
+  beginner: 36,
+  intermediate: 30,
+  expert: 26,
+};
+
+export default function MinesweeperBoard({ roomId }: GameComponentProps) {
+  const { socket } = useSocket();
+  const { gameState, makeMove } = useGame(socket);
+  const [elapsed, setElapsed] = useState(0);
+
+  const state = gameState as MinesweeperPublicState | null;
+
+  useEffect(() => {
+    if (!state?.startedAt || state.status !== "playing") return;
+
+    const update = () => setElapsed(Math.floor((Date.now() - state.startedAt!) / 1000));
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [state?.startedAt, state?.status]);
+
+  const handleReveal = useCallback(
+    (row: number, col: number) => {
+      if (!state || state.status !== "playing") return;
+      if (state.board[row][col].status !== "hidden") return;
+      const move: MinesweeperMove = { type: "reveal", row, col };
+      makeMove(move);
+    },
+    [state, makeMove],
+  );
+
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent, row: number, col: number) => {
+      e.preventDefault();
+      if (!state || state.status !== "playing") return;
+      const cell = state.board[row][col];
+      if (cell.status === "revealed") return;
+
+      const move: MinesweeperMove = {
+        type: cell.status === "flagged" ? "unflag" : "flag",
+        row,
+        col,
+      };
+      makeMove(move);
+    },
+    [state, makeMove],
+  );
+
+  if (!state) return null;
+
+  const remainingMines = state.mineCount - state.flagCount;
+  const cellSize = CELL_SIZES[state.difficulty] ?? 36;
+  const difficultyConfig = MINESWEEPER_DIFFICULTY_CONFIGS[state.difficulty];
+
+  return (
+    <div className="flex flex-col items-center gap-4">
+      {/* Difficulty label */}
+      <div className="text-sm text-muted-foreground">
+        {difficultyConfig.label} ({state.rows}×{state.cols} · 💣{state.mineCount})
+      </div>
+
+      {/* Header */}
+      <div className="flex items-center justify-between w-full max-w-sm px-2">
+        <div className="flex items-center gap-2 text-lg font-mono font-bold bg-gray-900 text-red-500 px-3 py-1 rounded">
+          {String(remainingMines).padStart(3, "0")}
+        </div>
+        <div className="text-sm text-muted-foreground">
+          {state.status === "playing" && "게임 진행 중"}
+          {state.status === "won" && "승리!"}
+          {state.status === "lost" && "게임 오버"}
+        </div>
+        <div className="flex items-center gap-2 text-lg font-mono font-bold bg-gray-900 text-red-500 px-3 py-1 rounded">
+          {String(elapsed).padStart(3, "0")}
+        </div>
+      </div>
+
+      {/* Board */}
+      {/* Board */}
+      <div
+        className="relative grid border-2 border-gray-400 bg-gray-300"
+        style={{
+          gridTemplateColumns: `repeat(${state.cols}, ${cellSize}px)`,
+          gridTemplateRows: `repeat(${state.rows}, ${cellSize}px)`,
+        }}
+      >
+        {state.board.map((row, r) =>
+          row.map((cell, c) => (
+            <button
+              key={`${r}-${c}`}
+              className={`flex items-center justify-center border font-bold select-none ${
+                cell.status === "revealed"
+                  ? "bg-gray-200 border-gray-300"
+                  : "bg-gray-400 border-t-gray-200 border-l-gray-200 border-r-gray-500 border-b-gray-500 hover:bg-gray-350 active:bg-gray-300"
+              }`}
+              style={{ width: cellSize, height: cellSize, fontSize: cellSize > 30 ? 14 : 11 }}
+              onClick={() => handleReveal(r, c)}
+              onContextMenu={(e) => handleContextMenu(e, r, c)}
+              disabled={state.status !== "playing"}
+            >
+              {cell.status === "flagged" && <span style={{ fontSize: cellSize > 30 ? 16 : 12 }}>🚩</span>}
+              {cell.status === "revealed" && cell.hasMine && <span style={{ fontSize: cellSize > 30 ? 16 : 12 }}>💣</span>}
+              {cell.status === "revealed" && !cell.hasMine && cell.adjacentMines !== undefined && cell.adjacentMines > 0 && (
+                <span className={NUMBER_COLORS[cell.adjacentMines]}>{cell.adjacentMines}</span>
+              )}
+              {cell.status === "hidden" && cell.hasMine && <span style={{ fontSize: cellSize > 30 ? 16 : 12 }}>💣</span>}
+            </button>
+          )),
+        )}
+      </div>
+
+      {/* Game over overlay */}
+      {state.status !== "playing" && (
+        <div className="text-center">
+          <p className={`text-lg font-bold ${state.status === "won" ? "text-green-600" : "text-red-600"}`}>
+            {state.status === "won" ? "축하합니다! 모든 지뢰를 찾았습니다!" : "지뢰를 밟았습니다!"}
+          </p>
+          <p className="text-sm text-muted-foreground mt-1">
+            시간: {elapsed}초
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}

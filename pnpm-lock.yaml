@@ -17,6 +17,9 @@ importers:
       globals:
         specifier: ^15.0.0
         version: 15.15.0
+      socket.io-client:
+        specifier: ^4.8.0
+        version: 4.8.3
       turbo:
         specifier: ^2.4.0
         version: 2.8.19

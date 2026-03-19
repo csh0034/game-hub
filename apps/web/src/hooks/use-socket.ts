@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { getSocket, type GameSocket } from "@/lib/socket";
 
 let globalSocket: GameSocket | null = null;
@@ -24,21 +24,9 @@ export function useSocket() {
   const socket = useSyncExternalStore(subscribeSocket, getSocketSnapshot, () => null);
   const [isConnected, setIsConnected] = useState(false);
   const [playerCount, setPlayerCount] = useState(0);
-  const initializedRef = useRef(false);
-
   useEffect(() => {
     const s = getSocket();
     globalSocket = s;
-
-    if (!initializedRef.current) {
-      initializedRef.current = true;
-      const savedNickname = localStorage.getItem("game-hub-nickname");
-      if (savedNickname) {
-        s.once("connect", () => {
-          s.emit("player:set-nickname", savedNickname);
-        });
-      }
-    }
 
     s.on("connect", () => setIsConnected(true));
     s.on("disconnect", () => setIsConnected(false));

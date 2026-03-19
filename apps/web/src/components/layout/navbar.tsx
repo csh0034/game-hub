@@ -1,39 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Gamepad2, Users, Wifi, WifiOff } from "lucide-react";
 
 interface NavbarProps {
   isConnected: boolean;
   playerCount: number;
+  nickname: string;
   onGoHome?: () => void;
 }
 
-export function Navbar({ isConnected, playerCount, onGoHome }: NavbarProps) {
-  const [nickname, setNickname] = useState("");
-  const [isEditing, setIsEditing] = useState(false);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("game-hub-nickname");
-    if (saved) setNickname(saved);
-  }, []);
-
-  const saveNickname = (value: string) => {
-    const trimmed = value.trim().slice(0, 20);
-    if (trimmed) {
-      setNickname(trimmed);
-      localStorage.setItem("game-hub-nickname", trimmed);
-      // Re-emit nickname on socket
-      import("@/lib/socket").then(({ getSocket }) => {
-        const socket = getSocket();
-        if (socket.connected) {
-          socket.emit("player:set-nickname", trimmed);
-        }
-      });
-    }
-    setIsEditing(false);
-  };
-
+export function Navbar({ isConnected, playerCount, nickname, onGoHome }: NavbarProps) {
   return (
     <nav className="border-b border-border bg-card/80 backdrop-blur-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -64,27 +40,9 @@ export function Navbar({ isConnected, playerCount, onGoHome }: NavbarProps) {
               )}
             </div>
 
-            {isEditing ? (
-              <input
-                type="text"
-                defaultValue={nickname}
-                autoFocus
-                maxLength={20}
-                className="bg-secondary border border-border rounded-md px-3 py-1.5 text-sm w-40 focus:outline-none focus:ring-1 focus:ring-primary"
-                onBlur={(e) => saveNickname(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") saveNickname(e.currentTarget.value);
-                  if (e.key === "Escape") setIsEditing(false);
-                }}
-              />
-            ) : (
-              <button
-                onClick={() => setIsEditing(true)}
-                className="bg-secondary hover:bg-secondary/80 border border-border rounded-md px-3 py-1.5 text-sm transition-colors"
-              >
-                {nickname || "닉네임 설정"}
-              </button>
-            )}
+            <span className="bg-secondary border border-border rounded-md px-3 py-1.5 text-sm">
+              {nickname}
+            </span>
           </div>
         </div>
       </div>

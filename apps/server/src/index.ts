@@ -10,6 +10,7 @@ import type {
 } from "@game-hub/shared-types";
 import { setupLobbyHandler } from "./socket/lobby-handler";
 import { setupGameHandler } from "./socket/game-handler";
+import { setupNicknameHandler } from "./socket/nickname-handler";
 import { GameManager } from "./games/game-manager";
 
 const PORT = parseInt(process.env.PORT || "3001", 10);
@@ -44,10 +45,7 @@ io.on("connection", (socket) => {
   socket.data.nickname = `Player_${socket.id.slice(0, 4)}`;
   socket.data.roomId = null;
 
-  socket.on("player:set-nickname", (nickname) => {
-    socket.data.nickname = nickname.trim().slice(0, 20) || socket.data.nickname;
-  });
-
+  setupNicknameHandler(io, socket);
   setupLobbyHandler(io, socket, gameManager);
   setupGameHandler(io, socket, gameManager);
 

@@ -1,19 +1,75 @@
 "use client";
 
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback, useRef, useSyncExternalStore } from "react";
 import { useSocket } from "@/hooks/use-socket";
 import { useLobby } from "@/hooks/use-lobby";
 import { Navbar } from "@/components/layout/navbar";
+import { NicknameForm } from "@/components/lobby/nickname-form";
 import { GameCardGrid } from "@/components/lobby/game-card-grid";
 import { RoomList } from "@/components/lobby/room-list";
 import { CreateRoomDialog } from "@/components/lobby/create-room-dialog";
 import { RoomView } from "@/components/lobby/room-view";
+
+const NICKNAME_KEY = "game-hub-nickname";
+
+let listeners: Array<() => void> = [];
+
+type NicknameSnapshot = string | null | undefined; // undefined = SSR (아직 모름)
+
+function nicknameStore() {
+  return {
+    getSnapshot: (): NicknameSnapshot => localStorage.getItem(NICKNAME_KEY),
+    getServerSnapshot: (): NicknameSnapshot => undefined,
+    subscribe: (cb: () => void) => {
+      listeners.push(cb);
+      const onStorage = (e: StorageEvent) => {
+        if (e.key === NICKNAME_KEY) cb();
+      };
+      window.addEventListener("storage", onStorage);
+      return () => {
+        listeners = listeners.filter((l) => l !== cb);
+        window.removeEventListener("storage", onStorage);
+      };
+    },
+    set: (value: string) => {
+      localStorage.setItem(NICKNAME_KEY, value);
+      listeners.forEach((l) => l());
+    },
+    remove: () => {
+      localStorage.removeItem(NICKNAME_KEY);
+      listeners.forEach((l) => l());
+    },
+  };
+}
+
+const store = nicknameStore();
 
 export default function LobbyPage() {
   const { socket, isConnected, playerCount } = useSocket();
   const { rooms, currentRoom, createRoom, joinRoom, leaveRoom, toggleReady } =
     useLobby(socket);
   const isNavigatingBack = useRef(false);
+
+  const nickname = useSyncExternalStore(
+    store.subscribe,
+    store.getSnapshot,
+    store.getServerSnapshot,
+  );
+
+  // 재접속 시 저장된 닉네임을 서버에 전송
+  useEffect(() => {
+    if (!socket || !isConnected || !nickname) return;
+
+    socket.emit("player:set-nickname", nickname, (result) => {
+      if (!result.success) {
+        store.remove();
+      }
+    });
+  }, [socket, isConnected, nickname]);
+
+  const handleNicknameComplete = useCallback((newNickname: string) => {
+    store.set(newNickname);
+  }, []);
 
   const handleLeaveRoom = useCallback(() => {
     if (!currentRoom) return;
@@ -58,10 +114,20 @@ export default function LobbyPage() {
     [joinRoom]
   );
 
+  // SSR / hydration 전: 빈 화면 (닉네임 폼 플래시 방지)
+  if (nickname === undefined) {
+    return null;
+  }
+
+  // 닉네임 미설정 시 닉네임 폼 표시
+  if (nickname === null) {
+    return <NicknameForm onComplete={handleNicknameComplete} />;
+  }
+
   if (currentRoom) {
     return (
       <div className="min-h-screen flex flex-col">
-        <Navbar isConnected={isConnected} playerCount={playerCount} onGoHome={handleGoHome} />
+        <Navbar isConnected={isConnected} playerCount={playerCount} nickname={nickname} onGoHome={handleGoHome} />
         <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-6">
           <RoomView
             room={currentRoom}
@@ -76,7 +142,7 @@ export default function LobbyPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar isConnected={isConnected} playerCount={playerCount} onGoHome={handleGoHome} />
+      <Navbar isConnected={isConnected} playerCount={playerCount} nickname={nickname} onGoHome={handleGoHome} />
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-6 space-y-8">
         <section>
           <div className="flex items-center justify-between mb-6">

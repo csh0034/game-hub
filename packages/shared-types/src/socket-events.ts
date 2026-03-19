@@ -17,7 +17,10 @@ export interface ClientToServerEvents {
   "game:rematch": () => void;
 
   // Player
-  "player:set-nickname": (nickname: string) => void;
+  "player:set-nickname": (
+    nickname: string,
+    callback: (result: { success: boolean; error?: string }) => void,
+  ) => void;
 
   // Chat
   "chat:message": (message: string) => void;

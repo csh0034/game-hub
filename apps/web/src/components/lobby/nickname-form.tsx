@@ -43,7 +43,7 @@ export function NicknameForm({ onComplete }: NicknameFormProps) {
   const canSubmit = nickname.trim().length >= 3 && nickname.trim().length <= 20 && !isSubmitting;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="min-h-screen flex items-center justify-center bg-background relative">
       <div className="w-full max-w-sm mx-auto px-4">
         <div className="flex flex-col items-center gap-6">
           <div className="flex items-center gap-3">
@@ -84,6 +84,9 @@ export function NicknameForm({ onComplete }: NicknameFormProps) {
           </form>
         </div>
       </div>
+      <span className="absolute bottom-4 right-4 text-xs text-muted-foreground">
+        v{process.env.NEXT_PUBLIC_APP_VERSION}
+      </span>
     </div>
   );
 }

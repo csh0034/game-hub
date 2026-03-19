@@ -25,6 +25,9 @@ export function Navbar({ isConnected, playerCount, nickname, onGoHome, onLogout 
             <span className="text-xl font-bold bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
               Game Hub
             </span>
+            <span className="text-xs text-muted-foreground">
+              v{process.env.NEXT_PUBLIC_APP_VERSION}
+            </span>
           </button>
 
           <div className="flex items-center gap-4">

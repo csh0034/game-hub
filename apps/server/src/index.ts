@@ -8,11 +8,11 @@ import type {
   InterServerEvents,
   SocketData,
 } from "@game-hub/shared-types";
-import { setupLobbyHandler } from "./socket/lobby-handler";
-import { setupGameHandler } from "./socket/game-handler";
-import { setupNicknameHandler } from "./socket/nickname-handler";
-import { broadcastAuthenticatedCount } from "./socket/broadcast-player-count";
-import { GameManager } from "./games/game-manager";
+import { setupLobbyHandler } from "./socket/lobby-handler.js";
+import { setupGameHandler } from "./socket/game-handler.js";
+import { setupNicknameHandler } from "./socket/nickname-handler.js";
+import { broadcastAuthenticatedCount } from "./socket/broadcast-player-count.js";
+import { GameManager } from "./games/game-manager.js";
 
 const PORT = parseInt(process.env.PORT || "3001", 10);
 const CORS_ORIGIN = process.env.CORS_ORIGIN || "http://localhost:3000";

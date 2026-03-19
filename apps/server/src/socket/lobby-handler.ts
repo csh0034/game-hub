@@ -5,7 +5,7 @@ import type {
   InterServerEvents,
   SocketData,
 } from "@game-hub/shared-types";
-import type { GameManager } from "../games/game-manager";
+import type { GameManager } from "../games/game-manager.js";
 
 type IOServer = Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 type IOSocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;

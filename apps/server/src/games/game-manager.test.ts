@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { GameManager } from "./game-manager";
+import { GameManager } from "./game-manager.js";
 import type { Player, CreateRoomPayload } from "@game-hub/shared-types";
 
 const host: Player = { id: "host-1", nickname: "Host", isReady: true };

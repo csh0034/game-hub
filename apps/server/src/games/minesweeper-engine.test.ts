@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { MinesweeperEngine } from "./minesweeper-engine";
+import { MinesweeperEngine } from "./minesweeper-engine.js";
 import type { Player, MinesweeperPublicState, MinesweeperMove } from "@game-hub/shared-types";
 
 const mockPlayers: Player[] = [

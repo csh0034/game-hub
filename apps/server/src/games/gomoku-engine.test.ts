@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { GomokuEngine } from "./gomoku-engine";
+import { GomokuEngine } from "./gomoku-engine.js";
 import type { Player, GomokuState, GomokuMove } from "@game-hub/shared-types";
 
 const mockPlayers: Player[] = [

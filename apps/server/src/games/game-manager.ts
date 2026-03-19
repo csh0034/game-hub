@@ -1,9 +1,9 @@
 import type { Room, CreateRoomPayload, RoomStatus } from "@game-hub/shared-types";
 import type { Player, GameType, GameState, GameMove, GameResult } from "@game-hub/shared-types";
-import { GomokuEngine } from "./gomoku-engine";
-import { HoldemEngine } from "./holdem-engine";
-import { MinesweeperEngine } from "./minesweeper-engine";
-import type { GameEngine } from "./engine-interface";
+import { GomokuEngine } from "./gomoku-engine.js";
+import { HoldemEngine } from "./holdem-engine.js";
+import { MinesweeperEngine } from "./minesweeper-engine.js";
+import type { GameEngine } from "./engine-interface.js";
 
 export class GameManager {
   private rooms: Map<string, Room> = new Map();

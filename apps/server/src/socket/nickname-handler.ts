@@ -5,7 +5,7 @@ import type {
   InterServerEvents,
   SocketData,
 } from "@game-hub/shared-types";
-import { broadcastAuthenticatedCount } from "./broadcast-player-count";
+import { broadcastAuthenticatedCount } from "./broadcast-player-count.js";
 
 type GameServer = Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 type GameSocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;

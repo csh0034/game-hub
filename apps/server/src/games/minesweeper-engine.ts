@@ -9,7 +9,7 @@ import type {
   GameState,
   GameMove,
 } from "@game-hub/shared-types";
-import type { GameEngine } from "./engine-interface";
+import type { GameEngine } from "./engine-interface.js";
 
 const DIFFICULTY_CONFIGS: Record<MinesweeperDifficulty, MinesweeperDifficultyConfig> = {
   beginner: { rows: 9, cols: 9, mineCount: 10, label: "초급" },

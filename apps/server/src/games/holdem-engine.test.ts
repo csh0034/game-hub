@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { HoldemEngine } from "./holdem-engine";
+import { HoldemEngine } from "./holdem-engine.js";
 import type { Player, HoldemPublicState } from "@game-hub/shared-types";
 
 const mockPlayers: Player[] = [

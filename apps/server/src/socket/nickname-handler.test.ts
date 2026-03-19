@@ -6,7 +6,7 @@ import type {
   InterServerEvents,
   SocketData,
 } from "@game-hub/shared-types";
-import { setupNicknameHandler } from "./nickname-handler";
+import { setupNicknameHandler } from "./nickname-handler.js";
 
 type GameServer = Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 type GameSocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;

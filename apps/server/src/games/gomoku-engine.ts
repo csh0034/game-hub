@@ -1,5 +1,5 @@
 import type { Player, GomokuState, GomokuMove, GameResult } from "@game-hub/shared-types";
-import type { GameEngine } from "./engine-interface";
+import type { GameEngine } from "./engine-interface.js";
 
 export class GomokuEngine implements GameEngine {
   gameType = "gomoku" as const;

@@ -84,6 +84,13 @@ export default function LobbyPage() {
     handleLeaveRoom();
   }, [handleLeaveRoom]);
 
+  const handleLogout = useCallback(() => {
+    if (currentRoom) {
+      leaveRoom();
+    }
+    store.remove();
+  }, [currentRoom, leaveRoom]);
+
   // Handle browser back button
   useEffect(() => {
     const onPopState = () => {
@@ -127,7 +134,7 @@ export default function LobbyPage() {
   if (currentRoom) {
     return (
       <div className="min-h-screen flex flex-col">
-        <Navbar isConnected={isConnected} playerCount={playerCount} nickname={nickname} onGoHome={handleGoHome} />
+        <Navbar isConnected={isConnected} playerCount={playerCount} nickname={nickname} onGoHome={handleGoHome} onLogout={handleLogout} />
         <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-6">
           <RoomView
             room={currentRoom}
@@ -142,7 +149,7 @@ export default function LobbyPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar isConnected={isConnected} playerCount={playerCount} nickname={nickname} onGoHome={handleGoHome} />
+      <Navbar isConnected={isConnected} playerCount={playerCount} nickname={nickname} onGoHome={handleGoHome} onLogout={handleLogout} />
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-6 space-y-8">
         <section>
           <div className="flex items-center justify-between mb-6">

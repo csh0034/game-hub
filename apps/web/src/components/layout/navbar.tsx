@@ -1,15 +1,16 @@
 "use client";
 
-import { Gamepad2, Users, Wifi, WifiOff } from "lucide-react";
+import { Gamepad2, LogOut, Users, Wifi, WifiOff } from "lucide-react";
 
 interface NavbarProps {
   isConnected: boolean;
   playerCount: number;
   nickname: string;
   onGoHome?: () => void;
+  onLogout?: () => void;
 }
 
-export function Navbar({ isConnected, playerCount, nickname, onGoHome }: NavbarProps) {
+export function Navbar({ isConnected, playerCount, nickname, onGoHome, onLogout }: NavbarProps) {
   return (
     <nav className="border-b border-border bg-card/80 backdrop-blur-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -43,6 +44,14 @@ export function Navbar({ isConnected, playerCount, nickname, onGoHome }: NavbarP
             <span className="bg-secondary border border-border rounded-md px-3 py-1.5 text-sm">
               {nickname}
             </span>
+
+            <button
+              onClick={onLogout}
+              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              aria-label="로그아웃"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>

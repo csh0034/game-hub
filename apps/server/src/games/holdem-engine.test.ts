@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { HoldemEngine } from "./holdem-engine";
-import type { Player, HoldemPublicState, HoldemMove } from "@game-hub/shared-types";
+import type { Player, HoldemPublicState } from "@game-hub/shared-types";
 
 const mockPlayers: Player[] = [
   { id: "player1", nickname: "Alice", isReady: true },
@@ -86,6 +86,16 @@ describe("HoldemEngine", () => {
       const serialized = allCards.map((c) => `${c.rank}_${c.suit}`);
       expect(new Set(serialized).size).toBe(4);
     });
+
+    it("actedPlayerIds가 빈 배열로 초기화된다", () => {
+      const state = engine.initState(mockPlayers);
+      expect(state.actedPlayerIds).toEqual([]);
+    });
+
+    it("minRaise가 bigBlind * 2로 초기화된다", () => {
+      const state = engine.initState(mockPlayers);
+      expect(state.minRaise).toBe(40);
+    });
   });
 
   describe("processMove", () => {
@@ -139,6 +149,93 @@ describe("HoldemEngine", () => {
       const newState = engine.processMove(state, currentPlayer.id, { action: "fold" });
       // 2인 게임에서 한 명이 폴드하면 showdown
       expect(newState.phase).toBe("showdown");
+    });
+
+    describe("BB 프리플롭 옵션", () => {
+      it("2인 게임에서 콜 후 BB에게 턴이 온다", () => {
+        // 2인: dealer=0(SB), BB=1, firstToAct=0(dealer/SB)
+        const current = state.players[state.currentPlayerIndex];
+        const s = engine.processMove(state, current.id, { action: "call" });
+        // BB에게 턴이 와야 한다 (아직 preflop)
+        expect(s.phase).toBe("preflop");
+        expect(s.currentPlayerIndex).not.toBe(-1);
+        const bbPlayer = s.players[s.currentPlayerIndex];
+        expect(bbPlayer.currentBet).toBe(20); // BB 강제 베팅
+      });
+
+      it("BB가 체크하면 플롭으로 진행한다", () => {
+        const current = state.players[state.currentPlayerIndex];
+        let s = engine.processMove(state, current.id, { action: "call" });
+        // BB 체크
+        const bb = s.players[s.currentPlayerIndex];
+        s = engine.processMove(s, bb.id, { action: "check" });
+        expect(s.phase).toBe("flop");
+      });
+
+      it("BB가 레이즈하면 다른 플레이어에게 재액션 기회가 주어진다", () => {
+        const current = state.players[state.currentPlayerIndex];
+        let s = engine.processMove(state, current.id, { action: "call" });
+        // BB 레이즈
+        const bb = s.players[s.currentPlayerIndex];
+        s = engine.processMove(s, bb.id, { action: "raise", amount: 60 });
+        expect(s.phase).toBe("preflop");
+        // 다른 플레이어에게 턴
+        expect(s.players[s.currentPlayerIndex].id).toBe(current.id);
+      });
+
+      it("3인 게임에서 콜 후 BB에게 턴이 온다", () => {
+        const engine3 = new HoldemEngine();
+        let s = engine3.initState(threePlayers);
+        // 3인: dealer=0, SB=1, BB=2, firstToAct=0
+        // player0 콜
+        let current = s.players[s.currentPlayerIndex];
+        s = engine3.processMove(s, current.id, { action: "call" });
+        // player1(SB) 콜
+        current = s.players[s.currentPlayerIndex];
+        s = engine3.processMove(s, current.id, { action: "call" });
+        // BB에게 턴이 와야 한다
+        expect(s.phase).toBe("preflop");
+        expect(s.players[s.currentPlayerIndex].id).toBe("player3");
+      });
+    });
+
+    describe("minRaise 검증", () => {
+      it("minRaise 미만 레이즈를 거부한다", () => {
+        const current = state.players[state.currentPlayerIndex];
+        // minRaise는 40, 30으로 레이즈 시도
+        const result = engine.processMove(state, current.id, { action: "raise", amount: 30 });
+        expect(result).toBe(state);
+      });
+
+      it("minRaise 이상 레이즈는 허용된다", () => {
+        const current = state.players[state.currentPlayerIndex];
+        const result = engine.processMove(state, current.id, { action: "raise", amount: 40 });
+        expect(result).not.toBe(state);
+        expect(result.currentBet).toBe(40);
+      });
+    });
+
+    describe("페이즈 변경 시 minRaise 리셋", () => {
+      it("플롭 진행 시 minRaise가 bigBlind * 2로 리셋된다", () => {
+        // preflop 진행: 콜 → BB 체크
+        let current = state.players[state.currentPlayerIndex];
+        let s = engine.processMove(state, current.id, { action: "call" });
+        current = s.players[s.currentPlayerIndex];
+        s = engine.processMove(s, current.id, { action: "check" });
+        expect(s.phase).toBe("flop");
+        expect(s.minRaise).toBe(40); // bigBlind * 2
+      });
+
+      it("프리플롭에서 레이즈 후 플롭에서 minRaise가 리셋된다", () => {
+        // 레이즈 → 콜 → BB 체크 또는 콜
+        let current = state.players[state.currentPlayerIndex];
+        let s = engine.processMove(state, current.id, { action: "raise", amount: 100 });
+        // BB 콜
+        current = s.players[s.currentPlayerIndex];
+        s = engine.processMove(s, current.id, { action: "call" });
+        expect(s.phase).toBe("flop");
+        expect(s.minRaise).toBe(40);
+      });
     });
   });
 

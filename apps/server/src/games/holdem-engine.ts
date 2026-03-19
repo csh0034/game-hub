@@ -143,7 +143,6 @@ export class HoldemEngine implements GameEngine {
   private deck: Card[] = [];
   private holeCards: Map<string, Card[]> = new Map();
   private communityCards: Card[] = [];
-  private actionIndex = 0;
   private activePlayers: string[] = [];
 
   private createDeck(): Card[] {
@@ -217,7 +216,8 @@ export class HoldemEngine implements GameEngine {
       players: holdemPlayers,
       smallBlind,
       bigBlind,
-      minRaise: bigBlind,
+      minRaise: bigBlind * 2,
+      actedPlayerIds: [],
     };
   }
 
@@ -231,17 +231,19 @@ export class HoldemEngine implements GameEngine {
 
     const player = { ...state.players[playerIndex] };
     const newPlayers = state.players.map((p, i) => (i === playerIndex ? player : { ...p }));
-    let newState: HoldemPublicState = { ...state, players: newPlayers };
+    let newState: HoldemPublicState = { ...state, players: newPlayers, actedPlayerIds: [...state.actedPlayerIds] };
 
     switch (move.action) {
       case "fold": {
         player.folded = true;
         player.isTurn = false;
+        newState.actedPlayerIds.push(playerId);
         break;
       }
       case "check": {
         if (player.currentBet < state.currentBet) return state; // Can't check
         player.isTurn = false;
+        newState.actedPlayerIds.push(playerId);
         break;
       }
       case "call": {
@@ -251,20 +253,23 @@ export class HoldemEngine implements GameEngine {
         newState.pot += callAmount;
         if (player.chips === 0) player.isAllIn = true;
         player.isTurn = false;
+        newState.actedPlayerIds.push(playerId);
         break;
       }
       case "raise": {
         const raiseAmount = move.amount || state.currentBet * 2;
         const totalBet = raiseAmount;
+        if (totalBet < state.minRaise) return state;
         const additionalBet = totalBet - player.currentBet;
         if (additionalBet > player.chips) return state;
         player.chips -= additionalBet;
         player.currentBet = totalBet;
         newState.pot += additionalBet;
         newState.currentBet = totalBet;
-        newState.minRaise = raiseAmount - state.currentBet + raiseAmount;
+        newState.minRaise = totalBet + (totalBet - state.currentBet);
         if (player.chips === 0) player.isAllIn = true;
         player.isTurn = false;
+        newState.actedPlayerIds = [playerId];
         break;
       }
       case "all-in": {
@@ -275,6 +280,9 @@ export class HoldemEngine implements GameEngine {
         player.isAllIn = true;
         if (player.currentBet > state.currentBet) {
           newState.currentBet = player.currentBet;
+          newState.actedPlayerIds = [playerId];
+        } else {
+          newState.actedPlayerIds.push(playerId);
         }
         player.isTurn = false;
         break;
@@ -317,14 +325,16 @@ export class HoldemEngine implements GameEngine {
   private isRoundComplete(state: HoldemPublicState, lastActorIndex: number): boolean {
     const active = state.players.filter((p) => !p.folded && !p.isAllIn);
     if (active.length <= 1) return true;
-    // All active players have same bet
-    return active.every((p) => p.currentBet === state.currentBet);
+    // All active players have same bet AND have acted
+    return active.every((p) => p.currentBet === state.currentBet && state.actedPlayerIds.includes(p.id));
   }
 
   private advancePhase(state: HoldemPublicState): HoldemPublicState {
     const newState = { ...state };
     newState.players = state.players.map((p) => ({ ...p, currentBet: 0, isTurn: false }));
     newState.currentBet = 0;
+    newState.minRaise = state.bigBlind * 2;
+    newState.actedPlayerIds = [];
 
     const phaseOrder: HoldemPhase[] = ["preflop", "flop", "turn", "river", "showdown"];
     const currentPhaseIdx = phaseOrder.indexOf(state.phase);
@@ -394,7 +404,8 @@ export class HoldemEngine implements GameEngine {
     }
 
     // Store winners info on state for UI
-    (state as any).winners = [{
+    const mutableState = state as HoldemPublicState;
+    mutableState.winners = [{
       playerId: winnerId,
       amount: state.pot,
       handName: bestHand.name,

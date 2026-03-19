@@ -89,6 +89,7 @@ export interface HoldemPublicState {
   smallBlind: number;
   bigBlind: number;
   minRaise: number;
+  actedPlayerIds: string[];
   winners?: { playerId: string; amount: number; handName: string }[];
 }
 

@@ -1,0 +1,76 @@
+import express from "express";
+import { createServer } from "http";
+import { Server } from "socket.io";
+import cors from "cors";
+import type {
+  ClientToServerEvents,
+  ServerToClientEvents,
+  InterServerEvents,
+  SocketData,
+} from "@game-hub/shared-types";
+import { setupLobbyHandler } from "./socket/lobby-handler";
+import { setupGameHandler } from "./socket/game-handler";
+import { GameManager } from "./games/game-manager";
+
+const PORT = parseInt(process.env.PORT || "3001", 10);
+const CORS_ORIGIN = process.env.CORS_ORIGIN || "http://localhost:3000";
+
+const app = express();
+app.use(cors({ origin: CORS_ORIGIN }));
+app.use(express.json());
+
+const httpServer = createServer(app);
+const io = new Server<
+  ClientToServerEvents,
+  ServerToClientEvents,
+  InterServerEvents,
+  SocketData
+>(httpServer, {
+  cors: {
+    origin: CORS_ORIGIN,
+    methods: ["GET", "POST"],
+  },
+});
+
+const gameManager = new GameManager();
+
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok", rooms: gameManager.getRoomCount() });
+});
+
+io.on("connection", (socket) => {
+  console.log(`[connect] ${socket.id}`);
+  socket.data.playerId = socket.id;
+  socket.data.nickname = `Player_${socket.id.slice(0, 4)}`;
+  socket.data.roomId = null;
+
+  socket.on("player:set-nickname", (nickname) => {
+    socket.data.nickname = nickname.trim().slice(0, 20) || socket.data.nickname;
+  });
+
+  setupLobbyHandler(io, socket, gameManager);
+  setupGameHandler(io, socket, gameManager);
+
+  socket.on("disconnect", () => {
+    console.log(`[disconnect] ${socket.id}`);
+    const roomId = socket.data.roomId;
+    if (roomId) {
+      const room = gameManager.removePlayer(roomId, socket.id);
+      if (room) {
+        io.to(roomId).emit("lobby:player-left", socket.id);
+        io.to(roomId).emit("lobby:room-updated", room);
+        io.emit("lobby:room-updated", room);
+      } else {
+        // Room was deleted (empty)
+        io.emit("lobby:room-removed", roomId);
+      }
+    }
+    io.emit("system:player-count", io.engine.clientsCount);
+  });
+
+  io.emit("system:player-count", io.engine.clientsCount);
+});
+
+httpServer.listen(PORT, () => {
+  console.log(`🎮 Game Hub server running on http://localhost:${PORT}`);
+});

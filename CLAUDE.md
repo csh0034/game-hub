@@ -32,6 +32,13 @@ pnpm --filter web lint                 # 웹 린트
 
 상세 구조와 패턴은 `.claude/rules/architecture.md` 참고.
 
+## 게임 규칙 문서
+
+| 게임 | 문서 | 요약 |
+|------|------|------|
+| 오목 (Gomoku) | `docs/games/gomoku.md` | 2인, 15×15 보드, 5목 먼저 완성 시 승리. 금수 없음, 장목 허용 |
+| 텍사스 홀덤 (Texas Hold'em) | `docs/games/texas-holdem.md` | 2~8인, 홀카드 2장 + 커뮤니티 5장으로 최고 5장 조합 승부. 시작칩 1000, SB/BB 10/20 |
+
 ## 규칙 파일 안내
 
 | 파일 | 내용 |

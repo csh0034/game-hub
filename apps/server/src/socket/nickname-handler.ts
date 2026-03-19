@@ -5,6 +5,7 @@ import type {
   InterServerEvents,
   SocketData,
 } from "@game-hub/shared-types";
+import { broadcastAuthenticatedCount } from "./broadcast-player-count";
 
 type GameServer = Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 type GameSocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
@@ -26,6 +27,13 @@ export function setupNicknameHandler(io: GameServer, socket: GameSocket) {
     }
 
     socket.data.nickname = trimmed;
+    socket.data.authenticated = true;
+    broadcastAuthenticatedCount(io);
     callback({ success: true });
+  });
+
+  socket.on("player:logout", () => {
+    socket.data.authenticated = false;
+    broadcastAuthenticatedCount(io);
   });
 }

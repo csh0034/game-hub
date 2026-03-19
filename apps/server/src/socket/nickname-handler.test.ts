@@ -11,11 +11,11 @@ import { setupNicknameHandler } from "./nickname-handler";
 type GameServer = Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 type GameSocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 
-function createMockSocket(id: string, nickname: string): GameSocket {
+function createMockSocket(id: string, nickname: string) {
   const handlers = new Map<string, (...args: unknown[]) => void>();
   return {
     id,
-    data: { playerId: id, nickname, roomId: null },
+    data: { playerId: id, nickname, roomId: null, authenticated: false },
     on: vi.fn((event: string, handler: (...args: unknown[]) => void) => {
       handlers.set(event, handler);
     }),
@@ -29,6 +29,7 @@ function createMockIo(sockets: GameSocket[]): GameServer {
   const socketMap = new Map(sockets.map((s) => [s.id, s]));
   return {
     sockets: { sockets: socketMap },
+    emit: vi.fn(),
   } as unknown as GameServer;
 }
 
@@ -48,6 +49,8 @@ describe("setupNicknameHandler", () => {
 
     expect(callback).toHaveBeenCalledWith({ success: true });
     expect(socket.data.nickname).toBe("홍길동");
+    expect(socket.data.authenticated).toBe(true);
+    expect(io.emit).toHaveBeenCalledWith("system:player-count", 1);
   });
 
   it("닉네임 앞뒤 공백을 제거한다", () => {
@@ -96,11 +99,7 @@ describe("setupNicknameHandler", () => {
     setupNicknameHandler(io, socket);
 
     const callback = vi.fn();
-    // socket에 다시 핸들러가 등록되었으므로, 새 핸들러로 호출
-    // on이 두 번 호출되었을 것이므로 마지막 등록된 핸들러를 사용
-    const onCalls = (socket.on as ReturnType<typeof vi.fn>).mock.calls;
-    const lastHandler = onCalls[onCalls.length - 1][1];
-    lastHandler("홍길동", callback);
+    socket._trigger("player:set-nickname", "홍길동", callback);
 
     expect(callback).toHaveBeenCalledWith({
       success: false,
@@ -115,10 +114,18 @@ describe("setupNicknameHandler", () => {
     setupNicknameHandler(io, socket);
 
     const callback = vi.fn();
-    const onCalls = (socket.on as ReturnType<typeof vi.fn>).mock.calls;
-    const lastHandler = onCalls[onCalls.length - 1][1];
-    lastHandler("홍길동", callback);
+    socket._trigger("player:set-nickname", "홍길동", callback);
 
     expect(callback).toHaveBeenCalledWith({ success: true });
+  });
+
+  it("로그아웃 시 authenticated를 false로 설정하고 카운트를 갱신한다", () => {
+    const callback = vi.fn();
+    socket._trigger("player:set-nickname", "홍길동", callback);
+    expect(socket.data.authenticated).toBe(true);
+
+    socket._trigger("player:logout");
+    expect(socket.data.authenticated).toBe(false);
+    expect(io.emit).toHaveBeenLastCalledWith("system:player-count", 0);
   });
 });

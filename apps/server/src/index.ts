@@ -11,6 +11,7 @@ import type {
 import { setupLobbyHandler } from "./socket/lobby-handler";
 import { setupGameHandler } from "./socket/game-handler";
 import { setupNicknameHandler } from "./socket/nickname-handler";
+import { broadcastAuthenticatedCount } from "./socket/broadcast-player-count";
 import { GameManager } from "./games/game-manager";
 
 const PORT = parseInt(process.env.PORT || "3001", 10);
@@ -44,6 +45,7 @@ io.on("connection", (socket) => {
   socket.data.playerId = socket.id;
   socket.data.nickname = `Player_${socket.id.slice(0, 4)}`;
   socket.data.roomId = null;
+  socket.data.authenticated = false;
 
   setupNicknameHandler(io, socket);
   setupLobbyHandler(io, socket, gameManager);
@@ -63,10 +65,10 @@ io.on("connection", (socket) => {
         io.emit("lobby:room-removed", roomId);
       }
     }
-    io.emit("system:player-count", io.engine.clientsCount);
+    if (socket.data.authenticated) {
+      broadcastAuthenticatedCount(io);
+    }
   });
-
-  io.emit("system:player-count", io.engine.clientsCount);
 });
 
 httpServer.listen(PORT, () => {

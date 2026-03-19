@@ -88,8 +88,9 @@ export default function LobbyPage() {
     if (currentRoom) {
       leaveRoom();
     }
+    socket?.emit("player:logout");
     store.remove();
-  }, [currentRoom, leaveRoom]);
+  }, [currentRoom, leaveRoom, socket]);
 
   // Handle browser back button
   useEffect(() => {

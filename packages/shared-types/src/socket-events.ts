@@ -21,6 +21,7 @@ export interface ClientToServerEvents {
     nickname: string,
     callback: (result: { success: boolean; error?: string }) => void,
   ) => void;
+  "player:logout": () => void;
 
   // Chat
   "chat:message": (message: string) => void;
@@ -60,4 +61,5 @@ export interface SocketData {
   playerId: string;
   nickname: string;
   roomId: string | null;
+  authenticated: boolean;
 }

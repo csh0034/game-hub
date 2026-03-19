@@ -6,5 +6,6 @@ dist
 .env
 .env.local
 .DS_Store
+.idea
 .claude/settings.local.json
 next-env.d.ts

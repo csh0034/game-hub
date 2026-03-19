@@ -3,7 +3,7 @@
 import { useEffect, useCallback } from "react";
 import { useGameStore } from "@/stores/game-store";
 import type { GameSocket } from "@/lib/socket";
-import type { GameMove } from "@game-hub/shared-types";
+import type { GameMove, GameState, GameResult, HoldemPrivateState } from "@game-hub/shared-types";
 
 export function useGame(socket: GameSocket | null) {
   const {
@@ -19,33 +19,35 @@ export function useGame(socket: GameSocket | null) {
   useEffect(() => {
     if (!socket) return;
 
-    socket.on("game:started", (state) => {
+    const onStarted = (state: GameState) => {
       setGameState(state);
       setGameResult(null);
-    });
-
-    socket.on("game:state-updated", (state) => {
+    };
+    const onStateUpdated = (state: GameState) => {
       setGameState(state);
-    });
-
-    socket.on("game:ended", (result) => {
+    };
+    const onEnded = (result: GameResult) => {
       setGameResult(result);
-    });
-
-    socket.on("game:private-state", (state) => {
+    };
+    const onPrivateState = (state: HoldemPrivateState) => {
       setPrivateState(state);
-    });
-
-    socket.on("game:error", (message) => {
+    };
+    const onError = (message: string) => {
       console.error("[game error]", message);
-    });
+    };
+
+    socket.on("game:started", onStarted);
+    socket.on("game:state-updated", onStateUpdated);
+    socket.on("game:ended", onEnded);
+    socket.on("game:private-state", onPrivateState);
+    socket.on("game:error", onError);
 
     return () => {
-      socket.off("game:started");
-      socket.off("game:state-updated");
-      socket.off("game:ended");
-      socket.off("game:private-state");
-      socket.off("game:error");
+      socket.off("game:started", onStarted);
+      socket.off("game:state-updated", onStateUpdated);
+      socket.off("game:ended", onEnded);
+      socket.off("game:private-state", onPrivateState);
+      socket.off("game:error", onError);
     };
   }, [socket, setGameState, setGameResult, setPrivateState]);
 

@@ -245,9 +245,9 @@ export default function LobbyPage() {
             <section>
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h1 className="text-3xl font-bold">게임 선택</h1>
+                  <h1 className="text-3xl font-bold">빠른 시작</h1>
                   <p className="text-muted-foreground mt-1">
-                    플레이할 게임을 선택하고 방을 만들어보세요
+                    게임을 클릭하면 기본 설정으로 바로 방이 만들어집니다
                   </p>
                 </div>
                 <CreateRoomDialog onCreateRoom={wrappedCreateRoom} />

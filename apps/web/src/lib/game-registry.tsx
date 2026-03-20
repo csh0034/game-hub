@@ -9,6 +9,7 @@ const GAME_COMPONENTS: Record<GameType, React.LazyExoticComponent<ComponentType<
   gomoku: lazy(() => import("@/components/games/gomoku/gomoku-board")),
   "texas-holdem": lazy(() => import("@/components/games/texas-holdem/holdem-table")),
   minesweeper: lazy(() => import("@/components/games/minesweeper/minesweeper-board")),
+  tetris: lazy(() => import("@/components/games/tetris/tetris-board")),
 };
 
 export function getGameComponent(gameType: GameType) {
@@ -18,6 +19,7 @@ export function getGameComponent(gameType: GameType) {
 const GomokuGame = GAME_COMPONENTS["gomoku"];
 const HoldemGame = GAME_COMPONENTS["texas-holdem"];
 const MinesweeperGame = GAME_COMPONENTS["minesweeper"];
+const TetrisGame = GAME_COMPONENTS["tetris"];
 
 export function GameRenderer({ gameType, roomId }: { gameType: GameType; roomId: string }) {
   switch (gameType) {
@@ -27,5 +29,7 @@ export function GameRenderer({ gameType, roomId }: { gameType: GameType; roomId:
       return <HoldemGame roomId={roomId} />;
     case "minesweeper":
       return <MinesweeperGame roomId={roomId} />;
+    case "tetris":
+      return <TetrisGame roomId={roomId} />;
   }
 }

@@ -3,6 +3,7 @@ import type { Player, GameType, GameState, GameMove, GameResult } from "@game-hu
 import { GomokuEngine } from "./gomoku-engine.js";
 import { HoldemEngine } from "./holdem-engine.js";
 import { MinesweeperEngine } from "./minesweeper-engine.js";
+import { TetrisEngine } from "./tetris-engine.js";
 import type { GameEngine } from "./engine-interface.js";
 
 export class GameManager {
@@ -13,11 +14,14 @@ export class GameManager {
   private holdemInstances: Map<string, HoldemEngine> = new Map();
   // Minesweeper: per-room engine instances for hidden mine state
   private minesweeperInstances: Map<string, MinesweeperEngine> = new Map();
+  // Tetris: per-room engine instances for bag/board state
+  private tetrisInstances: Map<string, TetrisEngine> = new Map();
 
   constructor() {
     this.engines.set("gomoku", new GomokuEngine());
     this.engines.set("texas-holdem", new HoldemEngine());
     this.engines.set("minesweeper", new MinesweeperEngine());
+    this.engines.set("tetris", new TetrisEngine());
   }
 
   createRoom(payload: CreateRoomPayload, host: Player): Room {
@@ -57,6 +61,7 @@ export class GameManager {
       this.gameStates.delete(roomId);
       this.holdemInstances.delete(roomId);
       this.minesweeperInstances.delete(roomId);
+      this.tetrisInstances.delete(roomId);
       return null;
     }
     if (room.hostId === playerId) {
@@ -67,6 +72,7 @@ export class GameManager {
       this.gameStates.delete(roomId);
       this.holdemInstances.delete(roomId);
       this.minesweeperInstances.delete(roomId);
+      this.tetrisInstances.delete(roomId);
     } else if (room.status === "playing") {
       const engine = this.engines.get(room.gameType)!;
       if (room.players.length < engine.minPlayers) {
@@ -74,6 +80,7 @@ export class GameManager {
         this.gameStates.delete(roomId);
         this.holdemInstances.delete(roomId);
         this.minesweeperInstances.delete(roomId);
+        this.tetrisInstances.delete(roomId);
       }
     }
     return room;
@@ -113,6 +120,15 @@ export class GameManager {
       return state;
     }
 
+    if (room.gameType === "tetris") {
+      const difficulty = room.gameOptions?.tetrisDifficulty ?? "normal";
+      const tetrisEngine = new TetrisEngine(difficulty);
+      this.tetrisInstances.set(roomId, tetrisEngine);
+      const state = tetrisEngine.initState(room.players);
+      this.gameStates.set(roomId, state);
+      return state;
+    }
+
     const state = engine.initState(room.players);
     this.gameStates.set(roomId, state);
     return state;
@@ -129,6 +145,8 @@ export class GameManager {
       engine = this.holdemInstances.get(roomId) || this.engines.get(room.gameType)!;
     } else if (room.gameType === "minesweeper") {
       engine = this.minesweeperInstances.get(roomId) || this.engines.get(room.gameType)!;
+    } else if (room.gameType === "tetris") {
+      engine = this.tetrisInstances.get(roomId) || this.engines.get(room.gameType)!;
     } else {
       engine = this.engines.get(room.gameType)!;
     }
@@ -150,6 +168,7 @@ export class GameManager {
     this.gameStates.delete(roomId);
     this.holdemInstances.delete(roomId);
     this.minesweeperInstances.delete(roomId);
+    this.tetrisInstances.delete(roomId);
     return room;
   }
 
@@ -175,6 +194,10 @@ export class GameManager {
 
   getMinesweeperEngine(roomId: string): MinesweeperEngine | null {
     return this.minesweeperInstances.get(roomId) || null;
+  }
+
+  getTetrisEngine(roomId: string): TetrisEngine | null {
+    return this.tetrisInstances.get(roomId) || null;
   }
 
   private generateId(): string {

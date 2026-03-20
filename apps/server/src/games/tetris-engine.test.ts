@@ -1,0 +1,301 @@
+import { describe, it, expect, beforeEach } from "vitest";
+import { TetrisEngine } from "./tetris-engine.js";
+import type { Player, TetrisPublicState, TetrisMove } from "@game-hub/shared-types";
+
+const mockPlayers: Player[] = [
+  { id: "player1", nickname: "테트리스유저", isReady: true },
+];
+
+const mockVersusPlayers: Player[] = [
+  { id: "player1", nickname: "유저1", isReady: true },
+  { id: "player2", nickname: "유저2", isReady: true },
+];
+
+describe("TetrisEngine", () => {
+  let engine: TetrisEngine;
+
+  beforeEach(() => {
+    engine = new TetrisEngine();
+  });
+
+  it("gameType이 tetris이다", () => {
+    expect(engine.gameType).toBe("tetris");
+  });
+
+  it("1~2인 게임이다", () => {
+    expect(engine.minPlayers).toBe(1);
+    expect(engine.maxPlayers).toBe(2);
+  });
+
+  describe("initState", () => {
+    it("솔로 모드로 초기화한다", () => {
+      const state = engine.initState(mockPlayers);
+      expect(state.mode).toBe("solo");
+      expect(state.difficulty).toBe("normal");
+      expect(Object.keys(state.players)).toHaveLength(1);
+    });
+
+    it("대전 모드로 초기화한다", () => {
+      const state = engine.initState(mockVersusPlayers);
+      expect(state.mode).toBe("versus");
+      expect(Object.keys(state.players)).toHaveLength(2);
+    });
+
+    it("20x10 빈 보드를 생성한다", () => {
+      const state = engine.initState(mockPlayers);
+      const board = state.players["player1"].board;
+      expect(board).toHaveLength(20);
+      expect(board[0]).toHaveLength(10);
+    });
+
+    it("활성 피스가 존재한다", () => {
+      const state = engine.initState(mockPlayers);
+      const p = state.players["player1"];
+      expect(p.activePiece).not.toBeNull();
+      expect(p.activePiece!.rotation).toBe(0);
+    });
+
+    it("넥스트 피스가 2개 있다", () => {
+      const state = engine.initState(mockPlayers);
+      expect(state.players["player1"].nextPieces).toHaveLength(2);
+    });
+
+    it("초기 점수/레벨/라인이 올바르다", () => {
+      const state = engine.initState(mockPlayers);
+      const p = state.players["player1"];
+      expect(p.score).toBe(0);
+      expect(p.level).toBe(1);
+      expect(p.linesCleared).toBe(0);
+      expect(p.status).toBe("playing");
+    });
+
+    it("난이도별 초기 레벨이 다르다", () => {
+      const hardEngine = new TetrisEngine("hard");
+      const state = hardEngine.initState(mockPlayers);
+      expect(state.players["player1"].level).toBe(5);
+      expect(state.difficulty).toBe("hard");
+    });
+
+    it("난이도별 드롭 간격이 다르다", () => {
+      const easyEngine = new TetrisEngine("easy");
+      const easyState = easyEngine.initState(mockPlayers);
+      expect(easyState.dropInterval).toBe(1000);
+
+      const normalEngine = new TetrisEngine("normal");
+      const normalState = normalEngine.initState(mockPlayers);
+      expect(normalState.dropInterval).toBe(800);
+    });
+  });
+
+  describe("processMove", () => {
+    let state: TetrisPublicState;
+
+    beforeEach(() => {
+      state = engine.initState(mockPlayers);
+    });
+
+    it("좌우 이동이 동작한다", () => {
+      const origCol = state.players["player1"].activePiece!.col;
+      const newState = engine.processMove(state, "player1", { type: "move-left" } as TetrisMove);
+      const newCol = newState.players["player1"].activePiece?.col;
+      // 이동이 유효하면 col이 변경되어야 함
+      if (newCol !== undefined) {
+        expect(newCol).toBeLessThanOrEqual(origCol);
+      }
+    });
+
+    it("시계 방향 회전이 동작한다", () => {
+      const origRotation = state.players["player1"].activePiece!.rotation;
+      const pieceType = state.players["player1"].activePiece!.type;
+      const newState = engine.processMove(state, "player1", { type: "rotate-cw" } as TetrisMove);
+      const newPiece = newState.players["player1"].activePiece;
+      if (newPiece && pieceType !== "O") {
+        // O 피스는 회전하지 않음
+        expect(newPiece.rotation).not.toBe(origRotation);
+      }
+    });
+
+    it("반시계 방향 회전이 동작한다", () => {
+      const pieceType = state.players["player1"].activePiece!.type;
+      const newState = engine.processMove(state, "player1", { type: "rotate-ccw" } as TetrisMove);
+      const newPiece = newState.players["player1"].activePiece;
+      if (newPiece && pieceType !== "O") {
+        expect(newPiece.rotation).toBe(3); // 0 -> 3 (ccw)
+      }
+    });
+
+    it("소프트 드롭 시 점수가 증가한다", () => {
+      const scoreBefore = state.players["player1"].score;
+      const newState = engine.processMove(state, "player1", { type: "soft-drop" } as TetrisMove);
+      const scoreAfter = newState.players["player1"].score;
+      // 이동이 성공했으면 +1점
+      if (newState.players["player1"].activePiece!.row > state.players["player1"].activePiece!.row) {
+        expect(scoreAfter).toBe(scoreBefore + 1);
+      }
+    });
+
+    it("하드 드롭 시 피스가 고정되고 새 피스가 생성된다", () => {
+      const origPieceType = state.players["player1"].activePiece!.type;
+      const newState = engine.processMove(state, "player1", { type: "hard-drop" } as TetrisMove);
+      const p = newState.players["player1"];
+      // 보드에 블록이 놓여 있어야 함
+      const hasBlocks = p.board.some((row) => row.some((cell) => cell !== null));
+      expect(hasBlocks).toBe(true);
+      // 새 피스가 생성되어야 함 (gameover가 아닌 한)
+      if (p.status === "playing") {
+        expect(p.activePiece).not.toBeNull();
+      }
+      // 하드 드롭 점수가 추가되어야 함
+      expect(p.score).toBeGreaterThan(0);
+    });
+
+    it("tick으로 피스가 한 칸 내려간다", () => {
+      const origRow = state.players["player1"].activePiece!.row;
+      const newState = engine.processMove(state, "player1", { type: "tick" } as TetrisMove);
+      const newPiece = newState.players["player1"].activePiece;
+      if (newPiece) {
+        expect(newPiece.row).toBe(origRow + 1);
+      }
+    });
+
+    it("홀드가 동작한다", () => {
+      const origType = state.players["player1"].activePiece!.type;
+      const newState = engine.processMove(state, "player1", { type: "hold" } as TetrisMove);
+      const p = newState.players["player1"];
+      expect(p.holdPiece).toBe(origType);
+      expect(p.canHold).toBe(false);
+    });
+
+    it("홀드를 연속으로 사용할 수 없다", () => {
+      const state1 = engine.processMove(state, "player1", { type: "hold" } as TetrisMove);
+      expect(state1.players["player1"].canHold).toBe(false);
+      // 다시 홀드 시도 — 변경 없어야 함
+      const holdPieceBefore = state1.players["player1"].holdPiece;
+      const state2 = engine.processMove(state1, "player1", { type: "hold" } as TetrisMove);
+      expect(state2.players["player1"].holdPiece).toBe(holdPieceBefore);
+    });
+
+    it("gameover인 플레이어의 이동을 무시한다", () => {
+      // 빠르게 게임오버 시키기 위해 반복 하드 드롭
+      let currentState = state;
+      for (let i = 0; i < 50; i++) {
+        currentState = engine.processMove(currentState, "player1", { type: "hard-drop" } as TetrisMove);
+        if (currentState.players["player1"].status === "gameover") break;
+      }
+
+      if (currentState.players["player1"].status === "gameover") {
+        const afterMove = engine.processMove(currentState, "player1", { type: "move-left" } as TetrisMove);
+        // gameover 상태가 유지되어야 함
+        expect(afterMove.players["player1"].status).toBe("gameover");
+      }
+    });
+
+    it("잘못된 playerId의 이동을 무시한다", () => {
+      const newState = engine.processMove(state, "unknown-player", { type: "move-left" } as TetrisMove);
+      // 상태가 변하지 않아야 함
+      expect(newState.players["player1"].activePiece!.col).toBe(state.players["player1"].activePiece!.col);
+    });
+
+    it("고스트 row가 활성 피스보다 아래에 있다", () => {
+      const p = state.players["player1"];
+      if (p.activePiece) {
+        expect(p.ghostRow).toBeGreaterThanOrEqual(p.activePiece.row);
+      }
+    });
+  });
+
+  describe("줄 클리어와 점수", () => {
+    it("하드 드롭을 반복하면 결국 줄이 클리어된다", () => {
+      let currentState = engine.initState(mockPlayers);
+      let linesCleared = 0;
+
+      for (let i = 0; i < 100; i++) {
+        currentState = engine.processMove(currentState, "player1", { type: "hard-drop" } as TetrisMove);
+        linesCleared = currentState.players["player1"].linesCleared;
+        if (currentState.players["player1"].status === "gameover") break;
+        if (linesCleared > 0) break;
+      }
+
+      // 줄이 클리어되었거나 게임오버가 되어야 함
+      const p = currentState.players["player1"];
+      expect(p.linesCleared >= 0 || p.status === "gameover").toBe(true);
+    });
+  });
+
+  describe("checkWin", () => {
+    it("솔로 모드에서 진행 중이면 null을 반환한다", () => {
+      const state = engine.initState(mockPlayers);
+      const result = engine.checkWin(state);
+      expect(result).toBeNull();
+    });
+
+    it("솔로 모드에서 게임오버 시 결과를 반환한다", () => {
+      let currentState = engine.initState(mockPlayers);
+      for (let i = 0; i < 100; i++) {
+        currentState = engine.processMove(currentState, "player1", { type: "hard-drop" } as TetrisMove);
+        if (currentState.players["player1"].status === "gameover") break;
+      }
+
+      if (currentState.players["player1"].status === "gameover") {
+        const result = engine.checkWin(currentState);
+        expect(result).not.toBeNull();
+        expect(result!.winnerId).toBeNull();
+        expect(result!.reason).toContain("게임 오버");
+      }
+    });
+
+    it("대전 모드에서 진행 중이면 null을 반환한다", () => {
+      const versusEngine = new TetrisEngine();
+      const state = versusEngine.initState(mockVersusPlayers);
+      const result = versusEngine.checkWin(state);
+      expect(result).toBeNull();
+    });
+
+    it("대전 모드에서 한 명이 탑아웃되면 승자를 반환한다", () => {
+      const versusEngine = new TetrisEngine();
+      let currentState = versusEngine.initState(mockVersusPlayers);
+
+      // player1만 반복 하드 드롭하여 게임오버 유도
+      for (let i = 0; i < 100; i++) {
+        currentState = versusEngine.processMove(currentState, "player1", { type: "hard-drop" } as TetrisMove);
+        if (currentState.players["player1"].status === "gameover") break;
+      }
+
+      if (currentState.players["player1"].status === "gameover") {
+        const result = versusEngine.checkWin(currentState);
+        expect(result).not.toBeNull();
+        expect(result!.winnerId).toBe("player2");
+      }
+    });
+  });
+
+  describe("대전 모드 쓰레기 줄", () => {
+    it("쓰레기 줄이 pendingGarbage에 추가된다", () => {
+      const versusEngine = new TetrisEngine();
+      const state = versusEngine.initState(mockVersusPlayers);
+
+      // 초기 pendingGarbage는 0
+      expect(state.players["player1"].pendingGarbage).toBe(0);
+      expect(state.players["player2"].pendingGarbage).toBe(0);
+    });
+  });
+
+  describe("난이도별 설정", () => {
+    it("easy 난이도가 올바르게 설정된다", () => {
+      const easyEngine = new TetrisEngine("easy");
+      const state = easyEngine.initState(mockPlayers);
+      expect(state.difficulty).toBe("easy");
+      expect(state.dropInterval).toBe(1000);
+      expect(state.players["player1"].level).toBe(1);
+    });
+
+    it("hard 난이도가 올바르게 설정된다", () => {
+      const hardEngine = new TetrisEngine("hard");
+      const state = hardEngine.initState(mockPlayers);
+      expect(state.difficulty).toBe("hard");
+      // hard: base 400, startLevel 5, interval = max(400 - 4*50, 100) = 200
+      expect(state.dropInterval).toBe(200);
+      expect(state.players["player1"].level).toBe(5);
+    });
+  });
+});

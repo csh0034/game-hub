@@ -1,10 +1,11 @@
-import type { GameType, MinesweeperDifficulty } from "./game-types";
+import type { GameType, MinesweeperDifficulty, TetrisDifficulty } from "./game-types";
 import type { Player } from "./player-types";
 
 export type RoomStatus = "waiting" | "playing" | "finished";
 
 export interface GameOptions {
   minesweeperDifficulty?: MinesweeperDifficulty;
+  tetrisDifficulty?: TetrisDifficulty;
 }
 
 export interface Room {

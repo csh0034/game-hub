@@ -4,9 +4,11 @@ import { useState } from "react";
 import {
   GAME_CONFIGS,
   MINESWEEPER_DIFFICULTY_CONFIGS,
+  TETRIS_DIFFICULTY_CONFIGS,
   type GameType,
   type CreateRoomPayload,
   type MinesweeperDifficulty,
+  type TetrisDifficulty,
 } from "@game-hub/shared-types";
 import type { Room } from "@game-hub/shared-types";
 import { Plus, X } from "lucide-react";
@@ -20,6 +22,7 @@ export function CreateRoomDialog({ onCreateRoom }: CreateRoomDialogProps) {
   const [name, setName] = useState("");
   const [gameType, setGameType] = useState<GameType>("gomoku");
   const [minesweeperDifficulty, setMinesweeperDifficulty] = useState<MinesweeperDifficulty>("beginner");
+  const [tetrisDifficulty, setTetrisDifficulty] = useState<TetrisDifficulty>("normal");
 
   const handleCreate = async () => {
     const roomName = name.trim() || `${GAME_CONFIGS[gameType].name} 방`;
@@ -27,10 +30,14 @@ export function CreateRoomDialog({ onCreateRoom }: CreateRoomDialogProps) {
     if (gameType === "minesweeper") {
       payload.gameOptions = { minesweeperDifficulty };
     }
+    if (gameType === "tetris") {
+      payload.gameOptions = { tetrisDifficulty };
+    }
     await onCreateRoom(payload);
     setOpen(false);
     setName("");
     setMinesweeperDifficulty("beginner");
+    setTetrisDifficulty("normal");
   };
 
   if (!open) {
@@ -111,6 +118,30 @@ export function CreateRoomDialog({ onCreateRoom }: CreateRoomDialogProps) {
                       <div className="font-medium">{config.label}</div>
                       <div className="text-xs text-muted-foreground mt-0.5">
                         {config.rows}×{config.cols} · 💣{config.mineCount}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {gameType === "tetris" && (
+              <div>
+                <label className="block text-sm font-medium mb-1.5">난이도</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(Object.entries(TETRIS_DIFFICULTY_CONFIGS) as [TetrisDifficulty, typeof TETRIS_DIFFICULTY_CONFIGS[TetrisDifficulty]][]).map(([key, config]) => (
+                    <button
+                      key={key}
+                      onClick={() => setTetrisDifficulty(key)}
+                      className={`p-2 rounded-lg border text-sm text-center transition-colors ${
+                        tetrisDifficulty === key
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border hover:border-border/80"
+                      }`}
+                    >
+                      <div className="font-medium">{config.label}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        Lv.{config.startLevel} · {config.initialInterval}ms
                       </div>
                     </button>
                   ))}

@@ -1,6 +1,6 @@
 import type { Player } from "./player-types";
 
-export type GameType = "gomoku" | "texas-holdem" | "minesweeper";
+export type GameType = "gomoku" | "texas-holdem" | "minesweeper" | "tetris";
 
 export interface GameConfig {
   gameType: GameType;
@@ -35,6 +35,14 @@ export const GAME_CONFIGS: Record<GameType, GameConfig> = {
     minPlayers: 1,
     maxPlayers: 1,
     icon: "💣",
+  },
+  tetris: {
+    gameType: "tetris",
+    name: "테트리스",
+    description: "떨어지는 블록을 쌓아 줄을 완성하는 퍼즐 게임",
+    minPlayers: 1,
+    maxPlayers: 2,
+    icon: "🧱",
   },
 };
 
@@ -145,8 +153,71 @@ export interface MinesweeperMove {
   col: number;
 }
 
-export type GameState = GomokuState | HoldemPublicState | MinesweeperPublicState;
-export type GameMove = GomokuMove | HoldemMove | MinesweeperMove;
+// Tetris types
+export type TetrisDifficulty = "easy" | "normal" | "hard";
+
+export interface TetrisDifficultyConfig {
+  initialInterval: number;
+  startLevel: number;
+  label: string;
+}
+
+export const TETRIS_DIFFICULTY_CONFIGS: Record<TetrisDifficulty, TetrisDifficultyConfig> = {
+  easy: { initialInterval: 1000, startLevel: 1, label: "Easy" },
+  normal: { initialInterval: 800, startLevel: 1, label: "Normal" },
+  hard: { initialInterval: 400, startLevel: 5, label: "Hard" },
+};
+
+export type TetrominoType = "I" | "O" | "T" | "S" | "Z" | "J" | "L";
+
+export interface TetrisActivePiece {
+  type: TetrominoType;
+  row: number;
+  col: number;
+  rotation: 0 | 1 | 2 | 3;
+}
+
+export type TetrisPlayerStatus = "playing" | "gameover";
+
+export interface TetrisPlayerBoard {
+  board: (TetrominoType | null)[][];
+  activePiece: TetrisActivePiece | null;
+  ghostRow: number;
+  holdPiece: TetrominoType | null;
+  canHold: boolean;
+  nextPieces: TetrominoType[];
+  score: number;
+  level: number;
+  linesCleared: number;
+  status: TetrisPlayerStatus;
+  pendingGarbage: number;
+}
+
+export type TetrisMode = "solo" | "versus";
+
+export interface TetrisPublicState {
+  players: Record<string, TetrisPlayerBoard>;
+  difficulty: TetrisDifficulty;
+  mode: TetrisMode;
+  dropInterval: number;
+}
+
+export type TetrisMoveType =
+  | "tick"
+  | "move-left"
+  | "move-right"
+  | "rotate-cw"
+  | "rotate-ccw"
+  | "soft-drop"
+  | "hard-drop"
+  | "hold";
+
+export interface TetrisMove {
+  type: TetrisMoveType;
+}
+
+export type GameState = GomokuState | HoldemPublicState | MinesweeperPublicState | TetrisPublicState;
+export type GameMove = GomokuMove | HoldemMove | MinesweeperMove | TetrisMove;
 
 export interface GameResult {
   winnerId: string | null; // null = draw

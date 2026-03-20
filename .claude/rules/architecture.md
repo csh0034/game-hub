@@ -17,15 +17,19 @@ game-hub/
 
 ```
 ├── index.ts                 # 서버 진입점
+├── cors.ts                  # CORS origin 파싱
 ├── games/
 │   ├── engine-interface.ts  # GameEngine 인터페이스
 │   ├── game-manager.ts      # GameType → GameEngine 매핑
 │   ├── gomoku-engine.ts
 │   ├── holdem-engine.ts
-│   └── minesweeper-engine.ts
+│   ├── minesweeper-engine.ts
+│   └── tetris-engine.ts
 └── socket/
     ├── lobby-handler.ts     # lobby:* 이벤트
-    └── game-handler.ts      # game:* 이벤트
+    ├── game-handler.ts      # game:* 이벤트
+    ├── nickname-handler.ts  # player:* 이벤트 (닉네임/인증)
+    └── broadcast-player-count.ts  # 접속자 수 브로드캐스트
 ```
 
 모든 게임은 `GameEngine` 인터페이스를 구현하고 `game-manager.ts`에 등록한다.
@@ -40,7 +44,8 @@ game-hub/
 │   └── games/               # 게임별 UI
 │       ├── gomoku/
 │       ├── texas-holdem/
-│       └── minesweeper/
+│       ├── minesweeper/
+│       └── tetris/
 ├── hooks/                   # useSocket, useLobby, useGame
 ├── stores/                  # Zustand (lobby-store, game-store)
 └── lib/
@@ -55,7 +60,7 @@ game-hub/
 
 ## 소켓 이벤트 네이밍
 
-`lobby:*` (방 CRUD), `game:*` (게임 진행), `chat:*` (채팅), `system:*` (시스템)
+`lobby:*` (방 CRUD), `game:*` (게임 진행), `player:*` (닉네임/인증), `chat:*` (채팅), `system:*` (시스템)
 
 ## 게임 추가 흐름
 

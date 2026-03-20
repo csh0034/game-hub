@@ -1,5 +1,3 @@
-import type { Player } from "./player-types";
-
 export type GameType = "gomoku" | "texas-holdem" | "minesweeper" | "tetris";
 
 export interface GameConfig {

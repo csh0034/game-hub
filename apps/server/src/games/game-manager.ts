@@ -10,12 +10,8 @@ export class GameManager {
   private rooms: Map<string, Room> = new Map();
   private gameStates: Map<string, GameState> = new Map();
   private engines: Map<GameType, GameEngine> = new Map();
-  // Holdem: per-room engine instances for stateful deck management
-  private holdemInstances: Map<string, HoldemEngine> = new Map();
-  // Minesweeper: per-room engine instances for hidden mine state
-  private minesweeperInstances: Map<string, MinesweeperEngine> = new Map();
-  // Tetris: per-room engine instances for bag/board state
-  private tetrisInstances: Map<string, TetrisEngine> = new Map();
+  // Per-room stateful engine instances (holdem, minesweeper, tetris)
+  private roomEngines: Map<string, GameEngine> = new Map();
 
   constructor() {
     this.engines.set("gomoku", new GomokuEngine());
@@ -58,10 +54,7 @@ export class GameManager {
     room.players = room.players.filter((p) => p.id !== playerId);
     if (room.players.length === 0) {
       this.rooms.delete(roomId);
-      this.gameStates.delete(roomId);
-      this.holdemInstances.delete(roomId);
-      this.minesweeperInstances.delete(roomId);
-      this.tetrisInstances.delete(roomId);
+      this.cleanupRoomState(roomId);
       return null;
     }
     if (room.hostId === playerId) {
@@ -69,18 +62,12 @@ export class GameManager {
     }
     if (room.status === "finished") {
       room.status = "waiting";
-      this.gameStates.delete(roomId);
-      this.holdemInstances.delete(roomId);
-      this.minesweeperInstances.delete(roomId);
-      this.tetrisInstances.delete(roomId);
+      this.cleanupRoomState(roomId);
     } else if (room.status === "playing") {
       const engine = this.engines.get(room.gameType)!;
       if (room.players.length < engine.minPlayers) {
         room.status = "waiting";
-        this.gameStates.delete(roomId);
-        this.holdemInstances.delete(roomId);
-        this.minesweeperInstances.delete(roomId);
-        this.tetrisInstances.delete(roomId);
+        this.cleanupRoomState(roomId);
       }
     }
     return room;
@@ -105,7 +92,7 @@ export class GameManager {
 
     if (room.gameType === "texas-holdem") {
       const holdemEngine = new HoldemEngine();
-      this.holdemInstances.set(roomId, holdemEngine);
+      this.roomEngines.set(roomId, holdemEngine);
       const state = holdemEngine.initState(room.players);
       this.gameStates.set(roomId, state);
       return state;
@@ -114,7 +101,7 @@ export class GameManager {
     if (room.gameType === "minesweeper") {
       const difficulty = room.gameOptions?.minesweeperDifficulty ?? "beginner";
       const minesweeperEngine = new MinesweeperEngine(difficulty);
-      this.minesweeperInstances.set(roomId, minesweeperEngine);
+      this.roomEngines.set(roomId, minesweeperEngine);
       const state = minesweeperEngine.initState(room.players);
       this.gameStates.set(roomId, state);
       return state;
@@ -123,7 +110,7 @@ export class GameManager {
     if (room.gameType === "tetris") {
       const difficulty = room.gameOptions?.tetrisDifficulty ?? "normal";
       const tetrisEngine = new TetrisEngine(difficulty);
-      this.tetrisInstances.set(roomId, tetrisEngine);
+      this.roomEngines.set(roomId, tetrisEngine);
       const state = tetrisEngine.initState(room.players);
       this.gameStates.set(roomId, state);
       return state;
@@ -140,16 +127,7 @@ export class GameManager {
     const state = this.gameStates.get(roomId);
     if (!state) return null;
 
-    let engine: GameEngine;
-    if (room.gameType === "texas-holdem") {
-      engine = this.holdemInstances.get(roomId) || this.engines.get(room.gameType)!;
-    } else if (room.gameType === "minesweeper") {
-      engine = this.minesweeperInstances.get(roomId) || this.engines.get(room.gameType)!;
-    } else if (room.gameType === "tetris") {
-      engine = this.tetrisInstances.get(roomId) || this.engines.get(room.gameType)!;
-    } else {
-      engine = this.engines.get(room.gameType)!;
-    }
+    const engine = this.roomEngines.get(roomId) || this.engines.get(room.gameType)!;
 
     const newState = engine.processMove(state, playerId, move);
     this.gameStates.set(roomId, newState);
@@ -165,10 +143,7 @@ export class GameManager {
     if (!room) return null;
     room.status = "waiting";
     room.players.forEach((p) => (p.isReady = false));
-    this.gameStates.delete(roomId);
-    this.holdemInstances.delete(roomId);
-    this.minesweeperInstances.delete(roomId);
-    this.tetrisInstances.delete(roomId);
+    this.cleanupRoomState(roomId);
     return room;
   }
 
@@ -189,15 +164,23 @@ export class GameManager {
   }
 
   getHoldemEngine(roomId: string): HoldemEngine | null {
-    return this.holdemInstances.get(roomId) || null;
+    const engine = this.roomEngines.get(roomId);
+    return engine instanceof HoldemEngine ? engine : null;
   }
 
   getMinesweeperEngine(roomId: string): MinesweeperEngine | null {
-    return this.minesweeperInstances.get(roomId) || null;
+    const engine = this.roomEngines.get(roomId);
+    return engine instanceof MinesweeperEngine ? engine : null;
   }
 
   getTetrisEngine(roomId: string): TetrisEngine | null {
-    return this.tetrisInstances.get(roomId) || null;
+    const engine = this.roomEngines.get(roomId);
+    return engine instanceof TetrisEngine ? engine : null;
+  }
+
+  private cleanupRoomState(roomId: string): void {
+    this.gameStates.delete(roomId);
+    this.roomEngines.delete(roomId);
   }
 
   private generateId(): string {

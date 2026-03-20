@@ -84,9 +84,13 @@ function getPieceCells(piece: TetrisActivePiece): [number, number][] {
   ]);
 }
 
-function MiniPiecePreview({ type }: { type: TetrominoType | null }) {
+function MiniPiecePreview({ type, size = "normal" }: { type: TetrominoType | null; size?: "normal" | "small" }) {
+  const boxClass = size === "small" ? "w-10 h-10" : "w-16 h-16";
+  const cellPx = size === "small" ? 8 : 12;
+  const cellClass = size === "small" ? "w-2 h-2" : "w-3 h-3";
+
   if (!type) {
-    return <div className="w-16 h-16 bg-secondary/50 rounded border border-border" />;
+    return <div className={`${boxClass} bg-secondary/50 rounded border border-border`} />;
   }
 
   const cells = TETROMINO_SHAPES[type][0];
@@ -98,12 +102,12 @@ function MiniPiecePreview({ type }: { type: TetrominoType | null }) {
   const w = maxC - minC + 1;
 
   return (
-    <div className="w-16 h-16 bg-secondary/50 rounded border border-border flex items-center justify-center">
+    <div className={`${boxClass} bg-secondary/50 rounded border border-border flex items-center justify-center`}>
       <div
         className="grid gap-px"
         style={{
-          gridTemplateColumns: `repeat(${w}, 12px)`,
-          gridTemplateRows: `repeat(${h}, 12px)`,
+          gridTemplateColumns: `repeat(${w}, ${cellPx}px)`,
+          gridTemplateRows: `repeat(${h}, ${cellPx}px)`,
         }}
       >
         {Array.from({ length: h }, (_, r) =>
@@ -112,7 +116,7 @@ function MiniPiecePreview({ type }: { type: TetrominoType | null }) {
             return (
               <div
                 key={`${r}-${c}`}
-                className={`w-3 h-3 rounded-sm ${isFilled ? TETROMINO_COLORS[type] : "bg-transparent"}`}
+                className={`${cellClass} rounded-sm ${isFilled ? TETROMINO_COLORS[type] : "bg-transparent"}`}
               />
             );
           }),
@@ -124,14 +128,16 @@ function MiniPiecePreview({ type }: { type: TetrominoType | null }) {
 
 function PlayerBoard({
   board,
-  isMe,
+  cellSize,
+  compact,
   nickname,
 }: {
   board: TetrisPlayerBoard;
-  isMe: boolean;
+  cellSize: number;
+  compact?: boolean;
   nickname?: string;
 }) {
-  const cellSize = isMe ? 32 : 18;
+  const previewSize = compact ? "small" as const : "normal" as const;
 
   // Build display grid with active piece and ghost
   const displayGrid: { type: TetrominoType | null; isGhost: boolean; isActive: boolean }[][] =
@@ -156,19 +162,24 @@ function PlayerBoard({
     }
   }
 
+  const textSm = compact ? "text-[10px]" : "text-xs";
+  const textLg = compact ? "text-sm" : "text-lg";
+
   return (
-    <div className="flex gap-3">
+    <div className="flex gap-2">
       {/* Hold */}
-      <div className="flex flex-col items-center gap-1">
-        <span className="text-xs text-muted-foreground font-medium">HOLD</span>
-        <MiniPiecePreview type={board.holdPiece} />
-      </div>
+      {!compact && (
+        <div className="flex flex-col items-center gap-1">
+          <span className="text-xs text-muted-foreground font-medium">HOLD</span>
+          <MiniPiecePreview type={board.holdPiece} size={previewSize} />
+        </div>
+      )}
 
       {/* Board */}
       <div className="flex flex-col items-center gap-1">
-        {nickname && <span className="text-xs text-muted-foreground font-medium">{nickname}</span>}
+        {nickname && <span className={`${textSm} text-muted-foreground font-medium`}>{nickname}</span>}
         <div
-          className="border border-border rounded bg-secondary/30"
+          className="border border-border rounded bg-secondary/30 relative"
           style={{
             display: "grid",
             gridTemplateColumns: `repeat(10, ${cellSize}px)`,
@@ -194,45 +205,52 @@ function PlayerBoard({
               );
             }),
           )}
+          {board.status === "gameover" && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded">
+              <span className={`text-white font-bold ${compact ? "text-xs" : "text-lg"}`}>GAME OVER</span>
+            </div>
+          )}
         </div>
-        {board.status === "gameover" && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded">
-            <span className="text-white font-bold text-lg">GAME OVER</span>
-          </div>
-        )}
       </div>
 
       {/* Info panel */}
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2">
         <div className="flex flex-col items-center gap-1">
-          <span className="text-xs text-muted-foreground font-medium">NEXT</span>
+          <span className={`${textSm} text-muted-foreground font-medium`}>NEXT</span>
           {board.nextPieces.map((type, i) => (
-            <MiniPiecePreview key={i} type={type} />
+            <MiniPiecePreview key={i} type={type} size={previewSize} />
           ))}
         </div>
-        <div className="space-y-2 text-center">
+        <div className="space-y-1 text-center">
           <div>
-            <div className="text-xs text-muted-foreground">SCORE</div>
-            <div className="text-lg font-bold font-mono">{board.score.toLocaleString()}</div>
+            <div className={`${textSm} text-muted-foreground`}>SCORE</div>
+            <div className={`${textLg} font-bold font-mono`}>{board.score.toLocaleString()}</div>
           </div>
           <div>
-            <div className="text-xs text-muted-foreground">LEVEL</div>
-            <div className="text-lg font-bold font-mono">{board.level}</div>
+            <div className={`${textSm} text-muted-foreground`}>LEVEL</div>
+            <div className={`${textLg} font-bold font-mono`}>{board.level}</div>
           </div>
           <div>
-            <div className="text-xs text-muted-foreground">LINES</div>
-            <div className="text-lg font-bold font-mono">{board.linesCleared}</div>
+            <div className={`${textSm} text-muted-foreground`}>LINES</div>
+            <div className={`${textLg} font-bold font-mono`}>{board.linesCleared}</div>
           </div>
           {board.pendingGarbage > 0 && (
             <div>
-              <div className="text-xs text-red-400">GARBAGE</div>
-              <div className="text-lg font-bold font-mono text-red-400">{board.pendingGarbage}</div>
+              <div className={`${textSm} text-red-400`}>GARBAGE</div>
+              <div className={`${textLg} font-bold font-mono text-red-400`}>{board.pendingGarbage}</div>
             </div>
           )}
         </div>
       </div>
     </div>
   );
+}
+
+function getOpponentCellSize(count: number): number {
+  if (count <= 1) return 16;
+  if (count <= 2) return 14;
+  if (count <= 3) return 12;
+  return 10;
 }
 
 export default function TetrisBoard({ roomId }: GameComponentProps) {
@@ -246,6 +264,8 @@ export default function TetrisBoard({ roomId }: GameComponentProps) {
   const opponentEntries = state && myId
     ? Object.entries(state.players).filter(([id]) => id !== myId)
     : [];
+
+  const opponentCellSize = getOpponentCellSize(opponentEntries.length);
 
   // Tick timer
   useEffect(() => {
@@ -317,6 +337,8 @@ export default function TetrisBoard({ roomId }: GameComponentProps) {
     );
   }
 
+  const isSolo = state.mode === "solo";
+
   return (
     <div className="flex flex-col items-center gap-4 p-4">
       {/* Game result overlay */}
@@ -330,16 +352,30 @@ export default function TetrisBoard({ roomId }: GameComponentProps) {
       )}
 
       {/* Boards */}
-      <div className={`flex ${state.mode === "versus" ? "gap-6" : ""} items-start flex-wrap justify-center`}>
-        <div className="relative">
-          <PlayerBoard board={myBoard} isMe={true} />
+      <div className="flex items-start gap-6">
+        {/* My board */}
+        <div className="relative shrink-0">
+          <PlayerBoard board={myBoard} cellSize={32} />
         </div>
 
-        {opponentEntries.map(([id, board], i) => (
-          <div key={id} className="relative">
-            <PlayerBoard board={board} isMe={false} nickname={`상대 ${opponentEntries.length > 1 ? i + 1 : ""}`} />
+        {/* Opponents grid: 2 columns on the right */}
+        {!isSolo && opponentEntries.length > 0 && (
+          <div
+            className="grid gap-4"
+            style={{ gridTemplateColumns: `repeat(${Math.min(opponentEntries.length, 2)}, 1fr)` }}
+          >
+            {opponentEntries.map(([id, board], i) => (
+              <div key={id} className="relative">
+                <PlayerBoard
+                  board={board}
+                  cellSize={opponentCellSize}
+                  compact
+                  nickname={`상대 ${opponentEntries.length > 1 ? i + 1 : ""}`}
+                />
+              </div>
+            ))}
           </div>
-        ))}
+        )}
       </div>
 
       {/* Controls hint */}

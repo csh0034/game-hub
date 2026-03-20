@@ -46,7 +46,7 @@ export function GameCardGrid({ onCreateRoom }: GameCardGridProps) {
           <button
             onClick={() => handleQuickCreate(game.gameType)}
             disabled={game.disabled}
-            className={`group relative w-full bg-card border border-border rounded-xl p-6 text-left transition-all duration-300 ${game.disabled ? "opacity-60 cursor-not-allowed" : "hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5"}`}
+            className={`group relative w-full h-full bg-card border border-border rounded-xl p-6 text-left transition-all duration-300 ${game.disabled ? "opacity-60 cursor-default" : "hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5"}`}
           >
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="relative">
@@ -90,7 +90,10 @@ export function GameCardGrid({ onCreateRoom }: GameCardGridProps) {
       ))}
       {COMING_SOON_GAMES.map((game) => (
         <div key={game.name}>
-          <div className="group relative w-full bg-card border border-border rounded-xl p-6 text-left opacity-60 cursor-default">
+          <button
+            disabled
+            className="group relative w-full h-full bg-card border border-border rounded-xl p-6 text-left transition-all duration-300 opacity-60 cursor-default"
+          >
             <div className="relative">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-4xl">{game.icon}</span>
@@ -109,7 +112,7 @@ export function GameCardGrid({ onCreateRoom }: GameCardGridProps) {
                 </span>
               </div>
             </div>
-          </div>
+          </button>
         </div>
       ))}
     </div>

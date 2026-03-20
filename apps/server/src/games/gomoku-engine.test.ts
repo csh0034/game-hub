@@ -43,6 +43,16 @@ describe("GomokuEngine", () => {
       expect(state.lastMove).toBeNull();
       expect(state.moveCount).toBe(0);
     });
+
+    it("turnStartedAt과 gameStartedAt을 설정한다", () => {
+      const before = Date.now();
+      const state = engine.initState(mockPlayers);
+      const after = Date.now();
+      expect(state.turnStartedAt).toBeGreaterThanOrEqual(before);
+      expect(state.turnStartedAt).toBeLessThanOrEqual(after);
+      expect(state.gameStartedAt).toBeGreaterThanOrEqual(before);
+      expect(state.gameStartedAt).toBeLessThanOrEqual(after);
+    });
   });
 
   describe("processMove", () => {
@@ -86,6 +96,16 @@ describe("GomokuEngine", () => {
       expect(state.board[7][7]).toBeNull();
       expect(newState.board[7][7]).toBe("black");
       expect(newState).not.toBe(state);
+    });
+
+    it("돌을 놓으면 turnStartedAt이 갱신된다", () => {
+      const newState = engine.processMove(state, "player1", { row: 7, col: 7 });
+      expect(newState.turnStartedAt).toBeGreaterThanOrEqual(state.turnStartedAt);
+    });
+
+    it("돌을 놓아도 gameStartedAt은 유지된다", () => {
+      const newState = engine.processMove(state, "player1", { row: 7, col: 7 });
+      expect(newState.gameStartedAt).toBe(state.gameStartedAt);
     });
   });
 
@@ -267,6 +287,8 @@ describe("GomokuEngine", () => {
         players: { black: "player1", white: "player2" },
         lastMove: { row: 14, col: 14 },
         moveCount: 225,
+        turnStartedAt: Date.now(),
+        gameStartedAt: Date.now(),
       };
 
       const result = engine.checkWin(drawState);

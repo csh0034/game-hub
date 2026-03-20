@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useGame } from "@/hooks/use-game";
 import { useSocket } from "@/hooks/use-socket";
 import type { GomokuState, GomokuMove } from "@game-hub/shared-types";
@@ -15,6 +16,19 @@ export default function GomokuBoard({ roomId }: GameComponentProps) {
   const { gameState, makeMove } = useGame(socket);
 
   const state = gameState as GomokuState | null;
+
+  const [remainingTime, setRemainingTime] = useState(15);
+  const [elapsedTime, setElapsedTime] = useState(0);
+
+  useEffect(() => {
+    if (!state) return;
+    const interval = setInterval(() => {
+      setRemainingTime(Math.max(0, 15 - (Date.now() - state.turnStartedAt) / 1000));
+      setElapsedTime(Math.floor((Date.now() - state.gameStartedAt) / 1000));
+    }, 200);
+    return () => clearInterval(interval);
+  }, [state?.turnStartedAt, state?.gameStartedAt, state]);
+
   if (!state) return null;
 
   const isMyTurn = state.players[state.currentTurn] === socket?.id;
@@ -46,6 +60,10 @@ export default function GomokuBoard({ roomId }: GameComponentProps) {
         <span className="text-muted-foreground">·</span>
         <span className={isMyTurn ? "text-primary font-bold" : "text-muted-foreground"}>
           {isMyTurn ? "내 차례" : "상대 차례"}
+        </span>
+        <span className="text-muted-foreground">·</span>
+        <span className={`font-mono font-bold ${remainingTime <= 5 ? "text-red-500" : "text-foreground"}`}>
+          {Math.ceil(remainingTime)}초
         </span>
       </div>
 
@@ -131,7 +149,7 @@ export default function GomokuBoard({ roomId }: GameComponentProps) {
       </div>
 
       <p className="text-xs text-muted-foreground">
-        수: {state.moveCount}
+        수: {state.moveCount} · 경과 {String(Math.floor(elapsedTime / 60)).padStart(2, "0")}:{String(elapsedTime % 60).padStart(2, "0")}
       </p>
     </div>
   );

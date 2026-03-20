@@ -4,13 +4,31 @@ import type {
   ServerToClientEvents,
   InterServerEvents,
   SocketData,
+  GomokuState,
 } from "@game-hub/shared-types";
 import type { GameManager } from "../games/game-manager.js";
+import { startGomokuTimer, clearGomokuTimer } from "../games/gomoku-timer.js";
 
 type IOServer = Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 type IOSocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 
 export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: GameManager) {
+  function startGomokuTurnTimer(roomId: string) {
+    startGomokuTimer(roomId, () => {
+      const room = gameManager.getRoom(roomId);
+      const state = gameManager.getGameState(roomId) as GomokuState | null;
+      if (!room || !state || room.status !== "playing") return;
+
+      const loserColor = state.currentTurn === "black" ? "흑" : "백";
+      room.status = "finished";
+      io.to(roomId).emit("game:ended", {
+        winnerId: state.players[state.currentTurn === "black" ? "white" : "black"],
+        reason: `${loserColor}의 시간이 초과되었습니다!`,
+      });
+      io.emit("lobby:room-updated", room);
+    });
+  }
+
   socket.on("game:start", () => {
     const roomId = socket.data.roomId;
     if (!roomId) return;
@@ -30,6 +48,10 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
 
     io.to(roomId).emit("game:started", state);
     io.emit("lobby:room-updated", room);
+
+    if (room.gameType === "gomoku") {
+      startGomokuTurnTimer(roomId);
+    }
 
     // For holdem, send private hole cards
     if (room.gameType === "texas-holdem") {
@@ -59,10 +81,16 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
     io.to(roomId).emit("game:state-updated", result.state);
 
     if (result.result) {
+      clearGomokuTimer(roomId);
       io.to(roomId).emit("game:ended", result.result);
       const room = gameManager.getRoom(roomId);
       if (room) {
         io.emit("lobby:room-updated", room);
+      }
+    } else {
+      const room = gameManager.getRoom(roomId);
+      if (room?.gameType === "gomoku") {
+        startGomokuTurnTimer(roomId);
       }
     }
   });
@@ -70,6 +98,8 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
   socket.on("game:rematch", () => {
     const roomId = socket.data.roomId;
     if (!roomId) return;
+
+    clearGomokuTimer(roomId);
 
     // For simplicity, reset the room immediately
     const room = gameManager.resetRoom(roomId);

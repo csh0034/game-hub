@@ -7,6 +7,7 @@ import {
   type SocketData,
 } from "@game-hub/shared-types";
 import type { GameManager } from "../games/game-manager.js";
+import { clearGomokuTimer } from "../games/gomoku-timer.js";
 
 type IOServer = Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 type IOSocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
@@ -28,6 +29,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
     const prevRoomId = socket.data.roomId;
     if (!prevRoomId) return;
     emitPlayerLeftIfPlaying(prevRoomId);
+    clearGomokuTimer(prevRoomId);
     socket.leave(prevRoomId);
     socket.data.roomId = null;
     const prevRoom = gameManager.removePlayer(prevRoomId, socket.id!);
@@ -81,6 +83,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
     const roomId = socket.data.roomId;
     if (!roomId) return;
     emitPlayerLeftIfPlaying(roomId);
+    clearGomokuTimer(roomId);
     socket.leave(roomId);
     socket.data.roomId = null;
     const room = gameManager.removePlayer(roomId, socket.id!);

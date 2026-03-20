@@ -10,6 +10,7 @@ export class GomokuEngine implements GameEngine {
     const board: (null | "black" | "white")[][] = Array.from({ length: 15 }, () =>
       Array(15).fill(null)
     );
+    const now = Date.now();
     return {
       board,
       currentTurn: "black",
@@ -19,6 +20,8 @@ export class GomokuEngine implements GameEngine {
       },
       lastMove: null,
       moveCount: 0,
+      turnStartedAt: now,
+      gameStartedAt: now,
     };
   }
 
@@ -37,6 +40,7 @@ export class GomokuEngine implements GameEngine {
       currentTurn: state.currentTurn === "black" ? "white" : "black",
       lastMove: { row, col },
       moveCount: state.moveCount + 1,
+      turnStartedAt: Date.now(),
     };
   }
 

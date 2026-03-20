@@ -52,6 +52,8 @@ export interface GomokuState {
   players: Record<StoneColor, string>; // playerId
   lastMove: { row: number; col: number } | null;
   moveCount: number;
+  turnStartedAt: number;
+  gameStartedAt: number;
 }
 
 export interface GomokuMove {

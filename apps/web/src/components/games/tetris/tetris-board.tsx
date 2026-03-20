@@ -281,7 +281,7 @@ export default function TetrisBoard({ roomId }: GameComponentProps) {
     return () => {
       if (tickRef.current) clearInterval(tickRef.current);
     };
-  }, [state?.dropInterval, myBoard?.status, myBoard?.level, gameResult, makeMove, state, myBoard]);
+  }, [state?.dropInterval, myBoard?.status, myBoard?.level, gameResult, makeMove]);
 
   // Keyboard input
   useEffect(() => {

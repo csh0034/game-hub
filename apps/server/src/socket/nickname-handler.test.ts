@@ -19,6 +19,8 @@ function createMockSocket(id: string, nickname: string) {
     on: vi.fn((event: string, handler: (...args: unknown[]) => void) => {
       handlers.set(event, handler);
     }),
+    join: vi.fn(),
+    leave: vi.fn(),
     _trigger: (event: string, ...args: unknown[]) => {
       handlers.get(event)?.(...args);
     },

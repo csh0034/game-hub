@@ -2,6 +2,13 @@ import type { Room, CreateRoomPayload, JoinRoomPayload } from "./lobby-types";
 import type { GameState, GameMove, GameResult, HoldemPrivateState, Card } from "./game-types";
 import type { Player } from "./player-types";
 
+export interface ChatMessage {
+  playerId: string;
+  nickname: string;
+  message: string;
+  timestamp: number;
+}
+
 // Client → Server
 export interface ClientToServerEvents {
   // Lobby
@@ -24,7 +31,8 @@ export interface ClientToServerEvents {
   "player:logout": () => void;
 
   // Chat
-  "chat:message": (message: string) => void;
+  "chat:lobby-message": (message: string) => void;
+  "chat:room-message": (message: string) => void;
 }
 
 // Server → Client
@@ -54,7 +62,8 @@ export interface ServerToClientEvents {
   }) => void;
 
   // Chat
-  "chat:message": (data: { playerId: string; nickname: string; message: string; timestamp: number }) => void;
+  "chat:lobby-message": (data: ChatMessage) => void;
+  "chat:room-message": (data: ChatMessage) => void;
 
   // System
   "system:player-count": (data: { count: number; nicknames: string[] }) => void;

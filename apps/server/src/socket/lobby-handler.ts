@@ -55,6 +55,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
       return;
     }
     cleanupPreviousRoom();
+    socket.leave("lobby");
     const player = {
       id: socket.id!,
       nickname: socket.data.nickname,
@@ -69,6 +70,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
 
   socket.on("lobby:join-room", (payload, callback) => {
     cleanupPreviousRoom();
+    socket.leave("lobby");
     const player = {
       id: socket.id!,
       nickname: socket.data.nickname,
@@ -77,6 +79,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
     const room = gameManager.joinRoom(payload.roomId, player);
     if (!room) {
       callback(null, "방에 참가할 수 없습니다.");
+      socket.join("lobby");
       return;
     }
     socket.join(room.id);
@@ -102,6 +105,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
     } else {
       io.emit("lobby:room-removed", roomId);
     }
+    socket.join("lobby");
   });
 
   socket.on("lobby:toggle-ready", () => {
@@ -113,10 +117,21 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
     }
   });
 
-  socket.on("chat:message", (message) => {
+  socket.on("chat:lobby-message", (message) => {
+    if (!socket.data.authenticated) return;
+    if (socket.data.roomId) return;
+    io.to("lobby").emit("chat:lobby-message", {
+      playerId: socket.id!,
+      nickname: socket.data.nickname,
+      message: message.slice(0, 500),
+      timestamp: Date.now(),
+    });
+  });
+
+  socket.on("chat:room-message", (message) => {
     const roomId = socket.data.roomId;
     if (!roomId) return;
-    io.to(roomId).emit("chat:message", {
+    io.to(roomId).emit("chat:room-message", {
       playerId: socket.id!,
       nickname: socket.data.nickname,
       message: message.slice(0, 500),

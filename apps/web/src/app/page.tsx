@@ -4,12 +4,14 @@ import { useState, useEffect, useCallback, useRef, useSyncExternalStore } from "
 import { useGameStore } from "@/stores/game-store";
 import { useSocket } from "@/hooks/use-socket";
 import { useLobby } from "@/hooks/use-lobby";
+import { useChat } from "@/hooks/use-chat";
 import { Navbar } from "@/components/layout/navbar";
 import { NicknameForm } from "@/components/lobby/nickname-form";
 import { GameCardGrid } from "@/components/lobby/game-card-grid";
 import { RoomList } from "@/components/lobby/room-list";
 import { CreateRoomDialog } from "@/components/lobby/create-room-dialog";
 import { RoomView } from "@/components/lobby/room-view";
+import { ChatPanel } from "@/components/chat/chat-panel";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
 
 const NICKNAME_KEY = "game-hub-nickname";
@@ -50,6 +52,8 @@ export default function LobbyPage() {
   const { socket, isConnected, playerCount, onlineNicknames } = useSocket();
   const { rooms, currentRoom, createRoom, joinRoom, leaveRoom, toggleReady } =
     useLobby(socket);
+  const { lobbyMessages, roomMessages, sendLobbyMessage, sendRoomMessage, clearRoomMessages } =
+    useChat(socket);
   const isNavigatingBack = useRef(false);
   const [confirmState, setConfirmState] = useState<{
     open: boolean;
@@ -106,11 +110,12 @@ export default function LobbyPage() {
   const doLeaveRoom = useCallback(() => {
     if (!currentRoom) return;
     leaveRoom();
+    clearRoomMessages();
     if (!isNavigatingBack.current) {
       history.back();
     }
     isNavigatingBack.current = false;
-  }, [currentRoom, leaveRoom]);
+  }, [currentRoom, leaveRoom, clearRoomMessages]);
 
   const handleLeaveRoom = useCallback(async () => {
     if (!currentRoom) return;
@@ -166,20 +171,22 @@ export default function LobbyPage() {
 
   const wrappedCreateRoom = useCallback(
     async (...args: Parameters<typeof createRoom>) => {
+      clearRoomMessages();
       const room = await createRoom(...args);
       history.pushState({ inRoom: true }, "");
       return room;
     },
-    [createRoom]
+    [createRoom, clearRoomMessages]
   );
 
   const wrappedJoinRoom = useCallback(
     async (...args: Parameters<typeof joinRoom>) => {
+      clearRoomMessages();
       const room = await joinRoom(...args);
       history.pushState({ inRoom: true }, "");
       return room;
     },
-    [joinRoom]
+    [joinRoom, clearRoomMessages]
   );
 
   // SSR / hydration 전: 빈 화면 (닉네임 폼 플래시 방지)
@@ -215,6 +222,8 @@ export default function LobbyPage() {
             onLeave={handleLeaveRoom}
             onLeaveImmediate={doLeaveRoom}
             onToggleReady={toggleReady}
+            roomMessages={roomMessages}
+            onSendRoomMessage={sendRoomMessage}
           />
         </main>
         {confirmDialog}
@@ -225,24 +234,37 @@ export default function LobbyPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar isConnected={isConnected} playerCount={playerCount} onlineNicknames={onlineNicknames} nickname={nickname} onGoHome={handleGoHome} onLogout={handleLogout} />
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-6 space-y-8">
-        <section>
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-3xl font-bold">게임 선택</h1>
-              <p className="text-muted-foreground mt-1">
-                플레이할 게임을 선택하고 방을 만들어보세요
-              </p>
-            </div>
-            <CreateRoomDialog onCreateRoom={wrappedCreateRoom} />
-          </div>
-          <GameCardGrid onCreateRoom={wrappedCreateRoom} />
-        </section>
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-6">
+        <div className="lg:grid lg:grid-cols-[1fr_320px] lg:gap-6">
+          <div className="space-y-8">
+            <section>
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h1 className="text-3xl font-bold">게임 선택</h1>
+                  <p className="text-muted-foreground mt-1">
+                    플레이할 게임을 선택하고 방을 만들어보세요
+                  </p>
+                </div>
+                <CreateRoomDialog onCreateRoom={wrappedCreateRoom} />
+              </div>
+              <GameCardGrid onCreateRoom={wrappedCreateRoom} />
+            </section>
 
-        <section>
-          <h2 className="text-2xl font-bold mb-4">열린 방 목록</h2>
-          <RoomList rooms={rooms} onJoinRoom={wrappedJoinRoom} />
-        </section>
+            <section>
+              <h2 className="text-2xl font-bold mb-4">열린 방 목록</h2>
+              <RoomList rooms={rooms} onJoinRoom={wrappedJoinRoom} />
+            </section>
+          </div>
+
+          <aside className="mt-8 lg:mt-0 h-[500px]">
+            <ChatPanel
+              messages={lobbyMessages}
+              onSendMessage={sendLobbyMessage}
+              placeholder="로비 채팅..."
+              myPlayerId={socket?.id ?? undefined}
+            />
+          </aside>
+        </div>
       </main>
     </div>
   );

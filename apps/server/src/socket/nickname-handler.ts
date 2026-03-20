@@ -28,12 +28,16 @@ export function setupNicknameHandler(io: GameServer, socket: GameSocket) {
 
     socket.data.nickname = trimmed;
     socket.data.authenticated = true;
+    if (!socket.data.roomId) {
+      socket.join("lobby");
+    }
     broadcastAuthenticatedCount(io);
     callback({ success: true });
   });
 
   socket.on("player:logout", () => {
     socket.data.authenticated = false;
+    socket.leave("lobby");
     broadcastAuthenticatedCount(io);
   });
 }

@@ -1,8 +1,9 @@
 "use client";
 
 import { Suspense, useEffect, useState, useCallback } from "react";
-import type { Room } from "@game-hub/shared-types";
+import type { Room, ChatMessage } from "@game-hub/shared-types";
 import { GAME_CONFIGS } from "@game-hub/shared-types";
+import { ChatPanel } from "@/components/chat/chat-panel";
 import { useGame } from "@/hooks/use-game";
 import { GameRenderer } from "@/lib/game-registry";
 import type { GameSocket } from "@/lib/socket";
@@ -13,6 +14,9 @@ import {
   Circle,
   Play,
   RotateCcw,
+  MessageCircle,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 function PlayerLeftOverlay({
@@ -65,10 +69,13 @@ interface RoomViewProps {
   onLeave: () => void;
   onLeaveImmediate: () => void;
   onToggleReady: () => void;
+  roomMessages: ChatMessage[];
+  onSendRoomMessage: (message: string) => void;
 }
 
-export function RoomView({ room, socket, onLeave, onLeaveImmediate, onToggleReady }: RoomViewProps) {
+export function RoomView({ room, socket, onLeave, onLeaveImmediate, onToggleReady, roomMessages, onSendRoomMessage }: RoomViewProps) {
   const { gameState, gameResult, playerLeftInfo, startGame, requestRematch, setPlayerLeftInfo } = useGame(socket);
+  const [chatOpen, setChatOpen] = useState(false);
   const config = GAME_CONFIGS[room.gameType];
   const isHost = socket?.id === room.hostId;
   const isPlaying = room.status === "playing" || !!gameState;
@@ -138,6 +145,27 @@ export function RoomView({ room, socket, onLeave, onLeaveImmediate, onToggleRead
         >
           <GameRenderer gameType={room.gameType} roomId={room.id} />
         </Suspense>
+
+        <div className="mt-4">
+          <button
+            onClick={() => setChatOpen((prev) => !prev)}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-2"
+          >
+            <MessageCircle className="w-4 h-4" />
+            채팅
+            {chatOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+          </button>
+          {chatOpen && (
+            <div className="h-[300px]">
+              <ChatPanel
+                messages={roomMessages}
+                onSendMessage={onSendRoomMessage}
+                placeholder="게임 채팅..."
+                myPlayerId={socket?.id ?? undefined}
+              />
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -221,6 +249,15 @@ export function RoomView({ room, socket, onLeave, onLeaveImmediate, onToggleRead
       <p className="text-xs text-center text-muted-foreground">
         방 코드: <span className="font-mono text-foreground">{room.id}</span>
       </p>
+
+      <div className="h-[300px]">
+        <ChatPanel
+          messages={roomMessages}
+          onSendMessage={onSendRoomMessage}
+          placeholder="방 채팅..."
+          myPlayerId={socket?.id ?? undefined}
+        />
+      </div>
     </div>
   );
 }

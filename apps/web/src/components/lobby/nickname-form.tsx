@@ -86,6 +86,7 @@ export function NicknameForm({ onComplete }: NicknameFormProps) {
       </div>
       <span className="absolute bottom-4 right-4 text-xs text-muted-foreground">
         v{process.env.NEXT_PUBLIC_APP_VERSION}
+        <span className="ml-1 opacity-60">({process.env.NEXT_PUBLIC_COMMIT_HASH})</span>
       </span>
     </div>
   );

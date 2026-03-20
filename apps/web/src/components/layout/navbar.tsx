@@ -28,6 +28,7 @@ export function Navbar({ isConnected, playerCount, onlineNicknames = [], nicknam
             </span>
             <span className="text-xs text-muted-foreground">
               v{process.env.NEXT_PUBLIC_APP_VERSION}
+              <span className="ml-1 opacity-60">({process.env.NEXT_PUBLIC_COMMIT_HASH})</span>
             </span>
           </button>
 

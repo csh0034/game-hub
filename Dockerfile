@@ -41,7 +41,11 @@ COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
 # Express 서버 빌드 결과 복사
 COPY --from=builder /app/apps/server/dist ./apps/server/dist
 COPY --from=builder /app/apps/server/package.json ./apps/server/
-COPY --from=builder /app/packages/shared-types ./packages/shared-types
+
+# shared-types 빌드 결과 복사 (프로덕션에서는 dist 사용)
+COPY --from=builder /app/packages/shared-types/dist ./packages/shared-types/dist
+COPY --from=builder /app/packages/shared-types/package.json ./packages/shared-types/
+RUN sed -i 's|"./src/index.ts"|"./dist/index.js"|g' packages/shared-types/package.json
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml

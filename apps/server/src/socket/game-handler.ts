@@ -24,7 +24,7 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
 
     const state = gameManager.startGame(roomId);
     if (!state) {
-      socket.emit("game:error", "게임을 시작할 수 없습니다. 최소 인원을 확인하세요.");
+      socket.emit("game:error", "게임을 시작할 수 없습니다. 최소 인원과 준비 상태를 확인하세요.");
       return;
     }
 

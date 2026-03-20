@@ -88,6 +88,10 @@ export class GameManager {
     if (!room) return null;
     const engine = this.engines.get(room.gameType)!;
     if (room.players.length < engine.minPlayers) return null;
+
+    // 방장을 제외한 모든 플레이어가 준비 완료 상태여야 함
+    const otherPlayers = room.players.filter((p) => p.id !== room.hostId);
+    if (otherPlayers.length > 0 && !otherPlayers.every((p) => p.isReady)) return null;
     room.status = "playing";
 
     if (room.gameType === "texas-holdem") {

@@ -158,6 +158,23 @@ describe("GameManager", () => {
       const room = gm.createRoom(gomokuPayload, host);
       expect(gm.startGame(room.id)).toBeNull();
     });
+
+    it("방장 외 플레이어가 준비하지 않으면 null을 반환한다", () => {
+      const notReadyGuest: Player = { id: "guest-2", nickname: "NotReady", isReady: false };
+      const room = gm.createRoom(gomokuPayload, host);
+      gm.joinRoom(room.id, notReadyGuest);
+      expect(gm.startGame(room.id)).toBeNull();
+      expect(gm.getRoom(room.id)!.status).toBe("waiting");
+    });
+
+    it("방장 외 플레이어가 모두 준비하면 게임을 시작한다", () => {
+      const readyGuest: Player = { id: "guest-3", nickname: "Ready", isReady: true };
+      const room = gm.createRoom(gomokuPayload, host);
+      gm.joinRoom(room.id, readyGuest);
+      const state = gm.startGame(room.id);
+      expect(state).not.toBeNull();
+      expect(gm.getRoom(room.id)!.status).toBe("playing");
+    });
   });
 
   describe("processMove", () => {

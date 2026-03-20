@@ -63,11 +63,12 @@ interface RoomViewProps {
   room: Room;
   socket: GameSocket | null;
   onLeave: () => void;
+  onLeaveImmediate: () => void;
   onToggleReady: () => void;
 }
 
-export function RoomView({ room, socket, onLeave, onToggleReady }: RoomViewProps) {
-  const { gameState, gameResult, playerLeftInfo, startGame, requestRematch, setPlayerLeftInfo, reset } = useGame(socket);
+export function RoomView({ room, socket, onLeave, onLeaveImmediate, onToggleReady }: RoomViewProps) {
+  const { gameState, gameResult, playerLeftInfo, startGame, requestRematch, setPlayerLeftInfo } = useGame(socket);
   const config = GAME_CONFIGS[room.gameType];
   const isHost = socket?.id === room.hostId;
   const isPlaying = room.status === "playing" || !!gameState;
@@ -78,8 +79,8 @@ export function RoomView({ room, socket, onLeave, onToggleReady }: RoomViewProps
 
   const handlePlayerLeftReset = useCallback(() => {
     setPlayerLeftInfo(null);
-    reset();
-  }, [setPlayerLeftInfo, reset]);
+    onLeaveImmediate();
+  }, [setPlayerLeftInfo, onLeaveImmediate]);
 
   if (isPlaying && gameState) {
     return (
@@ -195,7 +196,7 @@ export function RoomView({ room, socket, onLeave, onToggleReady }: RoomViewProps
         {isHost ? (
           <button
             onClick={startGame}
-            disabled={room.players.length < config.minPlayers}
+            disabled={room.players.length < config.minPlayers || !room.players.filter((p) => p.id !== room.hostId).every((p) => p.isReady)}
             className="flex-1 flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground text-primary-foreground py-3 rounded-lg font-medium transition-colors disabled:cursor-not-allowed"
           >
             <Play className="w-5 h-5" />

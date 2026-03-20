@@ -213,6 +213,7 @@ export default function LobbyPage() {
             room={currentRoom}
             socket={socket}
             onLeave={handleLeaveRoom}
+            onLeaveImmediate={doLeaveRoom}
             onToggleReady={toggleReady}
           />
         </main>

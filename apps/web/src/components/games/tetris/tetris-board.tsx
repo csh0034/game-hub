@@ -335,7 +335,11 @@ export default function TetrisBoard({ roomId }: GameComponentProps) {
           <div className="text-lg font-bold mb-1">
             {gameResult.winnerId === myId ? "승리!" : gameResult.winnerId ? "패배" : "게임 오버"}
           </div>
-          <div className="text-sm text-muted-foreground">{gameResult.reason}</div>
+          <div className="text-sm text-muted-foreground">
+            {gameResult.winnerId && gameResult.winnerId !== myId
+              ? "상대가 끝까지 생존했습니다."
+              : gameResult.reason}
+          </div>
         </div>
       )}
 

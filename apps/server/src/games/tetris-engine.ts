@@ -198,7 +198,7 @@ export class TetrisEngine implements GameEngine {
     if (this.mode === "solo") {
       const ps = this.playerStates.get(this.playerIds[0]);
       if (ps && ps.status === "gameover") {
-        return { winnerId: null, reason: `게임 오버! 점수: ${ps.score}` };
+        return { winnerId: null, reason: `점수: ${ps.score}` };
       }
       return null;
     }

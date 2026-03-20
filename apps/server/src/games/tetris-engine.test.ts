@@ -240,7 +240,7 @@ describe("TetrisEngine", () => {
         const result = engine.checkWin(currentState);
         expect(result).not.toBeNull();
         expect(result!.winnerId).toBeNull();
-        expect(result!.reason).toContain("게임 오버");
+        expect(result!.reason).toContain("점수:");
       }
     });
 

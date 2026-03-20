@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useCallback, useRef, useSyncExternalStore } from "react";
+import { useGameStore } from "@/stores/game-store";
 import { useSocket } from "@/hooks/use-socket";
 import { useLobby } from "@/hooks/use-lobby";
 import { Navbar } from "@/components/layout/navbar";
@@ -71,7 +72,12 @@ export default function LobbyPage() {
     store.set(newNickname);
   }, []);
 
-  const handleLeaveRoom = useCallback(() => {
+  const isGameInProgress = useCallback(() => {
+    const { gameState, gameResult } = useGameStore.getState();
+    return gameState !== null && gameResult === null;
+  }, []);
+
+  const doLeaveRoom = useCallback(() => {
     if (!currentRoom) return;
     leaveRoom();
     if (!isNavigatingBack.current) {
@@ -80,29 +86,57 @@ export default function LobbyPage() {
     isNavigatingBack.current = false;
   }, [currentRoom, leaveRoom]);
 
+  const handleLeaveRoom = useCallback(() => {
+    if (!currentRoom) return;
+    if (isGameInProgress()) {
+      if (!window.confirm("게임이 진행 중입니다. 정말 나가시겠습니까?")) return;
+    }
+    doLeaveRoom();
+  }, [currentRoom, isGameInProgress, doLeaveRoom]);
+
   const handleGoHome = useCallback(() => {
     handleLeaveRoom();
   }, [handleLeaveRoom]);
 
   const handleLogout = useCallback(() => {
+    if (currentRoom && isGameInProgress()) {
+      if (!window.confirm("게임이 진행 중입니다. 정말 나가시겠습니까?")) return;
+    }
     if (currentRoom) {
       leaveRoom();
     }
     socket?.emit("player:logout");
     store.remove();
-  }, [currentRoom, leaveRoom, socket]);
+  }, [currentRoom, leaveRoom, socket, isGameInProgress]);
 
   // Handle browser back button
   useEffect(() => {
     const onPopState = () => {
       if (currentRoom) {
+        if (isGameInProgress()) {
+          if (!window.confirm("게임이 진행 중입니다. 정말 나가시겠습니까?")) {
+            history.pushState({ inRoom: true }, "");
+            return;
+          }
+        }
         isNavigatingBack.current = true;
-        handleLeaveRoom();
+        doLeaveRoom();
       }
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
-  }, [currentRoom, handleLeaveRoom]);
+  }, [currentRoom, isGameInProgress, doLeaveRoom]);
+
+  // beforeunload — 게임 진행 중 탭 닫기 방지
+  useEffect(() => {
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isGameInProgress()) {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [isGameInProgress]);
 
   const wrappedCreateRoom = useCallback(
     async (...args: Parameters<typeof createRoom>) => {

@@ -10,9 +10,11 @@ export function useGame(socket: GameSocket | null) {
     gameState,
     gameResult,
     privateState,
+    playerLeftInfo,
     setGameState,
     setGameResult,
     setPrivateState,
+    setPlayerLeftInfo,
     reset,
   } = useGameStore();
 
@@ -35,12 +37,16 @@ export function useGame(socket: GameSocket | null) {
     const onError = (message: string) => {
       console.error("[game error]", message);
     };
+    const onPlayerLeft = (data: { playerId: string; nickname: string; willEnd: boolean }) => {
+      setPlayerLeftInfo({ nickname: data.nickname, willEnd: data.willEnd });
+    };
 
     socket.on("game:started", onStarted);
     socket.on("game:state-updated", onStateUpdated);
     socket.on("game:ended", onEnded);
     socket.on("game:private-state", onPrivateState);
     socket.on("game:error", onError);
+    socket.on("game:player-left", onPlayerLeft);
 
     return () => {
       socket.off("game:started", onStarted);
@@ -48,8 +54,9 @@ export function useGame(socket: GameSocket | null) {
       socket.off("game:ended", onEnded);
       socket.off("game:private-state", onPrivateState);
       socket.off("game:error", onError);
+      socket.off("game:player-left", onPlayerLeft);
     };
-  }, [socket, setGameState, setGameResult, setPrivateState]);
+  }, [socket, setGameState, setGameResult, setPrivateState, setPlayerLeftInfo]);
 
   const makeMove = useCallback(
     (move: GameMove) => {
@@ -70,5 +77,5 @@ export function useGame(socket: GameSocket | null) {
     reset();
   }, [socket, reset]);
 
-  return { gameState, gameResult, privateState, makeMove, startGame, requestRematch };
+  return { gameState, gameResult, privateState, playerLeftInfo, makeMove, startGame, requestRematch, setPlayerLeftInfo, reset };
 }

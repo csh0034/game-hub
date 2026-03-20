@@ -44,6 +44,7 @@ export interface ServerToClientEvents {
   "game:ended": (result: GameResult) => void;
   "game:error": (message: string) => void;
   "game:private-state": (state: HoldemPrivateState) => void;
+  "game:player-left": (data: { playerId: string; nickname: string; willEnd: boolean }) => void;
   "game:rematch-requested": (playerId: string) => void;
 
   // Chat

@@ -2,11 +2,12 @@ import express from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import cors from "cors";
-import type {
-  ClientToServerEvents,
-  ServerToClientEvents,
-  InterServerEvents,
-  SocketData,
+import {
+  GAME_CONFIGS,
+  type ClientToServerEvents,
+  type ServerToClientEvents,
+  type InterServerEvents,
+  type SocketData,
 } from "@game-hub/shared-types";
 import { setupLobbyHandler } from "./socket/lobby-handler.js";
 import { setupGameHandler } from "./socket/game-handler.js";
@@ -57,6 +58,15 @@ io.on("connection", (socket) => {
     console.log(`[disconnect] ${socket.id}`);
     const roomId = socket.data.roomId;
     if (roomId) {
+      const roomBefore = gameManager.getRoom(roomId);
+      if (roomBefore && roomBefore.status === "playing") {
+        const willEnd = roomBefore.players.length - 1 < GAME_CONFIGS[roomBefore.gameType].minPlayers;
+        socket.to(roomId).emit("game:player-left", {
+          playerId: socket.id,
+          nickname: socket.data.nickname,
+          willEnd,
+        });
+      }
       const room = gameManager.removePlayer(roomId, socket.id);
       if (room) {
         io.to(roomId).emit("lobby:player-left", socket.id);

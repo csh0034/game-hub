@@ -1,9 +1,10 @@
 import type { Server, Socket } from "socket.io";
-import type {
-  ClientToServerEvents,
-  ServerToClientEvents,
-  InterServerEvents,
-  SocketData,
+import {
+  GAME_CONFIGS,
+  type ClientToServerEvents,
+  type ServerToClientEvents,
+  type InterServerEvents,
+  type SocketData,
 } from "@game-hub/shared-types";
 import type { GameManager } from "../games/game-manager.js";
 
@@ -11,9 +12,22 @@ type IOServer = Server<ClientToServerEvents, ServerToClientEvents, InterServerEv
 type IOSocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 
 export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: GameManager) {
+  function emitPlayerLeftIfPlaying(roomId: string) {
+    const room = gameManager.getRoom(roomId);
+    if (room && room.status === "playing") {
+      const willEnd = room.players.length - 1 < GAME_CONFIGS[room.gameType].minPlayers;
+      socket.to(roomId).emit("game:player-left", {
+        playerId: socket.id!,
+        nickname: socket.data.nickname,
+        willEnd,
+      });
+    }
+  }
+
   function cleanupPreviousRoom() {
     const prevRoomId = socket.data.roomId;
     if (!prevRoomId) return;
+    emitPlayerLeftIfPlaying(prevRoomId);
     socket.leave(prevRoomId);
     socket.data.roomId = null;
     const prevRoom = gameManager.removePlayer(prevRoomId, socket.id!);
@@ -66,6 +80,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
   socket.on("lobby:leave-room", () => {
     const roomId = socket.data.roomId;
     if (!roomId) return;
+    emitPlayerLeftIfPlaying(roomId);
     socket.leave(roomId);
     socket.data.roomId = null;
     const room = gameManager.removePlayer(roomId, socket.id!);

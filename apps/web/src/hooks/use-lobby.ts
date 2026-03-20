@@ -33,23 +33,27 @@ export function useLobby(socket: GameSocket | null) {
     };
   }, [socket, setRooms, addRoom, updateRoom, removeRoom]);
 
+  const resetGame = useGameStore((s) => s.reset);
+
   const createRoom = useCallback(
     (payload: CreateRoomPayload): Promise<Room> => {
       return new Promise((resolve, reject) => {
         if (!socket) return reject("Not connected");
+        resetGame();
         socket.emit("lobby:create-room", payload, (room) => {
           setCurrentRoom(room);
           resolve(room);
         });
       });
     },
-    [socket, setCurrentRoom]
+    [socket, setCurrentRoom, resetGame]
   );
 
   const joinRoom = useCallback(
     (roomId: string): Promise<Room> => {
       return new Promise((resolve, reject) => {
         if (!socket) return reject("Not connected");
+        resetGame();
         socket.emit("lobby:join-room", { roomId }, (room, error) => {
           if (!room) return reject(error || "Failed to join");
           setCurrentRoom(room);
@@ -57,10 +61,8 @@ export function useLobby(socket: GameSocket | null) {
         });
       });
     },
-    [socket, setCurrentRoom]
+    [socket, setCurrentRoom, resetGame]
   );
-
-  const resetGame = useGameStore((s) => s.reset);
 
   const leaveRoom = useCallback(() => {
     if (!socket) return;

@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect, useState, useCallback } from "react";
 import type { Room } from "@game-hub/shared-types";
 import { GAME_CONFIGS } from "@game-hub/shared-types";
 import { useGame } from "@/hooks/use-game";
@@ -15,6 +15,50 @@ import {
   RotateCcw,
 } from "lucide-react";
 
+function PlayerLeftOverlay({
+  nickname,
+  willEnd,
+  onDismiss,
+  onReset,
+}: {
+  nickname: string;
+  willEnd: boolean;
+  onDismiss: () => void;
+  onReset: () => void;
+}) {
+  const [countdown, setCountdown] = useState(willEnd ? 5 : 3);
+
+  useEffect(() => {
+    if (countdown <= 0) {
+      if (willEnd) {
+        onReset();
+      } else {
+        onDismiss();
+      }
+      return;
+    }
+    const timer = setTimeout(() => setCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [countdown, willEnd, onDismiss, onReset]);
+
+  return (
+    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 rounded-lg">
+      <div className="bg-card border border-border rounded-xl p-6 text-center space-y-3 max-w-sm mx-4">
+        <p className="text-lg font-bold">{nickname} 님이 게임을 떠났습니다.</p>
+        {willEnd ? (
+          <p className="text-muted-foreground">
+            {countdown}초 후 대기실로 이동합니다.
+          </p>
+        ) : (
+          <p className="text-muted-foreground">
+            {countdown}초 후 닫힙니다.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 interface RoomViewProps {
   room: Room;
   socket: GameSocket | null;
@@ -23,14 +67,31 @@ interface RoomViewProps {
 }
 
 export function RoomView({ room, socket, onLeave, onToggleReady }: RoomViewProps) {
-  const { gameState, gameResult, startGame, requestRematch } = useGame(socket);
+  const { gameState, gameResult, playerLeftInfo, startGame, requestRematch, setPlayerLeftInfo, reset } = useGame(socket);
   const config = GAME_CONFIGS[room.gameType];
   const isHost = socket?.id === room.hostId;
   const isPlaying = room.status === "playing" || !!gameState;
 
+  const handlePlayerLeftDismiss = useCallback(() => {
+    setPlayerLeftInfo(null);
+  }, [setPlayerLeftInfo]);
+
+  const handlePlayerLeftReset = useCallback(() => {
+    setPlayerLeftInfo(null);
+    reset();
+  }, [setPlayerLeftInfo, reset]);
+
   if (isPlaying && gameState) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-4 relative">
+        {playerLeftInfo && (
+          <PlayerLeftOverlay
+            nickname={playerLeftInfo.nickname}
+            willEnd={playerLeftInfo.willEnd}
+            onDismiss={handlePlayerLeftDismiss}
+            onReset={handlePlayerLeftReset}
+          />
+        )}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button

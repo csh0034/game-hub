@@ -76,7 +76,7 @@ interface RoomViewProps {
 
 export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, onToggleReady, roomMessages, onSendRoomMessage }: RoomViewProps) {
   const { gameState, gameResult, playerLeftInfo, startGame, requestRematch, setPlayerLeftInfo } = useGame(socket);
-  const [chatOpen, setChatOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(true);
   const config = GAME_CONFIGS[room.gameType];
   const isHost = socket?.id === room.hostId;
   const isPlaying = room.status === "playing" || !!gameState;

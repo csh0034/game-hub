@@ -39,7 +39,7 @@ export function Navbar({ isConnected, playerCount, onlineNicknames = [], nicknam
                 <span>{playerCount} 온라인</span>
               </div>
               {onlineNicknames.length > 0 && (
-                <div className="absolute top-full right-0 mt-2 w-48 bg-popover/95 backdrop-blur-sm border border-border rounded-lg shadow-lg py-2 px-3 hidden group-hover:block z-50">
+                <div className="absolute top-full right-0 mt-2 w-48 bg-card border border-border rounded-lg shadow-lg py-2 px-3 hidden group-hover:block z-50">
                   <p className="text-xs font-medium text-muted-foreground mb-1.5">접속 중인 플레이어</p>
                   <ul className="space-y-0.5">
                     {onlineNicknames.map((name) => (

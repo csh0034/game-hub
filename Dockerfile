@@ -29,6 +29,7 @@ RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 WORKDIR /app
 
 ENV NODE_ENV=production
+ENV CORS_ORIGIN=*
 
 # Next.js standalone 출력 복사
 COPY --from=builder /app/apps/web/.next/standalone ./

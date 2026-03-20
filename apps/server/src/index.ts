@@ -13,12 +13,14 @@ import { setupGameHandler } from "./socket/game-handler.js";
 import { setupNicknameHandler } from "./socket/nickname-handler.js";
 import { broadcastAuthenticatedCount } from "./socket/broadcast-player-count.js";
 import { GameManager } from "./games/game-manager.js";
+import { parseCorsOrigin } from "./cors.js";
 
 const PORT = parseInt(process.env.PORT || "3001", 10);
-const CORS_ORIGIN = process.env.CORS_ORIGIN || "http://localhost:3000";
+
+const corsOrigin = parseCorsOrigin(process.env.CORS_ORIGIN);
 
 const app = express();
-app.use(cors({ origin: CORS_ORIGIN }));
+app.use(cors({ origin: corsOrigin }));
 app.use(express.json());
 
 const httpServer = createServer(app);
@@ -29,7 +31,7 @@ const io = new Server<
   SocketData
 >(httpServer, {
   cors: {
-    origin: CORS_ORIGIN,
+    origin: corsOrigin,
     methods: ["GET", "POST"],
   },
 });

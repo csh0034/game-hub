@@ -2,6 +2,7 @@
 
 import { useEffect, useCallback } from "react";
 import { useGameStore } from "@/stores/game-store";
+import type { RoundResult } from "@/stores/game-store";
 import type { GameSocket } from "@/lib/socket";
 import type { GameMove, GameState, GameResult, HoldemPrivateState } from "@game-hub/shared-types";
 
@@ -11,10 +12,12 @@ export function useGame(socket: GameSocket | null) {
     gameResult,
     privateState,
     playerLeftInfo,
+    roundResult,
     setGameState,
     setGameResult,
     setPrivateState,
     setPlayerLeftInfo,
+    setRoundResult,
     reset,
   } = useGameStore();
 
@@ -24,6 +27,7 @@ export function useGame(socket: GameSocket | null) {
     const onStarted = (state: GameState) => {
       setGameState(state);
       setGameResult(null);
+      setRoundResult(null);
     };
     const onStateUpdated = (state: GameState) => {
       setGameState(state);
@@ -40,6 +44,9 @@ export function useGame(socket: GameSocket | null) {
     const onPlayerLeft = (data: { playerId: string; nickname: string; willEnd: boolean }) => {
       setPlayerLeftInfo({ nickname: data.nickname, willEnd: data.willEnd });
     };
+    const onRoundEnded = (data: RoundResult) => {
+      setRoundResult(data);
+    };
 
     socket.on("game:started", onStarted);
     socket.on("game:state-updated", onStateUpdated);
@@ -47,6 +54,7 @@ export function useGame(socket: GameSocket | null) {
     socket.on("game:private-state", onPrivateState);
     socket.on("game:error", onError);
     socket.on("game:player-left", onPlayerLeft);
+    socket.on("game:round-ended", onRoundEnded);
 
     return () => {
       socket.off("game:started", onStarted);
@@ -55,8 +63,9 @@ export function useGame(socket: GameSocket | null) {
       socket.off("game:private-state", onPrivateState);
       socket.off("game:error", onError);
       socket.off("game:player-left", onPlayerLeft);
+      socket.off("game:round-ended", onRoundEnded);
     };
-  }, [socket, setGameState, setGameResult, setPrivateState, setPlayerLeftInfo]);
+  }, [socket, setGameState, setGameResult, setPrivateState, setPlayerLeftInfo, setRoundResult]);
 
   const makeMove = useCallback(
     (move: GameMove) => {
@@ -77,5 +86,5 @@ export function useGame(socket: GameSocket | null) {
     reset();
   }, [socket, reset]);
 
-  return { gameState, gameResult, privateState, playerLeftInfo, makeMove, startGame, requestRematch, setPlayerLeftInfo, reset };
+  return { gameState, gameResult, privateState, playerLeftInfo, roundResult, makeMove, startGame, requestRematch, setPlayerLeftInfo, reset };
 }

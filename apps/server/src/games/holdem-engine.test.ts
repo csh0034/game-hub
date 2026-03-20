@@ -295,4 +295,200 @@ describe("HoldemEngine", () => {
       expect(engine.getHoleCards("unknown")).toEqual([]);
     });
   });
+
+  describe("initState 새 필드", () => {
+    it("roundNumber가 1로 시작한다", () => {
+      const state = engine.initState(mockPlayers);
+      expect(state.roundNumber).toBe(1);
+    });
+
+    it("eliminatedPlayerIds가 빈 배열로 시작한다", () => {
+      const state = engine.initState(mockPlayers);
+      expect(state.eliminatedPlayerIds).toEqual([]);
+    });
+
+    it("플레이어의 eliminated가 false로 시작한다", () => {
+      const state = engine.initState(mockPlayers);
+      expect(state.players.every((p) => p.eliminated === false)).toBe(true);
+    });
+  });
+
+  describe("checkWin — 쇼다운 카드 공개", () => {
+    it("쇼다운 시 showdownCards에 활성 플레이어만 포함된다", () => {
+      const state = engine.initState(mockPlayers);
+      let s = state;
+
+      // showdown까지 진행
+      let current = s.players[s.currentPlayerIndex];
+      s = engine.processMove(s, current.id, { action: "call" });
+      if (s.phase === "preflop" && s.currentPlayerIndex !== -1) {
+        current = s.players[s.currentPlayerIndex];
+        s = engine.processMove(s, current.id, { action: "check" });
+      }
+      for (const phase of ["flop", "turn", "river"]) {
+        if (s.phase === phase && s.currentPlayerIndex !== -1) {
+          current = s.players[s.currentPlayerIndex];
+          s = engine.processMove(s, current.id, { action: "check" });
+          if (s.phase === phase && s.currentPlayerIndex !== -1) {
+            current = s.players[s.currentPlayerIndex];
+            s = engine.processMove(s, current.id, { action: "check" });
+          }
+        }
+      }
+
+      if (s.phase === "showdown") {
+        engine.checkWin(s);
+        expect(s.showdownCards).toBeDefined();
+        const cardPlayerIds = Object.keys(s.showdownCards!);
+        expect(cardPlayerIds).toHaveLength(2); // 폴드 없으므로 2명 모두
+        for (const id of cardPlayerIds) {
+          expect(s.showdownCards![id]).toHaveLength(2);
+        }
+      }
+    });
+
+    it("폴드 승리 시 showdownCards가 undefined이다", () => {
+      const state = engine.initState(mockPlayers);
+      const currentPlayer = state.players[state.currentPlayerIndex];
+      const foldedState = engine.processMove(state, currentPlayer.id, { action: "fold" });
+      engine.checkWin(foldedState);
+      expect(foldedState.showdownCards).toBeUndefined();
+    });
+
+    it("쇼다운 승자에게 pot이 지급된다", () => {
+      const state = engine.initState(mockPlayers);
+      let s = state;
+
+      let current = s.players[s.currentPlayerIndex];
+      s = engine.processMove(s, current.id, { action: "call" });
+      if (s.phase === "preflop" && s.currentPlayerIndex !== -1) {
+        current = s.players[s.currentPlayerIndex];
+        s = engine.processMove(s, current.id, { action: "check" });
+      }
+      for (const phase of ["flop", "turn", "river"]) {
+        if (s.phase === phase && s.currentPlayerIndex !== -1) {
+          current = s.players[s.currentPlayerIndex];
+          s = engine.processMove(s, current.id, { action: "check" });
+          if (s.phase === phase && s.currentPlayerIndex !== -1) {
+            current = s.players[s.currentPlayerIndex];
+            s = engine.processMove(s, current.id, { action: "check" });
+          }
+        }
+      }
+
+      if (s.phase === "showdown") {
+        const pot = s.pot;
+        const result = engine.checkWin(s);
+        expect(result).not.toBeNull();
+        const winner = s.players.find((p) => p.id === result!.winnerId)!;
+        // 승자의 칩은 시작칩 - blind + pot 이상이어야 한다
+        expect(winner.chips).toBeGreaterThanOrEqual(pot);
+      }
+    });
+
+    it("폴드 승자에게 pot이 지급된다", () => {
+      const state = engine.initState(mockPlayers);
+      const currentPlayer = state.players[state.currentPlayerIndex];
+      const potBefore = state.pot;
+      const foldedState = engine.processMove(state, currentPlayer.id, { action: "fold" });
+      const result = engine.checkWin(foldedState);
+      expect(result).not.toBeNull();
+      const winner = foldedState.players.find((p) => p.id === result!.winnerId)!;
+      // BB가 승리: 원래 칩(1000-20) + pot(30)
+      expect(winner.chips).toBe(1000 - 20 + potBefore);
+    });
+  });
+
+  describe("startNewRound", () => {
+    function playToShowdown(eng: HoldemEngine, state: HoldemPublicState): HoldemPublicState {
+      let s = state;
+      let current = s.players[s.currentPlayerIndex];
+      s = eng.processMove(s, current.id, { action: "call" });
+      if (s.phase === "preflop" && s.currentPlayerIndex !== -1) {
+        current = s.players[s.currentPlayerIndex];
+        s = eng.processMove(s, current.id, { action: "check" });
+      }
+      for (const phase of ["flop", "turn", "river"]) {
+        if (s.phase === phase && s.currentPlayerIndex !== -1) {
+          current = s.players[s.currentPlayerIndex];
+          s = eng.processMove(s, current.id, { action: "check" });
+          if (s.phase === phase && s.currentPlayerIndex !== -1) {
+            current = s.players[s.currentPlayerIndex];
+            s = eng.processMove(s, current.id, { action: "check" });
+          }
+        }
+      }
+      if (s.phase === "showdown") {
+        eng.checkWin(s);
+      }
+      return s;
+    }
+
+    it("칩이 유지된 채로 새 라운드가 시작된다", () => {
+      const state = engine.initState(mockPlayers);
+      const endState = playToShowdown(engine, state);
+      const totalChipsBefore = endState.players.reduce((sum, p) => sum + p.chips, 0);
+
+      const { state: newState } = engine.startNewRound(endState);
+      const totalChipsAfter = newState.players.reduce((sum, p) => sum + p.chips + p.currentBet, 0);
+      expect(totalChipsAfter).toBe(totalChipsBefore);
+    });
+
+    it("roundNumber가 증가한다", () => {
+      const state = engine.initState(mockPlayers);
+      const endState = playToShowdown(engine, state);
+      const { state: newState } = engine.startNewRound(endState);
+      expect(newState.roundNumber).toBe(2);
+    });
+
+    it("딜러가 로테이션된다", () => {
+      const state = engine.initState(mockPlayers);
+      const endState = playToShowdown(engine, state);
+      const oldDealerIndex = endState.dealerIndex;
+      const { state: newState } = engine.startNewRound(endState);
+      expect(newState.dealerIndex).not.toBe(oldDealerIndex);
+    });
+
+    it("새 홀 카드가 배분된다", () => {
+      const state = engine.initState(mockPlayers);
+      const endState = playToShowdown(engine, state);
+      const { holeCardsMap } = engine.startNewRound(endState);
+      for (const [, cards] of holeCardsMap) {
+        expect(cards).toHaveLength(2);
+      }
+    });
+
+    it("eliminated 플레이어는 참여하지 않는다", () => {
+      const eng = new HoldemEngine();
+      const state = eng.initState(threePlayers);
+      // 라운드를 진행하여 종료시킨다 (player1이 폴드하여 패배 시뮬레이션)
+      const current = state.players[state.currentPlayerIndex];
+      const foldedState = eng.processMove(state, current.id, { action: "fold" });
+      eng.checkWin(foldedState);
+
+      // player1의 칩을 0으로 수동 설정 (탈락 시뮬레이션)
+      foldedState.players[0].chips = 0;
+
+      const { state: newState, holeCardsMap } = eng.startNewRound(foldedState);
+      // player1이 eliminated 되었는지 확인
+      expect(newState.eliminatedPlayerIds).toContain("player1");
+      expect(newState.players.find((p) => p.id === "player1")!.eliminated).toBe(true);
+      // eliminated 플레이어에게는 카드가 없다
+      expect(holeCardsMap.has("player1")).toBe(false);
+    });
+  });
+
+  describe("getActivePlayerCount", () => {
+    it("칩이 있는 플레이어 수를 반환한다", () => {
+      const state = engine.initState(mockPlayers);
+      expect(engine.getActivePlayerCount(state)).toBe(2);
+    });
+
+    it("eliminated 플레이어는 제외된다", () => {
+      const state = engine.initState(threePlayers);
+      state.players[0].eliminated = true;
+      state.players[0].chips = 0;
+      expect(engine.getActivePlayerCount(state)).toBe(2);
+    });
+  });
 });

@@ -7,10 +7,13 @@ import type {
   GomokuState,
   TetrisMove,
   TetrisPublicState,
+  HoldemPublicState,
 } from "@game-hub/shared-types";
 import type { GameManager } from "../games/game-manager.js";
 import { startGomokuTimer, clearGomokuTimer } from "../games/gomoku-timer.js";
 import { startTetrisTicker, updateTetrisTickerInterval, clearTetrisTicker } from "../games/tetris-ticker.js";
+
+const holdemRoundTimers: Map<string, NodeJS.Timeout> = new Map();
 
 type IOServer = Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 type IOSocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
@@ -132,10 +135,61 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
     if (result.result) {
       clearGomokuTimer(roomId);
       clearTetrisTicker(roomId);
-      io.to(roomId).emit("game:ended", result.result);
-      const updatedRoom = gameManager.getRoom(roomId);
-      if (updatedRoom) {
-        io.emit("lobby:room-updated", updatedRoom);
+
+      if (room?.gameType === "texas-holdem") {
+        const holdemEngine = gameManager.getHoldemEngine(roomId);
+        const holdemState = result.state as HoldemPublicState;
+
+        if (holdemEngine) {
+          const activeCount = holdemEngine.getActivePlayerCount(holdemState);
+
+          if (activeCount <= 1) {
+            // Final game end — only 1 player left with chips
+            room.status = "finished";
+            io.to(roomId).emit("game:ended", result.result);
+            io.emit("lobby:room-updated", room);
+          } else {
+            // Round ended, more rounds to play
+            const nextRoundIn = 5000;
+            io.to(roomId).emit("game:round-ended", {
+              winners: holdemState.winners || [],
+              showdownCards: holdemState.showdownCards,
+              eliminatedPlayerIds: holdemState.eliminatedPlayerIds,
+              nextRoundIn,
+            });
+
+            // Schedule next round
+            const timer = setTimeout(() => {
+              holdemRoundTimers.delete(roomId);
+              const currentRoom = gameManager.getRoom(roomId);
+              if (!currentRoom || currentRoom.status !== "playing") return;
+
+              const currentState = gameManager.getGameState(roomId) as HoldemPublicState | null;
+              if (!currentState) return;
+
+              const { state: newState, holeCardsMap } = holdemEngine.startNewRound(currentState);
+              gameManager.setGameState(roomId, newState);
+
+              io.to(roomId).emit("game:started", newState);
+
+              // Send private hole cards to each player
+              for (const [playerId, holeCards] of holeCardsMap) {
+                const playerSocket = io.sockets.sockets.get(playerId);
+                if (playerSocket) {
+                  playerSocket.emit("game:private-state", { holeCards });
+                }
+              }
+            }, nextRoundIn);
+
+            holdemRoundTimers.set(roomId, timer);
+          }
+        }
+      } else {
+        io.to(roomId).emit("game:ended", result.result);
+        const updatedRoom = gameManager.getRoom(roomId);
+        if (updatedRoom) {
+          io.emit("lobby:room-updated", updatedRoom);
+        }
       }
     } else {
       if (room?.gameType === "gomoku") {
@@ -150,6 +204,11 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
 
     clearGomokuTimer(roomId);
     clearTetrisTicker(roomId);
+    const holdemTimer = holdemRoundTimers.get(roomId);
+    if (holdemTimer) {
+      clearTimeout(holdemTimer);
+      holdemRoundTimers.delete(roomId);
+    }
 
     // For simplicity, reset the room immediately
     const room = gameManager.resetRoom(roomId);

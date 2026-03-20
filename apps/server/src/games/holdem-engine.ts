@@ -144,6 +144,7 @@ export class HoldemEngine implements GameEngine {
   private holeCards: Map<string, Card[]> = new Map();
   private communityCards: Card[] = [];
   private activePlayers: string[] = [];
+  private currentDealerIndex = 0;
 
   private createDeck(): Card[] {
     const deck: Card[] = [];
@@ -189,6 +190,7 @@ export class HoldemEngine implements GameEngine {
       isDealer: i === dealerIndex,
       isTurn: false,
       seatIndex: i,
+      eliminated: false,
     }));
 
     // Post blinds
@@ -218,6 +220,8 @@ export class HoldemEngine implements GameEngine {
       bigBlind,
       minRaise: bigBlind * 2,
       actedPlayerIds: [],
+      roundNumber: 1,
+      eliminatedPlayerIds: [],
     };
   }
 
@@ -373,20 +377,30 @@ export class HoldemEngine implements GameEngine {
   }
 
   checkWin(state: HoldemPublicState): GameResult | null {
+    const active = state.players.filter((p) => !p.folded);
+
+    // Fold victory — only one player left (not folded)
+    if (active.length === 1) {
+      const winner = active[0];
+      const mutableWinner = state.players.find((p) => p.id === winner.id)!;
+      mutableWinner.chips += state.pot;
+      state.winners = [{
+        playerId: winner.id,
+        amount: state.pot,
+        handName: "폴드 승리",
+      }];
+      // No showdownCards for fold wins
+      return {
+        winnerId: winner.id,
+        reason: `${winner.nickname}이(가) 승리했습니다! (상대 폴드)`,
+      };
+    }
+
     if (state.phase !== "showdown") {
-      // Check if only one player left
-      const active = state.players.filter((p) => !p.folded);
-      if (active.length === 1) {
-        return {
-          winnerId: active[0].id,
-          reason: `${active[0].nickname}이(가) 승리했습니다! (상대 폴드)`,
-        };
-      }
       return null;
     }
 
     // Showdown - evaluate hands
-    const active = state.players.filter((p) => !p.folded);
     let bestHand: HandEvaluation = { rank: -1, name: "", tiebreakers: [] };
     let winnerId = "";
     let winnerNickname = "";
@@ -403,17 +417,121 @@ export class HoldemEngine implements GameEngine {
       }
     }
 
-    // Store winners info on state for UI
-    const mutableState = state as HoldemPublicState;
-    mutableState.winners = [{
+    // Store winners info and showdown cards on state for UI
+    state.winners = [{
       playerId: winnerId,
       amount: state.pot,
       handName: bestHand.name,
     }];
 
+    // Record showdown cards for all active (non-folded) players
+    const showdownCards: Record<string, Card[]> = {};
+    for (const player of active) {
+      showdownCards[player.id] = this.holeCards.get(player.id) || [];
+    }
+    state.showdownCards = showdownCards;
+
+    // Award pot to winner
+    const winnerPlayer = state.players.find((p) => p.id === winnerId)!;
+    winnerPlayer.chips += state.pot;
+
     return {
       winnerId,
       reason: `${winnerNickname}이(가) ${bestHand.name}(으)로 승리했습니다!`,
     };
+  }
+
+  getActivePlayerCount(state: HoldemPublicState): number {
+    return state.players.filter((p) => !p.eliminated && (p.chips > 0 || state.winners?.some((w) => w.playerId === p.id))).length;
+  }
+
+  startNewRound(state: HoldemPublicState): { state: HoldemPublicState; holeCardsMap: Map<string, Card[]> } {
+    this.deck = this.createDeck();
+    this.holeCards = new Map();
+    this.communityCards = [];
+
+    // Mark eliminated players (chips === 0 and not a winner of the current round)
+    const eliminatedPlayerIds = [...state.eliminatedPlayerIds];
+    for (const player of state.players) {
+      if (player.chips === 0 && !player.eliminated) {
+        player.eliminated = true;
+        eliminatedPlayerIds.push(player.id);
+      }
+    }
+
+    // Rotate dealer to next non-eliminated player
+    const nonEliminated = state.players.filter((p) => !p.eliminated);
+    const currentDealerPos = nonEliminated.findIndex((p) => p.id === state.players[state.dealerIndex]?.id);
+    const nextDealerPos = (currentDealerPos + 1) % nonEliminated.length;
+    const nextDealer = nonEliminated[nextDealerPos];
+    const newDealerIndex = state.players.findIndex((p) => p.id === nextDealer.id);
+    this.currentDealerIndex = newDealerIndex;
+
+    // Deal hole cards to non-eliminated players
+    for (const player of nonEliminated) {
+      this.holeCards.set(player.id, [this.dealCard(), this.dealCard()]);
+    }
+
+    const smallBlind = state.smallBlind;
+    const bigBlind = state.bigBlind;
+
+    // Reset player states
+    const newPlayers = state.players.map((p, i) => ({
+      ...p,
+      currentBet: 0,
+      folded: p.eliminated,
+      isAllIn: false,
+      isDealer: i === newDealerIndex,
+      isTurn: false,
+    }));
+
+    // Post blinds (only among non-eliminated)
+    const nonEliminatedIndices = newPlayers
+      .map((p, i) => ({ player: p, index: i }))
+      .filter(({ player }) => !player.eliminated);
+
+    const dealerLocalIdx = nonEliminatedIndices.findIndex(({ index }) => index === newDealerIndex);
+    const sbLocalIdx = nonEliminatedIndices.length === 2
+      ? dealerLocalIdx
+      : (dealerLocalIdx + 1) % nonEliminatedIndices.length;
+    const bbLocalIdx = (sbLocalIdx + 1) % nonEliminatedIndices.length;
+
+    const sbPlayer = newPlayers[nonEliminatedIndices[sbLocalIdx].index];
+    const bbPlayer = newPlayers[nonEliminatedIndices[bbLocalIdx].index];
+
+    const sbAmount = Math.min(smallBlind, sbPlayer.chips);
+    sbPlayer.chips -= sbAmount;
+    sbPlayer.currentBet = sbAmount;
+    if (sbPlayer.chips === 0) sbPlayer.isAllIn = true;
+
+    const bbAmount = Math.min(bigBlind, bbPlayer.chips);
+    bbPlayer.chips -= bbAmount;
+    bbPlayer.currentBet = bbAmount;
+    if (bbPlayer.chips === 0) bbPlayer.isAllIn = true;
+
+    // First to act preflop: after big blind
+    const firstToActLocalIdx = (bbLocalIdx + 1) % nonEliminatedIndices.length;
+    const firstToActIndex = nonEliminatedIndices[firstToActLocalIdx].index;
+    newPlayers[firstToActIndex].isTurn = true;
+
+    this.activePlayers = nonEliminated.map((p) => p.id);
+
+    const newState: HoldemPublicState = {
+      phase: "preflop",
+      communityCards: [],
+      pot: sbAmount + bbAmount,
+      currentBet: bbAmount,
+      dealerIndex: newDealerIndex,
+      currentPlayerIndex: firstToActIndex,
+      players: newPlayers,
+      smallBlind,
+      bigBlind,
+      minRaise: bigBlind * 2,
+      actedPlayerIds: [],
+      roundNumber: state.roundNumber + 1,
+      eliminatedPlayerIds,
+    };
+
+    return { state: newState, holeCardsMap: this.holeCards };
   }
 }

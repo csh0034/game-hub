@@ -1,5 +1,5 @@
 import type { Room, CreateRoomPayload, JoinRoomPayload } from "./lobby-types";
-import type { GameState, GameMove, GameResult, HoldemPrivateState } from "./game-types";
+import type { GameState, GameMove, GameResult, HoldemPrivateState, Card } from "./game-types";
 import type { Player } from "./player-types";
 
 // Client → Server
@@ -46,6 +46,12 @@ export interface ServerToClientEvents {
   "game:private-state": (state: HoldemPrivateState) => void;
   "game:player-left": (data: { playerId: string; nickname: string; willEnd: boolean }) => void;
   "game:rematch-requested": (playerId: string) => void;
+  "game:round-ended": (data: {
+    winners: { playerId: string; amount: number; handName: string }[];
+    showdownCards?: Record<string, Card[]>;
+    eliminatedPlayerIds: string[];
+    nextRoundIn: number;
+  }) => void;
 
   // Chat
   "chat:message": (data: { playerId: string; nickname: string; message: string; timestamp: number }) => void;

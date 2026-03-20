@@ -84,6 +84,7 @@ export interface HoldemPlayerState {
   isDealer: boolean;
   isTurn: boolean;
   seatIndex: number;
+  eliminated: boolean;
 }
 
 export interface HoldemPublicState {
@@ -99,6 +100,9 @@ export interface HoldemPublicState {
   minRaise: number;
   actedPlayerIds: string[];
   winners?: { playerId: string; amount: number; handName: string }[];
+  showdownCards?: Record<string, Card[]>;
+  roundNumber: number;
+  eliminatedPlayerIds: string[];
 }
 
 export interface HoldemPrivateState {

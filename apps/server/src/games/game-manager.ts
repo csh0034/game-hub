@@ -136,7 +136,7 @@ export class GameManager {
     const newState = engine.processMove(state, playerId, move);
     this.gameStates.set(roomId, newState);
     const result = engine.checkWin(newState);
-    if (result) {
+    if (result && room.gameType !== "texas-holdem") {
       room.status = "finished";
     }
     return { state: newState, result };

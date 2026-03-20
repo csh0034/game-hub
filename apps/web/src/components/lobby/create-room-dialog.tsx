@@ -64,7 +64,7 @@ export function CreateRoomDialog({ onCreateRoom }: CreateRoomDialogProps) {
     <>
       <div className="fixed inset-0 bg-black/60 z-50" onClick={() => setOpen(false)} />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="bg-card border border-border rounded-xl p-6 w-full max-w-md shadow-2xl">
+        <div className="bg-card border border-border rounded-xl p-6 w-full max-w-lg shadow-2xl">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold">새 방 만들기</h2>
             <button
@@ -209,7 +209,7 @@ export function CreateRoomDialog({ onCreateRoom }: CreateRoomDialogProps) {
                       onChange={(e) => setLiarDrawingRounds(Number(e.target.value))}
                       className="flex-1"
                     />
-                    <span className="text-sm font-medium w-12 text-center">{liarDrawingRounds}라운드</span>
+                    <span className="text-sm font-medium w-12 text-center whitespace-nowrap">{liarDrawingRounds}라운드</span>
                   </div>
                 </div>
               </div>

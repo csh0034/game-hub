@@ -24,7 +24,8 @@ game-hub/
 │   ├── gomoku-engine.ts
 │   ├── holdem-engine.ts
 │   ├── minesweeper-engine.ts
-│   └── tetris-engine.ts
+│   ├── tetris-engine.ts
+│   └── liar-drawing-engine.ts
 └── socket/
     ├── lobby-handler.ts     # lobby:* + chat:* 이벤트
     ├── game-handler.ts      # game:* 이벤트
@@ -46,7 +47,8 @@ game-hub/
 │       ├── gomoku/
 │       ├── texas-holdem/
 │       ├── minesweeper/
-│       └── tetris/
+│       ├── tetris/
+│       └── liar-drawing/
 ├── hooks/                   # useSocket, useLobby, useGame, useChat
 ├── stores/                  # Zustand (lobby-store, game-store, chat-store)
 └── lib/

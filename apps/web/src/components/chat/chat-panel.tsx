@@ -72,10 +72,10 @@ export function ChatPanel({
               <span className="text-muted-foreground text-xs mr-1">
                 {formatTime(msg.timestamp)}
               </span>
-              <span className={`font-semibold ${isMe ? "text-primary" : ""}`}>
+              <span className={`font-semibold ${isMe ? "text-sky-400" : ""}`}>
                 {msg.nickname}
               </span>
-              <p className={`${isMe ? "text-primary/90" : "text-foreground"} break-words`}>
+              <p className={`${isMe ? "text-sky-400/90" : "text-foreground"} break-words`}>
                 {msg.message}
               </p>
             </div>

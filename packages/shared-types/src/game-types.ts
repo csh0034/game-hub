@@ -39,7 +39,7 @@ export const GAME_CONFIGS: Record<GameType, GameConfig> = {
     name: "테트리스",
     description: "떨어지는 블록을 쌓아 줄을 완성하는 퍼즐 게임",
     minPlayers: 1,
-    maxPlayers: 2,
+    maxPlayers: 6,
     icon: "🧱",
   },
 };
@@ -213,6 +213,24 @@ export type TetrisMoveType =
 export interface TetrisMove {
   type: TetrisMoveType;
 }
+
+export interface ComingSoonGame {
+  name: string;
+  description: string;
+  minPlayers: number;
+  maxPlayers: number;
+  icon: string;
+}
+
+export const COMING_SOON_GAMES: ComingSoonGame[] = [
+  {
+    name: "라이어 드로잉",
+    description: "라이어를 찾아라! 소셜 디덕션 그림 게임",
+    minPlayers: 3,
+    maxPlayers: 8,
+    icon: "🎨",
+  },
+];
 
 export type GameState = GomokuState | HoldemPublicState | MinesweeperPublicState | TetrisPublicState;
 export type GameMove = GomokuMove | HoldemMove | MinesweeperMove | TetrisMove;

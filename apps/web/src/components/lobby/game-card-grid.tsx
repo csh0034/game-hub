@@ -3,6 +3,7 @@
 import { useState } from "react";
 import {
   GAME_CONFIGS,
+  COMING_SOON_GAMES,
   MINESWEEPER_DIFFICULTY_CONFIGS,
   type GameType,
   type CreateRoomPayload,
@@ -76,6 +77,30 @@ export function GameCardGrid({ onCreateRoom }: GameCardGridProps) {
               ))}
             </div>
           )}
+        </div>
+      ))}
+      {COMING_SOON_GAMES.map((game) => (
+        <div key={game.name}>
+          <div className="group relative w-full bg-card border border-border rounded-xl p-6 text-left opacity-60 cursor-default">
+            <div className="relative">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-4xl">{game.icon}</span>
+                <span className="text-xs font-semibold bg-primary/20 text-primary px-2 py-0.5 rounded-full">
+                  오픈 예정
+                </span>
+              </div>
+              <h3 className="text-lg font-semibold mb-1">{game.name}</h3>
+              <p className="text-sm text-muted-foreground mb-3">{game.description}</p>
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Users className="w-3 h-3" />
+                <span>
+                  {game.minPlayers === game.maxPlayers
+                    ? `${game.minPlayers}명`
+                    : `${game.minPlayers}-${game.maxPlayers}명`}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       ))}
     </div>

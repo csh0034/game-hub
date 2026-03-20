@@ -3,6 +3,7 @@
 import { useState } from "react";
 import {
   GAME_CONFIGS,
+  COMING_SOON_GAMES,
   MINESWEEPER_DIFFICULTY_CONFIGS,
   TETRIS_DIFFICULTY_CONFIGS,
   type GameType,
@@ -97,6 +98,18 @@ export function CreateRoomDialog({ onCreateRoom }: CreateRoomDialogProps) {
                     <span className="text-xl">{config.icon}</span>
                     <span className="font-medium">{config.name}</span>
                   </button>
+                ))}
+                {COMING_SOON_GAMES.map((game) => (
+                  <div
+                    key={game.name}
+                    className="flex items-center gap-2 p-3 rounded-lg border border-border text-sm opacity-50 cursor-default"
+                  >
+                    <span className="text-xl">{game.icon}</span>
+                    <span className="font-medium">{game.name}</span>
+                    <span className="text-[10px] font-semibold bg-primary/20 text-primary px-1.5 py-0.5 rounded-full ml-auto">
+                      오픈 예정
+                    </span>
+                  </div>
                 ))}
               </div>
             </div>

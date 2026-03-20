@@ -268,6 +268,11 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
 
     io.to(roomId).emit("game:state-updated", result.state);
 
+    // Notify all clients when canvas is cleared
+    if (room?.gameType === "liar-drawing" && (move as { type: string }).type === "clear-canvas") {
+      io.to(roomId).emit("game:clear-canvas", { playerId: socket.id! });
+    }
+
     if (result.result) {
       clearGomokuTimer(roomId);
       clearTetrisTicker(roomId);

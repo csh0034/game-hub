@@ -25,12 +25,20 @@ function drawPoints(ctx: CanvasRenderingContext2D, points: DrawPoint[]) {
       ctx.lineTo(point.x, point.y);
     }
 
-    ctx.strokeStyle = point.tool === "eraser" ? "#ffffff" : COLOR_MAP[point.color];
-    ctx.lineWidth = point.tool === "eraser" ? point.thickness * 3 : point.thickness;
+    if (point.tool === "eraser") {
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.strokeStyle = "rgba(0,0,0,1)";
+      ctx.lineWidth = point.thickness * 3;
+    } else {
+      ctx.globalCompositeOperation = "source-over";
+      ctx.strokeStyle = COLOR_MAP[point.color];
+      ctx.lineWidth = point.thickness;
+    }
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.stroke();
   }
+  ctx.globalCompositeOperation = "source-over";
 }
 
 interface DrawingCanvasProps {
@@ -133,12 +141,20 @@ export function DrawingCanvas({
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
     if (ctx) {
-      ctx.strokeStyle = tool === "eraser" ? "#ffffff" : COLOR_MAP[color];
-      ctx.lineWidth = tool === "eraser" ? thickness * 3 : thickness;
+      if (tool === "eraser") {
+        ctx.globalCompositeOperation = "destination-out";
+        ctx.strokeStyle = "rgba(0,0,0,1)";
+        ctx.lineWidth = thickness * 3;
+      } else {
+        ctx.globalCompositeOperation = "source-over";
+        ctx.strokeStyle = COLOR_MAP[color];
+        ctx.lineWidth = thickness;
+      }
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
       ctx.lineTo(pos.x, pos.y);
       ctx.stroke();
+      ctx.globalCompositeOperation = "source-over";
     }
   };
 

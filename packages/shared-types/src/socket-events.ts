@@ -55,6 +55,7 @@ export interface ServerToClientEvents {
   "game:error": (message: string) => void;
   "game:private-state": (state: HoldemPrivateState | LiarDrawingPrivateState) => void;
   "game:draw-points": (data: { playerId: string; points: DrawPoint[] }) => void;
+  "game:clear-canvas": (data: { playerId: string }) => void;
   "game:player-left": (data: { playerId: string; nickname: string; willEnd: boolean }) => void;
   "game:rematch-requested": (playerId: string) => void;
   "game:round-ended": (data: {

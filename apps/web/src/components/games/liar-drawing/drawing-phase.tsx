@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { LiarDrawingPublicState, DrawPoint, DrawTool, PenColor, PenThickness } from "@game-hub/shared-types";
 import type { GameSocket } from "@/lib/socket";
 import { DrawingCanvas } from "./drawing-canvas";
@@ -10,9 +10,10 @@ interface DrawingPhaseProps {
   state: LiarDrawingPublicState;
   socket: GameSocket;
   myId: string;
+  keyword: string | null;
 }
 
-export function DrawingPhase({ state, socket, myId }: DrawingPhaseProps) {
+export function DrawingPhase({ state, socket, myId, keyword }: DrawingPhaseProps) {
   const currentDrawerId = state.drawOrder[state.currentDrawerIndex];
   const isMyTurn = currentDrawerId === myId;
   const currentDrawer = state.players.find((p) => p.id === currentDrawerId);
@@ -28,6 +29,19 @@ export function DrawingPhase({ state, socket, myId }: DrawingPhaseProps) {
         <div className="text-xs text-muted-foreground">
           {state.currentDrawerIndex + 1} / {state.drawOrder.length}
         </div>
+      </div>
+
+      <div className="flex items-center gap-2 text-sm">
+        <span className="text-muted-foreground">주제:</span>
+        <span className="font-bold">{state.category}</span>
+        {keyword ? (
+          <>
+            <span className="text-muted-foreground ml-2">제시어:</span>
+            <span className="font-bold text-primary">{keyword}</span>
+          </>
+        ) : (
+          <span className="ml-2 text-destructive font-medium">라이어</span>
+        )}
       </div>
 
       {/* Key by currentDrawerIndex so the sub-component remounts and resets state */}
@@ -79,23 +93,33 @@ function DrawingTurn({ state, socket, isMyTurn, currentDrawerId }: DrawingTurnPr
   const [color, setColor] = useState<PenColor>("black");
   const [thickness, setThickness] = useState<PenThickness>(5);
   const [livePoints, setLivePoints] = useState<DrawPoint[]>([]);
-  const accumulatedRef = useRef<DrawPoint[]>([]);
   const myCanvasPoints = state.canvases[currentDrawerId] || [];
 
-  // Listen for real-time draw points from other players
+  // Listen for real-time draw points and clear-canvas events
   useEffect(() => {
-    if (isMyTurn) return;
-
-    const handleDrawPoints = (data: { playerId: string; points: DrawPoint[] }) => {
+    const handleClearCanvasEvent = (data: { playerId: string }) => {
       if (data.playerId === currentDrawerId) {
-        accumulatedRef.current = [...accumulatedRef.current, ...data.points];
-        setLivePoints([...accumulatedRef.current]);
+        setLivePoints([]);
       }
     };
 
-    socket.on("game:draw-points", handleDrawPoints);
+    socket.on("game:clear-canvas", handleClearCanvasEvent);
+
+    if (!isMyTurn) {
+      const handleDrawPoints = (data: { playerId: string; points: DrawPoint[] }) => {
+        if (data.playerId === currentDrawerId) {
+          setLivePoints((prev) => [...prev, ...data.points]);
+        }
+      };
+      socket.on("game:draw-points", handleDrawPoints);
+      return () => {
+        socket.off("game:draw-points", handleDrawPoints);
+        socket.off("game:clear-canvas", handleClearCanvasEvent);
+      };
+    }
+
     return () => {
-      socket.off("game:draw-points", handleDrawPoints);
+      socket.off("game:clear-canvas", handleClearCanvasEvent);
     };
   }, [socket, isMyTurn, currentDrawerId]);
 
@@ -103,6 +127,8 @@ function DrawingTurn({ state, socket, isMyTurn, currentDrawerId }: DrawingTurnPr
     (points: DrawPoint[]) => {
       if (!isMyTurn) return;
       socket.emit("game:draw-points", points);
+      // Accumulate locally so drawer's displayPoints stays in sync
+      setLivePoints((prev) => [...prev, ...points]);
     },
     [isMyTurn, socket],
   );
@@ -110,9 +136,10 @@ function DrawingTurn({ state, socket, isMyTurn, currentDrawerId }: DrawingTurnPr
   const handleClearCanvas = useCallback(() => {
     if (!isMyTurn) return;
     socket.emit("game:move", { type: "clear-canvas" });
+    setLivePoints([]);
   }, [isMyTurn, socket]);
 
-  const displayPoints = isMyTurn ? myCanvasPoints : [...myCanvasPoints, ...livePoints];
+  const displayPoints = [...myCanvasPoints, ...livePoints];
 
   return (
     <div className="flex gap-4 items-start">

@@ -37,6 +37,7 @@ RUN addgroup --system --gid 1001 nodejs && \
 # Next.js standalone 출력 복사
 COPY --from=builder /app/apps/web/.next/standalone ./
 COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
+COPY --from=builder /app/apps/web/public ./apps/web/public
 
 # Express 서버 빌드 결과 복사
 COPY --from=builder /app/apps/server/dist ./apps/server/dist

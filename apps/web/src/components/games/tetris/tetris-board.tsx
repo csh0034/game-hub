@@ -144,12 +144,14 @@ function PlayerBoard({
     board.board.map((row) => row.map((cell) => ({ type: cell, isGhost: false, isActive: false })));
 
   if (board.activePiece) {
-    // Ghost piece
-    const ghostPiece: TetrisActivePiece = { ...board.activePiece, row: board.ghostRow };
-    const ghostCells = getPieceCells(ghostPiece);
-    for (const [r, c] of ghostCells) {
-      if (r >= 0 && r < 20 && c >= 0 && c < 10 && !displayGrid[r][c].type) {
-        displayGrid[r][c] = { type: board.activePiece.type, isGhost: true, isActive: false };
+    // Ghost piece (내 보드에서만 표시)
+    if (!compact) {
+      const ghostPiece: TetrisActivePiece = { ...board.activePiece, row: board.ghostRow };
+      const ghostCells = getPieceCells(ghostPiece);
+      for (const [r, c] of ghostCells) {
+        if (r >= 0 && r < 20 && c >= 0 && c < 10 && !displayGrid[r][c].type) {
+          displayGrid[r][c] = { type: board.activePiece.type, isGhost: true, isActive: false };
+        }
       }
     }
 

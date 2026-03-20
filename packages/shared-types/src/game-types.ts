@@ -1,4 +1,4 @@
-export type GameType = "gomoku" | "texas-holdem" | "minesweeper" | "tetris";
+export type GameType = "gomoku" | "texas-holdem" | "minesweeper" | "tetris" | "liar-drawing";
 
 export interface GameConfig {
   gameType: GameType;
@@ -45,6 +45,14 @@ export const GAME_CONFIGS: Record<GameType, GameConfig> = {
     minPlayers: 1,
     maxPlayers: 8,
     icon: "🧱",
+  },
+  "liar-drawing": {
+    gameType: "liar-drawing",
+    name: "라이어 드로잉",
+    description: "라이어를 찾아라! 소셜 디덕션 그림 게임",
+    minPlayers: 3,
+    maxPlayers: 8,
+    icon: "🎨",
   },
 };
 
@@ -232,18 +240,66 @@ export interface ComingSoonGame {
   icon: string;
 }
 
-export const COMING_SOON_GAMES: ComingSoonGame[] = [
-  {
-    name: "라이어 드로잉",
-    description: "라이어를 찾아라! 소셜 디덕션 그림 게임",
-    minPlayers: 3,
-    maxPlayers: 8,
-    icon: "🎨",
-  },
-];
+export const COMING_SOON_GAMES: ComingSoonGame[] = [];
 
-export type GameState = GomokuState | HoldemPublicState | MinesweeperPublicState | TetrisPublicState;
-export type GameMove = GomokuMove | HoldemMove | MinesweeperMove | TetrisMove;
+// Liar Drawing types
+export type LiarDrawingPhase = "role-reveal" | "drawing" | "voting" | "liar-guess" | "round-result" | "final-result";
+export type DrawTool = "pen" | "eraser";
+export type PenColor = "black" | "red" | "blue" | "green" | "yellow" | "orange" | "purple" | "white";
+export type PenThickness = 2 | 5 | 10;
+
+export interface DrawPoint {
+  x: number;
+  y: number;
+  tool: DrawTool;
+  color: PenColor;
+  thickness: PenThickness;
+  isStart: boolean;
+}
+
+export interface LiarDrawingPlayerState {
+  id: string;
+  nickname: string;
+  score: number;
+  isDrawing: boolean;
+  hasDrawn: boolean;
+  votedFor: string | null;
+}
+
+export interface LiarDrawingPublicState {
+  phase: LiarDrawingPhase;
+  roundNumber: number;
+  totalRounds: number;
+  category: string;
+  drawOrder: string[];
+  currentDrawerIndex: number;
+  drawTimeSeconds: number;
+  turnStartedAt: number | null;
+  players: LiarDrawingPlayerState[];
+  canvases: Record<string, DrawPoint[]>;
+  votes: Record<string, string>;
+  votedPlayerIds: string[];
+  accusedPlayerId: string | null;
+  liarId: string | null;
+  liarGuess: string | null;
+  liarGuessCorrect: boolean | null;
+  roundScores: Record<string, number>;
+}
+
+export interface LiarDrawingPrivateState {
+  role: "citizen" | "liar";
+  keyword: string | null;
+}
+
+export interface LiarDrawingMove {
+  type: "draw" | "clear-canvas" | "vote" | "liar-guess" | "phase-ready";
+  points?: DrawPoint[];
+  targetPlayerId?: string;
+  guess?: string;
+}
+
+export type GameState = GomokuState | HoldemPublicState | MinesweeperPublicState | TetrisPublicState | LiarDrawingPublicState;
+export type GameMove = GomokuMove | HoldemMove | MinesweeperMove | TetrisMove | LiarDrawingMove;
 
 export interface GameResult {
   winnerId: string | null; // null = draw

@@ -1,5 +1,5 @@
 import type { Room, CreateRoomPayload, JoinRoomPayload } from "./lobby-types";
-import type { GameState, GameMove, GameResult, HoldemPrivateState, Card } from "./game-types";
+import type { GameState, GameMove, GameResult, HoldemPrivateState, LiarDrawingPrivateState, Card, DrawPoint } from "./game-types";
 import type { Player } from "./player-types";
 
 export interface ChatMessage {
@@ -22,6 +22,7 @@ export interface ClientToServerEvents {
   "game:move": (move: GameMove) => void;
   "game:start": () => void;
   "game:rematch": () => void;
+  "game:draw-points": (points: DrawPoint[]) => void;
 
   // Player
   "player:set-nickname": (
@@ -52,7 +53,8 @@ export interface ServerToClientEvents {
   "game:state-updated": (state: GameState) => void;
   "game:ended": (result: GameResult) => void;
   "game:error": (message: string) => void;
-  "game:private-state": (state: HoldemPrivateState) => void;
+  "game:private-state": (state: HoldemPrivateState | LiarDrawingPrivateState) => void;
+  "game:draw-points": (data: { playerId: string; points: DrawPoint[] }) => void;
   "game:player-left": (data: { playerId: string; nickname: string; willEnd: boolean }) => void;
   "game:rematch-requested": (playerId: string) => void;
   "game:round-ended": (data: {

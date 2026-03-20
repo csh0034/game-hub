@@ -8,10 +8,13 @@ import type {
   TetrisMove,
   TetrisPublicState,
   HoldemPublicState,
+  LiarDrawingPublicState,
+  DrawPoint,
 } from "@game-hub/shared-types";
 import type { GameManager } from "../games/game-manager.js";
 import { startGomokuTimer, clearGomokuTimer } from "../games/gomoku-timer.js";
 import { startTetrisTicker, updateTetrisTickerInterval, clearTetrisTicker } from "../games/tetris-ticker.js";
+import { startLiarDrawingTimer, clearLiarDrawingTimer } from "../games/liar-drawing-timer.js";
 
 const holdemRoundTimers: Map<string, NodeJS.Timeout> = new Map();
 
@@ -71,6 +74,86 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
     startTetrisTicker(roomId, currentInterval, onTick);
   }
 
+  function startLiarDrawingTurnTimer(roomId: string) {
+    const currentState = gameManager.getGameState(roomId) as LiarDrawingPublicState | null;
+    if (!currentState || currentState.phase !== "drawing") return;
+
+    const durationMs = currentState.drawTimeSeconds * 1000;
+    startLiarDrawingTimer(roomId, durationMs, () => {
+      const room = gameManager.getRoom(roomId);
+      const state = gameManager.getGameState(roomId) as LiarDrawingPublicState | null;
+      if (!room || !state || room.status !== "playing" || state.phase !== "drawing") return;
+
+      const liarEngine = gameManager.getLiarDrawingEngine(roomId);
+      if (!liarEngine) return;
+
+      const newState = liarEngine.advanceDrawingTurn(state);
+      gameManager.setGameState(roomId, newState);
+      io.to(roomId).emit("game:state-updated", newState);
+
+      if (newState.phase === "drawing") {
+        // More turns to go
+        startLiarDrawingTurnTimer(roomId);
+      }
+    });
+  }
+
+  function startLiarDrawingNextRound(roomId: string) {
+    const liarEngine = gameManager.getLiarDrawingEngine(roomId);
+    if (!liarEngine) return;
+
+    startLiarDrawingTimer(roomId, 5000, () => {
+      const room = gameManager.getRoom(roomId);
+      const state = gameManager.getGameState(roomId) as LiarDrawingPublicState | null;
+      if (!room || !state || room.status !== "playing") return;
+
+      if (state.phase !== "round-result") return;
+
+      // Advance to next round or final result
+      const result = gameManager.processMove(roomId, room.hostId, { type: "phase-ready" });
+      if (!result) return;
+
+      const newState = result.state as LiarDrawingPublicState;
+      io.to(roomId).emit("game:state-updated", newState);
+
+      if (newState.phase === "final-result") {
+        const gameResult = liarEngine.checkWin(newState);
+        if (gameResult) {
+          room.status = "finished";
+          io.to(roomId).emit("game:ended", gameResult);
+          io.emit("lobby:room-updated", room);
+        }
+        return;
+      }
+
+      // New round started - send private states
+      if (newState.phase === "role-reveal") {
+        for (const player of room.players) {
+          const playerSocket = io.sockets.sockets.get(player.id);
+          if (playerSocket) {
+            const isLiar = player.id === liarEngine.getLiarId();
+            playerSocket.emit("game:private-state", {
+              role: isLiar ? "liar" : "citizen",
+              keyword: isLiar ? null : liarEngine.getKeyword(),
+            });
+          }
+        }
+        // Auto-advance to drawing after 5 seconds
+        startLiarDrawingTimer(roomId, 5000, () => {
+          const currentState = gameManager.getGameState(roomId) as LiarDrawingPublicState | null;
+          const currentRoom = gameManager.getRoom(roomId);
+          if (!currentState || !currentRoom || currentRoom.status !== "playing") return;
+          if (currentState.phase !== "role-reveal") return;
+
+          const drawingState = liarEngine.startDrawingPhase(currentState);
+          gameManager.setGameState(roomId, drawingState);
+          io.to(roomId).emit("game:state-updated", drawingState);
+          startLiarDrawingTurnTimer(roomId);
+        });
+      }
+    });
+  }
+
   socket.on("game:start", () => {
     const roomId = socket.data.roomId;
     if (!roomId) return;
@@ -99,6 +182,37 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
       startTetrisServerTick(roomId);
     }
 
+    // For liar-drawing, send private states and start role-reveal timer
+    if (room.gameType === "liar-drawing") {
+      const liarEngine = gameManager.getLiarDrawingEngine(roomId);
+      if (liarEngine) {
+        for (const player of room.players) {
+          const playerSocket = io.sockets.sockets.get(player.id);
+          if (playerSocket) {
+            const isLiar = player.id === liarEngine.getLiarId();
+            playerSocket.emit("game:private-state", {
+              role: isLiar ? "liar" : "citizen",
+              keyword: isLiar ? null : liarEngine.getKeyword(),
+            });
+          }
+        }
+        // Auto-advance from role-reveal to drawing after 5 seconds
+        startLiarDrawingTimer(roomId, 5000, () => {
+          const currentState = gameManager.getGameState(roomId) as LiarDrawingPublicState | null;
+          const currentRoom = gameManager.getRoom(roomId);
+          if (!currentState || !currentRoom || currentRoom.status !== "playing") return;
+          if (currentState.phase !== "role-reveal") return;
+
+          const drawingState = liarEngine.startDrawingPhase(currentState);
+          gameManager.setGameState(roomId, drawingState);
+          io.to(roomId).emit("game:state-updated", drawingState);
+
+          // Start drawing turn timer
+          startLiarDrawingTurnTimer(roomId);
+        });
+      }
+    }
+
     // For holdem, send private hole cards
     if (room.gameType === "texas-holdem") {
       const holdemEngine = gameManager.getHoldemEngine(roomId);
@@ -112,6 +226,28 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
         }
       }
     }
+  });
+
+  socket.on("game:draw-points", (points: DrawPoint[]) => {
+    const roomId = socket.data.roomId;
+    if (!roomId) return;
+    const room = gameManager.getRoom(roomId);
+    if (!room || room.gameType !== "liar-drawing") return;
+
+    const state = gameManager.getGameState(roomId) as LiarDrawingPublicState | null;
+    if (!state || state.phase !== "drawing") return;
+
+    const currentDrawerId = state.drawOrder[state.currentDrawerIndex];
+    if (socket.id !== currentDrawerId) return;
+
+    // Update engine state with points
+    const liarEngine = gameManager.getLiarDrawingEngine(roomId);
+    if (!liarEngine) return;
+    const newState = liarEngine.processMove(state, socket.id!, { type: "draw", points });
+    gameManager.setGameState(roomId, newState);
+
+    // Broadcast to other players in the room
+    socket.to(roomId).emit("game:draw-points", { playerId: socket.id!, points });
   });
 
   socket.on("game:move", (move) => {
@@ -195,6 +331,34 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
       if (room?.gameType === "gomoku") {
         startGomokuTurnTimer(roomId);
       }
+
+      // Handle liar-drawing phase transitions
+      if (room?.gameType === "liar-drawing") {
+        const liarState = result.state as LiarDrawingPublicState;
+
+        if (liarState.phase === "liar-guess") {
+          // Start 30s timer for liar to guess
+          startLiarDrawingTimer(roomId, 30000, () => {
+            const currentRoom = gameManager.getRoom(roomId);
+            const currentState = gameManager.getGameState(roomId) as LiarDrawingPublicState | null;
+            if (!currentRoom || !currentState || currentRoom.status !== "playing") return;
+            if (currentState.phase !== "liar-guess") return;
+
+            // Time's up — liar didn't guess, treat as wrong guess
+            const liarEngine = gameManager.getLiarDrawingEngine(roomId);
+            if (!liarEngine) return;
+            const newState = liarEngine.processMove(currentState, liarEngine.getLiarId()!, { type: "liar-guess", guess: "" });
+            gameManager.setGameState(roomId, newState);
+            io.to(roomId).emit("game:state-updated", newState);
+            startLiarDrawingNextRound(roomId);
+          });
+        }
+
+        if (liarState.phase === "round-result") {
+          clearLiarDrawingTimer(roomId);
+          startLiarDrawingNextRound(roomId);
+        }
+      }
     }
   });
 
@@ -204,6 +368,7 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
 
     clearGomokuTimer(roomId);
     clearTetrisTicker(roomId);
+    clearLiarDrawingTimer(roomId);
     const holdemTimer = holdemRoundTimers.get(roomId);
     if (holdemTimer) {
       clearTimeout(holdemTimer);

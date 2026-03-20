@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { GameState, GameResult, HoldemPrivateState, Card } from "@game-hub/shared-types";
+import type { GameState, GameResult, HoldemPrivateState, LiarDrawingPrivateState, Card } from "@game-hub/shared-types";
 
 interface PlayerLeftInfo {
   nickname: string;
@@ -16,12 +16,12 @@ export interface RoundResult {
 interface GameStore {
   gameState: GameState | null;
   gameResult: GameResult | null;
-  privateState: HoldemPrivateState | null;
+  privateState: HoldemPrivateState | LiarDrawingPrivateState | null;
   playerLeftInfo: PlayerLeftInfo | null;
   roundResult: RoundResult | null;
   setGameState: (state: GameState) => void;
   setGameResult: (result: GameResult | null) => void;
-  setPrivateState: (state: HoldemPrivateState) => void;
+  setPrivateState: (state: HoldemPrivateState | LiarDrawingPrivateState) => void;
   setPlayerLeftInfo: (info: PlayerLeftInfo | null) => void;
   setRoundResult: (result: RoundResult | null) => void;
   reset: () => void;

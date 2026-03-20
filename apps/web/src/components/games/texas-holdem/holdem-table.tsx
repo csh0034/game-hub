@@ -4,6 +4,7 @@ import { useGame } from "@/hooks/use-game";
 import { useSocket } from "@/hooks/use-socket";
 import type {
   HoldemPublicState,
+  HoldemPrivateState,
   HoldemMove,
   HoldemAction,
 } from "@game-hub/shared-types";
@@ -16,7 +17,8 @@ import { RoundResultOverlay } from "./round-result-overlay";
 
 export default function HoldemTable({ roomId: _roomId }: GameComponentProps) {
   const { socket } = useSocket();
-  const { gameState, privateState, roundResult, makeMove } = useGame(socket);
+  const { gameState, privateState: rawPrivateState, roundResult, makeMove } = useGame(socket);
+  const privateState = rawPrivateState as HoldemPrivateState | null;
 
   const state = gameState as HoldemPublicState | null;
 

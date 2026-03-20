@@ -4,6 +4,7 @@ import { GomokuEngine } from "./gomoku-engine.js";
 import { HoldemEngine } from "./holdem-engine.js";
 import { MinesweeperEngine } from "./minesweeper-engine.js";
 import { TetrisEngine } from "./tetris-engine.js";
+import { LiarDrawingEngine } from "./liar-drawing-engine.js";
 import type { GameEngine } from "./engine-interface.js";
 
 export class GameManager {
@@ -18,6 +19,7 @@ export class GameManager {
     this.engines.set("texas-holdem", new HoldemEngine());
     this.engines.set("minesweeper", new MinesweeperEngine());
     this.engines.set("tetris", new TetrisEngine());
+    this.engines.set("liar-drawing", new LiarDrawingEngine());
   }
 
   createRoom(payload: CreateRoomPayload, host: Player): Room {
@@ -120,6 +122,16 @@ export class GameManager {
       return state;
     }
 
+    if (room.gameType === "liar-drawing") {
+      const drawTime = room.gameOptions?.liarDrawingTime ?? 60;
+      const rounds = room.gameOptions?.liarDrawingRounds ?? 3;
+      const liarEngine = new LiarDrawingEngine(drawTime, rounds);
+      this.roomEngines.set(roomId, liarEngine);
+      const state = liarEngine.initState(room.players);
+      this.gameStates.set(roomId, state);
+      return state;
+    }
+
     const state = engine.initState(room.players);
     this.gameStates.set(roomId, state);
     return state;
@@ -136,7 +148,7 @@ export class GameManager {
     const newState = engine.processMove(state, playerId, move);
     this.gameStates.set(roomId, newState);
     const result = engine.checkWin(newState);
-    if (result && room.gameType !== "texas-holdem") {
+    if (result && room.gameType !== "texas-holdem" && room.gameType !== "liar-drawing") {
       room.status = "finished";
     }
     return { state: newState, result };
@@ -184,6 +196,11 @@ export class GameManager {
   getTetrisEngine(roomId: string): TetrisEngine | null {
     const engine = this.roomEngines.get(roomId);
     return engine instanceof TetrisEngine ? engine : null;
+  }
+
+  getLiarDrawingEngine(roomId: string): LiarDrawingEngine | null {
+    const engine = this.roomEngines.get(roomId);
+    return engine instanceof LiarDrawingEngine ? engine : null;
   }
 
   private cleanupRoomState(roomId: string): void {

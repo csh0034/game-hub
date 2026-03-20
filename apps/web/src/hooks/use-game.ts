@@ -4,7 +4,7 @@ import { useEffect, useCallback } from "react";
 import { useGameStore } from "@/stores/game-store";
 import type { RoundResult } from "@/stores/game-store";
 import type { GameSocket } from "@/lib/socket";
-import type { GameMove, GameState, GameResult, HoldemPrivateState } from "@game-hub/shared-types";
+import type { GameMove, GameState, GameResult, HoldemPrivateState, LiarDrawingPrivateState } from "@game-hub/shared-types";
 
 export function useGame(socket: GameSocket | null) {
   const {
@@ -35,7 +35,7 @@ export function useGame(socket: GameSocket | null) {
     const onEnded = (result: GameResult) => {
       setGameResult(result);
     };
-    const onPrivateState = (state: HoldemPrivateState) => {
+    const onPrivateState = (state: HoldemPrivateState | LiarDrawingPrivateState) => {
       setPrivateState(state);
     };
     const onError = (message: string) => {

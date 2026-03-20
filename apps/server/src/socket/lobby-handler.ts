@@ -1,6 +1,7 @@
 import type { Server, Socket } from "socket.io";
 import {
   GAME_CONFIGS,
+  type ChatMessage,
   type ClientToServerEvents,
   type ServerToClientEvents,
   type InterServerEvents,
@@ -12,6 +13,23 @@ import { clearTetrisTicker } from "../games/tetris-ticker.js";
 
 type IOServer = Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 type IOSocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
+
+const MAX_HISTORY = 50;
+const lobbyHistory: ChatMessage[] = [];
+const roomHistories = new Map<string, ChatMessage[]>();
+
+function pushMessage(store: ChatMessage[], msg: ChatMessage) {
+  store.push(msg);
+  if (store.length > MAX_HISTORY) store.shift();
+}
+
+export function getRoomHistory(roomId: string): ChatMessage[] {
+  return roomHistories.get(roomId) ?? [];
+}
+
+export function deleteRoomHistory(roomId: string) {
+  roomHistories.delete(roomId);
+}
 
 export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: GameManager) {
   function emitPlayerLeftIfPlaying(roomId: string) {
@@ -40,6 +58,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
       io.to(prevRoomId).emit("lobby:room-updated", prevRoom);
       io.emit("lobby:room-updated", prevRoom);
     } else {
+      deleteRoomHistory(prevRoomId);
       io.emit("lobby:room-removed", prevRoomId);
     }
   }
@@ -103,6 +122,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
       io.to(roomId).emit("lobby:room-updated", room);
       io.emit("lobby:room-updated", room);
     } else {
+      deleteRoomHistory(roomId);
       io.emit("lobby:room-removed", roomId);
     }
     socket.join("lobby");
@@ -120,22 +140,38 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
   socket.on("chat:lobby-message", (message) => {
     if (!socket.data.authenticated) return;
     if (socket.data.roomId) return;
-    io.to("lobby").emit("chat:lobby-message", {
+    const chatMsg: ChatMessage = {
       playerId: socket.id!,
       nickname: socket.data.nickname,
       message: message.slice(0, 500),
       timestamp: Date.now(),
-    });
+    };
+    pushMessage(lobbyHistory, chatMsg);
+    io.to("lobby").emit("chat:lobby-message", chatMsg);
   });
 
   socket.on("chat:room-message", (message) => {
     const roomId = socket.data.roomId;
     if (!roomId) return;
-    io.to(roomId).emit("chat:room-message", {
+    const chatMsg: ChatMessage = {
       playerId: socket.id!,
       nickname: socket.data.nickname,
       message: message.slice(0, 500),
       timestamp: Date.now(),
-    });
+    };
+    if (!roomHistories.has(roomId)) roomHistories.set(roomId, []);
+    pushMessage(roomHistories.get(roomId)!, chatMsg);
+    io.to(roomId).emit("chat:room-message", chatMsg);
+  });
+
+  socket.on("chat:request-history", (target, callback) => {
+    if (!socket.data.authenticated) return callback([]);
+    if (target === "lobby") {
+      callback([...lobbyHistory]);
+    } else {
+      const roomId = socket.data.roomId;
+      if (!roomId) return callback([]);
+      callback([...(roomHistories.get(roomId) ?? [])]);
+    }
   });
 }

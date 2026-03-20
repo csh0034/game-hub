@@ -8,6 +8,8 @@ export function useChat(socket: GameSocket | null) {
     roomMessages,
     addLobbyMessage,
     addRoomMessage,
+    setLobbyMessages,
+    setRoomMessages,
     clearRoomMessages,
     clearLobbyMessages,
   } = useChatStore();
@@ -23,6 +25,16 @@ export function useChat(socket: GameSocket | null) {
       socket.off("chat:room-message", addRoomMessage);
     };
   }, [socket, addLobbyMessage, addRoomMessage]);
+
+  const requestLobbyHistory = useCallback(() => {
+    if (!socket) return;
+    socket.emit("chat:request-history", "lobby", setLobbyMessages);
+  }, [socket, setLobbyMessages]);
+
+  const requestRoomHistory = useCallback(() => {
+    if (!socket) return;
+    socket.emit("chat:request-history", "room", setRoomMessages);
+  }, [socket, setRoomMessages]);
 
   const sendLobbyMessage = useCallback(
     (message: string) => {
@@ -43,6 +55,8 @@ export function useChat(socket: GameSocket | null) {
     roomMessages,
     sendLobbyMessage,
     sendRoomMessage,
+    requestLobbyHistory,
+    requestRoomHistory,
     clearRoomMessages,
     clearLobbyMessages,
   };

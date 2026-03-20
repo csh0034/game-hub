@@ -6,7 +6,7 @@ import type {
   InterServerEvents,
   SocketData,
 } from "@game-hub/shared-types";
-import { setupLobbyHandler } from "./lobby-handler.js";
+import { setupLobbyHandler, deleteRoomHistory } from "./lobby-handler.js";
 import { GameManager } from "../games/game-manager.js";
 
 type GameServer = Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
@@ -155,5 +155,75 @@ describe("chat:room-message", () => {
         message: "a".repeat(500),
       }),
     );
+  });
+});
+
+describe("chat:request-history", () => {
+  let socket: ReturnType<typeof createMockSocket>;
+  let io: ReturnType<typeof createMockIo>;
+  let gameManager: GameManager;
+
+  beforeEach(() => {
+    // 이전 테스트에서 쌓인 이력 정리를 위해 새 소켓/io 생성
+    socket = createMockSocket("socket-1", "Player1");
+    io = createMockIo();
+    gameManager = new GameManager();
+    setupLobbyHandler(io as unknown as GameServer, socket as unknown as GameSocket, gameManager);
+  });
+
+  it("로비 메시지 이력을 반환한다", () => {
+    socket.data.authenticated = true;
+    socket.data.roomId = null;
+
+    // 메시지 전송하여 이력 쌓기
+    socket._trigger("chat:lobby-message", "첫 번째");
+    socket._trigger("chat:lobby-message", "두 번째");
+
+    const callback = vi.fn();
+    socket._trigger("chat:request-history", "lobby", callback);
+
+    expect(callback).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({ message: "첫 번째" }),
+        expect.objectContaining({ message: "두 번째" }),
+      ]),
+    );
+  });
+
+  it("방 메시지 이력을 반환한다", () => {
+    socket.data.roomId = "room-test";
+
+    socket._trigger("chat:room-message", "방 메시지");
+
+    const callback = vi.fn();
+    socket._trigger("chat:request-history", "room", callback);
+
+    expect(callback).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({ message: "방 메시지" }),
+      ]),
+    );
+
+    // cleanup
+    deleteRoomHistory("room-test");
+  });
+
+  it("인증되지 않은 유저는 빈 배열을 받는다", () => {
+    socket.data.authenticated = false;
+
+    const callback = vi.fn();
+    socket._trigger("chat:request-history", "lobby", callback);
+
+    expect(callback).toHaveBeenCalledWith([]);
+  });
+
+  it("roomId 없이 방 이력 요청 시 빈 배열을 받는다", () => {
+    socket.data.authenticated = true;
+    socket.data.roomId = null;
+
+    const callback = vi.fn();
+    socket._trigger("chat:request-history", "room", callback);
+
+    expect(callback).toHaveBeenCalledWith([]);
   });
 });

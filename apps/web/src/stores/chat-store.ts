@@ -8,6 +8,8 @@ interface ChatStore {
   roomMessages: ChatMessage[];
   addLobbyMessage: (msg: ChatMessage) => void;
   addRoomMessage: (msg: ChatMessage) => void;
+  setLobbyMessages: (msgs: ChatMessage[]) => void;
+  setRoomMessages: (msgs: ChatMessage[]) => void;
   clearRoomMessages: () => void;
   clearLobbyMessages: () => void;
 }
@@ -23,6 +25,8 @@ export const useChatStore = create<ChatStore>((set) => ({
     set((state) => ({
       roomMessages: [...state.roomMessages, msg].slice(-MAX_MESSAGES),
     })),
+  setLobbyMessages: (msgs) => set({ lobbyMessages: msgs.slice(-MAX_MESSAGES) }),
+  setRoomMessages: (msgs) => set({ roomMessages: msgs.slice(-MAX_MESSAGES) }),
   clearRoomMessages: () => set({ roomMessages: [] }),
   clearLobbyMessages: () => set({ lobbyMessages: [] }),
 }));

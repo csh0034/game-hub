@@ -52,7 +52,7 @@ export default function LobbyPage() {
   const { socket, isConnected, playerCount, onlineNicknames } = useSocket();
   const { rooms, currentRoom, createRoom, joinRoom, leaveRoom, toggleReady } =
     useLobby(socket);
-  const { lobbyMessages, roomMessages, sendLobbyMessage, sendRoomMessage, clearRoomMessages } =
+  const { lobbyMessages, roomMessages, sendLobbyMessage, sendRoomMessage, clearRoomMessages, requestLobbyHistory, requestRoomHistory } =
     useChat(socket);
   const isNavigatingBack = useRef(false);
   const [confirmState, setConfirmState] = useState<{
@@ -74,9 +74,11 @@ export default function LobbyPage() {
     socket.emit("player:set-nickname", nickname, (result) => {
       if (!result.success) {
         store.remove();
+      } else {
+        requestLobbyHistory();
       }
     });
-  }, [socket, isConnected, nickname]);
+  }, [socket, isConnected, nickname, requestLobbyHistory]);
 
   const handleNicknameComplete = useCallback((newNickname: string) => {
     store.set(newNickname);
@@ -111,11 +113,12 @@ export default function LobbyPage() {
     if (!currentRoom) return;
     leaveRoom();
     clearRoomMessages();
+    requestLobbyHistory();
     if (!isNavigatingBack.current) {
       history.back();
     }
     isNavigatingBack.current = false;
-  }, [currentRoom, leaveRoom, clearRoomMessages]);
+  }, [currentRoom, leaveRoom, clearRoomMessages, requestLobbyHistory]);
 
   const handleLeaveRoom = useCallback(async () => {
     if (!currentRoom) return;
@@ -183,10 +186,11 @@ export default function LobbyPage() {
     async (...args: Parameters<typeof joinRoom>) => {
       clearRoomMessages();
       const room = await joinRoom(...args);
+      requestRoomHistory();
       history.pushState({ inRoom: true }, "");
       return room;
     },
-    [joinRoom, clearRoomMessages]
+    [joinRoom, clearRoomMessages, requestRoomHistory]
   );
 
   // SSR / hydration 전: 빈 화면 (닉네임 폼 플래시 방지)

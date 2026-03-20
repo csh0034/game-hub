@@ -33,6 +33,7 @@ export interface ClientToServerEvents {
   // Chat
   "chat:lobby-message": (message: string) => void;
   "chat:room-message": (message: string) => void;
+  "chat:request-history": (target: "lobby" | "room", callback: (messages: ChatMessage[]) => void) => void;
 }
 
 // Server → Client

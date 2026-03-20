@@ -21,11 +21,12 @@ export function GameCardGrid({ onCreateRoom }: GameCardGridProps) {
   const [expandedGame, setExpandedGame] = useState<GameType | null>(null);
 
   const handleQuickCreate = async (gameType: GameType) => {
+    const config = GAME_CONFIGS[gameType];
+    if (config.disabled) return;
     if (gameType === "minesweeper") {
       setExpandedGame((prev) => (prev === "minesweeper" ? null : "minesweeper"));
       return;
     }
-    const config = GAME_CONFIGS[gameType];
     await onCreateRoom({ name: `${config.name} 방`, gameType });
   };
 
@@ -44,11 +45,19 @@ export function GameCardGrid({ onCreateRoom }: GameCardGridProps) {
         <div key={game.gameType}>
           <button
             onClick={() => handleQuickCreate(game.gameType)}
-            className="group relative w-full bg-card border border-border rounded-xl p-6 text-left hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300"
+            disabled={game.disabled}
+            className={`group relative w-full bg-card border border-border rounded-xl p-6 text-left transition-all duration-300 ${game.disabled ? "opacity-60 cursor-not-allowed" : "hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5"}`}
           >
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="relative">
-              <div className="text-4xl mb-3">{game.icon}</div>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-4xl">{game.icon}</span>
+                {game.disabled && (
+                  <span className="text-xs font-semibold bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded-full">
+                    {game.disabledReason ?? "점검중"}
+                  </span>
+                )}
+              </div>
               <h3 className="text-lg font-semibold mb-1">{game.name}</h3>
               <p className="text-sm text-muted-foreground mb-3">{game.description}</p>
               <div className="flex items-center gap-1 text-xs text-muted-foreground">

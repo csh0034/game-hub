@@ -49,6 +49,11 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
   });
 
   socket.on("lobby:create-room", (payload, callback) => {
+    const config = GAME_CONFIGS[payload.gameType];
+    if (config.disabled) {
+      socket.emit("game:error", config.disabledReason ?? "이 게임은 현재 이용할 수 없습니다.");
+      return;
+    }
     cleanupPreviousRoom();
     const player = {
       id: socket.id!,

@@ -7,6 +7,8 @@ export interface GameConfig {
   minPlayers: number;
   maxPlayers: number;
   icon: string;
+  disabled?: boolean;
+  disabledReason?: string;
 }
 
 export const GAME_CONFIGS: Record<GameType, GameConfig> = {
@@ -25,6 +27,8 @@ export const GAME_CONFIGS: Record<GameType, GameConfig> = {
     minPlayers: 2,
     maxPlayers: 8,
     icon: "🃏",
+    disabled: true,
+    disabledReason: "패치중",
   },
   minesweeper: {
     gameType: "minesweeper",

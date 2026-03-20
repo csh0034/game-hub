@@ -116,15 +116,15 @@ describe("setupLobbyHandler — game:player-left", () => {
   });
 
   it("willEnd가 false인 경우 — 남은 인원이 minPlayers 이상", () => {
-    // Use texas-holdem which has minPlayers: 2
+    // Use tetris which has minPlayers: 1
     setupLobbyHandler(io as unknown as GameServer, socket1 as unknown as GameSocket, gameManager);
     setupLobbyHandler(io as unknown as GameServer, socket2 as unknown as GameSocket, gameManager);
     const socket3 = createMockSocket("socket-3", "Player3");
     setupLobbyHandler(io as unknown as GameServer, socket3 as unknown as GameSocket, gameManager);
 
-    // Create holdem room with 3 players
+    // Create tetris room with 3 players
     const createCallback = vi.fn();
-    socket1._trigger("lobby:create-room", { gameType: "texas-holdem", name: "Holdem Room" }, createCallback);
+    socket1._trigger("lobby:create-room", { gameType: "tetris", name: "Tetris Room" }, createCallback);
     const room = createCallback.mock.calls[0][0];
 
     const joinCallback2 = vi.fn();

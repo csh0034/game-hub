@@ -85,20 +85,33 @@ export function CreateRoomDialog({ onCreateRoom }: CreateRoomDialogProps) {
             <div>
               <label className="block text-sm font-medium mb-1.5">게임 선택</label>
               <div className="grid grid-cols-2 gap-2">
-                {Object.values(GAME_CONFIGS).map((config) => (
-                  <button
-                    key={config.gameType}
-                    onClick={() => setGameType(config.gameType)}
-                    className={`flex items-center gap-2 p-3 rounded-lg border text-sm transition-colors ${
-                      gameType === config.gameType
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border hover:border-border/80"
-                    }`}
-                  >
-                    <span className="text-xl">{config.icon}</span>
-                    <span className="font-medium">{config.name}</span>
-                  </button>
-                ))}
+                {Object.values(GAME_CONFIGS).map((config) =>
+                  config.disabled ? (
+                    <div
+                      key={config.gameType}
+                      className="flex items-center gap-2 p-3 rounded-lg border border-border text-sm opacity-50 cursor-not-allowed"
+                    >
+                      <span className="text-xl">{config.icon}</span>
+                      <span className="font-medium">{config.name}</span>
+                      <span className="text-[10px] font-semibold bg-yellow-500/20 text-yellow-500 px-1.5 py-0.5 rounded-full ml-auto">
+                        {config.disabledReason ?? "점검중"}
+                      </span>
+                    </div>
+                  ) : (
+                    <button
+                      key={config.gameType}
+                      onClick={() => setGameType(config.gameType)}
+                      className={`flex items-center gap-2 p-3 rounded-lg border text-sm transition-colors ${
+                        gameType === config.gameType
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border hover:border-border/80"
+                      }`}
+                    >
+                      <span className="text-xl">{config.icon}</span>
+                      <span className="font-medium">{config.name}</span>
+                    </button>
+                  )
+                )}
                 {COMING_SOON_GAMES.map((game) => (
                   <div
                     key={game.name}
@@ -164,7 +177,8 @@ export function CreateRoomDialog({ onCreateRoom }: CreateRoomDialogProps) {
 
             <button
               onClick={handleCreate}
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-2.5 rounded-lg text-sm font-medium transition-colors"
+              disabled={GAME_CONFIGS[gameType].disabled}
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               방 만들기
             </button>

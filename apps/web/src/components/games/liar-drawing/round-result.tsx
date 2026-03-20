@@ -1,12 +1,24 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import type { LiarDrawingPublicState } from "@game-hub/shared-types";
 
 interface RoundResultProps {
   state: LiarDrawingPublicState;
 }
 
+const NEXT_ROUND_SECONDS = 10;
+
 export function RoundResult({ state }: RoundResultProps) {
+  const [countdown, setCountdown] = useState(NEXT_ROUND_SECONDS);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCountdown((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   const liar = state.players.find((p) => p.id === state.liarId);
   const accused = state.accusedPlayerId ? state.players.find((p) => p.id === state.accusedPlayerId) : null;
   const liarCaught = state.accusedPlayerId === state.liarId;
@@ -65,7 +77,7 @@ export function RoundResult({ state }: RoundResultProps) {
         </div>
       </div>
 
-      <div className="text-sm text-muted-foreground">잠시 후 다음 라운드가 시작됩니다...</div>
+      <div className="text-sm text-muted-foreground">다음 라운드까지 <span className="font-mono font-bold">{countdown}초</span></div>
     </div>
   );
 }

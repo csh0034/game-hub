@@ -102,7 +102,7 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
     const liarEngine = gameManager.getLiarDrawingEngine(roomId);
     if (!liarEngine) return;
 
-    startLiarDrawingTimer(roomId, 5000, () => {
+    startLiarDrawingTimer(roomId, 10000, () => {
       const room = gameManager.getRoom(roomId);
       const state = gameManager.getGameState(roomId) as LiarDrawingPublicState | null;
       if (!room || !state || room.status !== "playing") return;

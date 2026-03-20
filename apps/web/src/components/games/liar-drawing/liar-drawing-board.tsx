@@ -36,7 +36,7 @@ export default function LiarDrawingBoard({ roomId }: GameComponentProps) {
           />
         );
       case "drawing":
-        return <DrawingPhase state={state} socket={socket} myId={myId} />;
+        return <DrawingPhase state={state} socket={socket} myId={myId} keyword={liarPrivateState?.keyword ?? null} />;
       case "voting":
         return (
           <VotingPanel

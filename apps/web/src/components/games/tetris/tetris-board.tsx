@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useGame } from "@/hooks/use-game";
 import { useSocket } from "@/hooks/use-socket";
 import type {
@@ -252,13 +252,13 @@ function getOpponentCellSize(count: number): number {
   if (count <= 1) return 16;
   if (count <= 2) return 14;
   if (count <= 3) return 12;
-  return 10;
+  if (count <= 5) return 10;
+  return 8;
 }
 
 export default function TetrisBoard({ roomId }: GameComponentProps) {
   const { socket } = useSocket();
   const { gameState, gameResult, makeMove } = useGame(socket);
-  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const state = gameState as TetrisPublicState | null;
   const myId = socket?.id;
@@ -268,20 +268,6 @@ export default function TetrisBoard({ roomId }: GameComponentProps) {
     : [];
 
   const opponentCellSize = getOpponentCellSize(opponentEntries.length);
-
-  // Tick timer
-  useEffect(() => {
-    if (!state || !myBoard || myBoard.status !== "playing" || gameResult) return;
-
-    tickRef.current = setInterval(() => {
-      const move: TetrisMove = { type: "tick" };
-      makeMove(move);
-    }, state.dropInterval);
-
-    return () => {
-      if (tickRef.current) clearInterval(tickRef.current);
-    };
-  }, [state?.dropInterval, myBoard?.status, myBoard?.level, gameResult, makeMove]);
 
   // Keyboard input
   useEffect(() => {

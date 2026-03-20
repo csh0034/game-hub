@@ -5,9 +5,12 @@ import type {
   InterServerEvents,
   SocketData,
   GomokuState,
+  TetrisMove,
+  TetrisPublicState,
 } from "@game-hub/shared-types";
 import type { GameManager } from "../games/game-manager.js";
 import { startGomokuTimer, clearGomokuTimer } from "../games/gomoku-timer.js";
+import { startTetrisTicker, updateTetrisTickerInterval, clearTetrisTicker } from "../games/tetris-ticker.js";
 
 type IOServer = Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 type IOSocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
@@ -27,6 +30,42 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
       });
       io.emit("lobby:room-updated", room);
     });
+  }
+
+  function startTetrisServerTick(roomId: string) {
+    const tetrisEngine = gameManager.getTetrisEngine(roomId);
+    if (!tetrisEngine) return;
+
+    const state = gameManager.getGameState(roomId) as TetrisPublicState | null;
+    if (!state) return;
+
+    let currentInterval = state.dropInterval;
+
+    const onTick = () => {
+      const room = gameManager.getRoom(roomId);
+      if (!room || room.status !== "playing") {
+        clearTetrisTicker(roomId);
+        return;
+      }
+
+      const newState = tetrisEngine.tickAll();
+      gameManager.setGameState(roomId, newState);
+
+      const result = tetrisEngine.checkWin(newState);
+      io.to(roomId).emit("game:state-updated", newState);
+
+      if (result) {
+        clearTetrisTicker(roomId);
+        room.status = "finished";
+        io.to(roomId).emit("game:ended", result);
+        io.emit("lobby:room-updated", room);
+      } else if (newState.dropInterval !== currentInterval) {
+        currentInterval = newState.dropInterval;
+        updateTetrisTickerInterval(roomId, currentInterval, onTick);
+      }
+    };
+
+    startTetrisTicker(roomId, currentInterval, onTick);
   }
 
   socket.on("game:start", () => {
@@ -53,6 +92,10 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
       startGomokuTurnTimer(roomId);
     }
 
+    if (room.gameType === "tetris") {
+      startTetrisServerTick(roomId);
+    }
+
     // For holdem, send private hole cards
     if (room.gameType === "texas-holdem") {
       const holdemEngine = gameManager.getHoldemEngine(roomId);
@@ -72,6 +115,12 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
     const roomId = socket.data.roomId;
     if (!roomId) return;
 
+    // Ignore client-side tick moves for tetris — server handles ticks
+    const room = gameManager.getRoom(roomId);
+    if (room?.gameType === "tetris" && (move as TetrisMove).type === "tick") {
+      return;
+    }
+
     const result = gameManager.processMove(roomId, socket.id!, move);
     if (!result) {
       socket.emit("game:error", "잘못된 수입니다.");
@@ -82,13 +131,13 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
 
     if (result.result) {
       clearGomokuTimer(roomId);
+      clearTetrisTicker(roomId);
       io.to(roomId).emit("game:ended", result.result);
-      const room = gameManager.getRoom(roomId);
-      if (room) {
-        io.emit("lobby:room-updated", room);
+      const updatedRoom = gameManager.getRoom(roomId);
+      if (updatedRoom) {
+        io.emit("lobby:room-updated", updatedRoom);
       }
     } else {
-      const room = gameManager.getRoom(roomId);
       if (room?.gameType === "gomoku") {
         startGomokuTurnTimer(roomId);
       }
@@ -100,6 +149,7 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
     if (!roomId) return;
 
     clearGomokuTimer(roomId);
+    clearTetrisTicker(roomId);
 
     // For simplicity, reset the room immediately
     const room = gameManager.resetRoom(roomId);

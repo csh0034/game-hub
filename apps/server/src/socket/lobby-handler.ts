@@ -8,6 +8,7 @@ import {
 } from "@game-hub/shared-types";
 import type { GameManager } from "../games/game-manager.js";
 import { clearGomokuTimer } from "../games/gomoku-timer.js";
+import { clearTetrisTicker } from "../games/tetris-ticker.js";
 
 type IOServer = Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 type IOSocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
@@ -30,6 +31,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
     if (!prevRoomId) return;
     emitPlayerLeftIfPlaying(prevRoomId);
     clearGomokuTimer(prevRoomId);
+    clearTetrisTicker(prevRoomId);
     socket.leave(prevRoomId);
     socket.data.roomId = null;
     const prevRoom = gameManager.removePlayer(prevRoomId, socket.id!);
@@ -84,6 +86,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
     if (!roomId) return;
     emitPlayerLeftIfPlaying(roomId);
     clearGomokuTimer(roomId);
+    clearTetrisTicker(roomId);
     socket.leave(roomId);
     socket.data.roomId = null;
     const room = gameManager.removePlayer(roomId, socket.id!);

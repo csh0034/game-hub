@@ -110,7 +110,7 @@ interface PlayerInternalState {
 export class TetrisEngine implements GameEngine {
   gameType = "tetris" as const;
   minPlayers = 1;
-  maxPlayers = 6;
+  maxPlayers = 8;
 
   private playerStates: Map<string, PlayerInternalState> = new Map();
   private playerIds: string[] = [];
@@ -456,6 +456,15 @@ export class TetrisEngine implements GameEngine {
       if (ps.level > maxLevel) maxLevel = ps.level;
     }
     return Math.max(this.baseInterval - (maxLevel - 1) * DROP_SPEED_DECREASE, MIN_DROP_INTERVAL);
+  }
+
+  tickAll(): TetrisPublicState {
+    for (const ps of this.playerStates.values()) {
+      if (ps.status === "playing" && ps.activePiece) {
+        this.tick(ps);
+      }
+    }
+    return this.toPublicState();
   }
 
   toPublicState(): TetrisPublicState {

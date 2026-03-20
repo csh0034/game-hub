@@ -159,6 +159,10 @@ export class GameManager {
     return this.gameStates.get(roomId) || null;
   }
 
+  setGameState(roomId: string, state: GameState): void {
+    this.gameStates.set(roomId, state);
+  }
+
   getRooms(): Room[] {
     return Array.from(this.rooms.values());
   }

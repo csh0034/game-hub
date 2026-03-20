@@ -39,7 +39,7 @@ export const GAME_CONFIGS: Record<GameType, GameConfig> = {
     name: "테트리스",
     description: "떨어지는 블록을 쌓아 줄을 완성하는 퍼즐 게임",
     minPlayers: 1,
-    maxPlayers: 6,
+    maxPlayers: 8,
     icon: "🧱",
   },
 };

@@ -22,9 +22,9 @@ describe("TetrisEngine", () => {
     expect(engine.gameType).toBe("tetris");
   });
 
-  it("1~6인 게임이다", () => {
+  it("1~8인 게임이다", () => {
     expect(engine.minPlayers).toBe(1);
-    expect(engine.maxPlayers).toBe(6);
+    expect(engine.maxPlayers).toBe(8);
   });
 
   describe("initState", () => {
@@ -277,6 +277,48 @@ describe("TetrisEngine", () => {
       // 초기 pendingGarbage는 0
       expect(state.players["player1"].pendingGarbage).toBe(0);
       expect(state.players["player2"].pendingGarbage).toBe(0);
+    });
+  });
+
+  describe("tickAll", () => {
+    it("모든 플레이어를 한번에 tick한다", () => {
+      const versusEngine = new TetrisEngine();
+      const state = versusEngine.initState(mockVersusPlayers);
+      const p1Row = state.players["player1"].activePiece!.row;
+      const p2Row = state.players["player2"].activePiece!.row;
+
+      const newState = versusEngine.tickAll();
+
+      const p1NewPiece = newState.players["player1"].activePiece;
+      const p2NewPiece = newState.players["player2"].activePiece;
+      if (p1NewPiece) {
+        expect(p1NewPiece.row).toBe(p1Row + 1);
+      }
+      if (p2NewPiece) {
+        expect(p2NewPiece.row).toBe(p2Row + 1);
+      }
+    });
+
+    it("gameover인 플레이어는 tick하지 않는다", () => {
+      const versusEngine = new TetrisEngine();
+      versusEngine.initState(mockVersusPlayers);
+
+      // player1을 게임오버 시키기
+      let currentState: TetrisPublicState;
+      for (let i = 0; i < 100; i++) {
+        currentState = versusEngine.processMove({} as TetrisPublicState, "player1", { type: "hard-drop" } as TetrisMove);
+        if (currentState.players["player1"].status === "gameover") break;
+      }
+
+      const p2Row = versusEngine.tickAll().players["player2"].activePiece?.row;
+      const afterTick = versusEngine.tickAll();
+
+      // player1은 여전히 gameover
+      expect(afterTick.players["player1"].status).toBe("gameover");
+      // player2는 계속 진행
+      if (afterTick.players["player2"].activePiece && p2Row !== undefined) {
+        expect(afterTick.players["player2"].activePiece.row).toBeGreaterThanOrEqual(p2Row);
+      }
     });
   });
 

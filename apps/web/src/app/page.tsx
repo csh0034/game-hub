@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback, useRef, useSyncExternalStore } from "react";
+import { useState, useEffect, useCallback, useRef, useSyncExternalStore } from "react";
 import { useGameStore } from "@/stores/game-store";
 import { useSocket } from "@/hooks/use-socket";
 import { useLobby } from "@/hooks/use-lobby";
@@ -10,6 +10,7 @@ import { GameCardGrid } from "@/components/lobby/game-card-grid";
 import { RoomList } from "@/components/lobby/room-list";
 import { CreateRoomDialog } from "@/components/lobby/create-room-dialog";
 import { RoomView } from "@/components/lobby/room-view";
+import { ConfirmDialog } from "@/components/common/confirm-dialog";
 
 const NICKNAME_KEY = "game-hub-nickname";
 
@@ -50,6 +51,11 @@ export default function LobbyPage() {
   const { rooms, currentRoom, createRoom, joinRoom, leaveRoom, toggleReady } =
     useLobby(socket);
   const isNavigatingBack = useRef(false);
+  const [confirmState, setConfirmState] = useState<{
+    open: boolean;
+    onConfirm: () => void;
+  }>({ open: false, onConfirm: () => {} });
+  const confirmResolveRef = useRef<((value: boolean) => void) | null>(null);
 
   const nickname = useSyncExternalStore(
     store.subscribe,
@@ -77,6 +83,26 @@ export default function LobbyPage() {
     return gameState !== null && gameResult === null;
   }, []);
 
+  const showConfirm = useCallback((): Promise<boolean> => {
+    return new Promise((resolve) => {
+      confirmResolveRef.current = resolve;
+      setConfirmState({
+        open: true,
+        onConfirm: () => {
+          resolve(true);
+          confirmResolveRef.current = null;
+          setConfirmState({ open: false, onConfirm: () => {} });
+        },
+      });
+    });
+  }, []);
+
+  const handleConfirmCancel = useCallback(() => {
+    confirmResolveRef.current?.(false);
+    confirmResolveRef.current = null;
+    setConfirmState({ open: false, onConfirm: () => {} });
+  }, []);
+
   const doLeaveRoom = useCallback(() => {
     if (!currentRoom) return;
     leaveRoom();
@@ -86,36 +112,36 @@ export default function LobbyPage() {
     isNavigatingBack.current = false;
   }, [currentRoom, leaveRoom]);
 
-  const handleLeaveRoom = useCallback(() => {
+  const handleLeaveRoom = useCallback(async () => {
     if (!currentRoom) return;
     if (isGameInProgress()) {
-      if (!window.confirm("게임이 진행 중입니다. 정말 나가시겠습니까?")) return;
+      if (!(await showConfirm())) return;
     }
     doLeaveRoom();
-  }, [currentRoom, isGameInProgress, doLeaveRoom]);
+  }, [currentRoom, isGameInProgress, doLeaveRoom, showConfirm]);
 
   const handleGoHome = useCallback(() => {
     handleLeaveRoom();
   }, [handleLeaveRoom]);
 
-  const handleLogout = useCallback(() => {
+  const handleLogout = useCallback(async () => {
     if (currentRoom && isGameInProgress()) {
-      if (!window.confirm("게임이 진행 중입니다. 정말 나가시겠습니까?")) return;
+      if (!(await showConfirm())) return;
     }
     if (currentRoom) {
       leaveRoom();
     }
     socket?.emit("player:logout");
     store.remove();
-  }, [currentRoom, leaveRoom, socket, isGameInProgress]);
+  }, [currentRoom, leaveRoom, socket, isGameInProgress, showConfirm]);
 
   // Handle browser back button
   useEffect(() => {
-    const onPopState = () => {
+    const onPopState = async () => {
       if (currentRoom) {
         if (isGameInProgress()) {
-          if (!window.confirm("게임이 진행 중입니다. 정말 나가시겠습니까?")) {
-            history.pushState({ inRoom: true }, "");
+          history.pushState({ inRoom: true }, "");
+          if (!(await showConfirm())) {
             return;
           }
         }
@@ -125,7 +151,7 @@ export default function LobbyPage() {
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
-  }, [currentRoom, isGameInProgress, doLeaveRoom]);
+  }, [currentRoom, isGameInProgress, doLeaveRoom, showConfirm]);
 
   // beforeunload — 게임 진행 중 탭 닫기 방지
   useEffect(() => {
@@ -166,6 +192,18 @@ export default function LobbyPage() {
     return <NicknameForm onComplete={handleNicknameComplete} />;
   }
 
+  const confirmDialog = (
+    <ConfirmDialog
+      open={confirmState.open}
+      title="게임 나가기"
+      message="게임이 진행 중입니다. 정말 나가시겠습니까?"
+      confirmText="나가기"
+      cancelText="취소"
+      onConfirm={confirmState.onConfirm}
+      onCancel={handleConfirmCancel}
+    />
+  );
+
   if (currentRoom) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -178,6 +216,7 @@ export default function LobbyPage() {
             onToggleReady={toggleReady}
           />
         </main>
+        {confirmDialog}
       </div>
     );
   }

@@ -95,6 +95,33 @@ describe("GameManager", () => {
       const updated = gm.removePlayer(room.id, guest.id);
       expect(updated!.status).toBe("waiting");
     });
+
+    it("finished 상태에서 플레이어가 나가면 waiting으로 전환되고 게임 상태가 정리된다", () => {
+      const room = gm.createRoom(gomokuPayload, host);
+      gm.joinRoom(room.id, guest);
+      gm.startGame(room.id);
+
+      // 5목 완성하여 게임 종료
+      const moves = [
+        { player: host.id, move: { row: 7, col: 3 } },
+        { player: guest.id, move: { row: 8, col: 3 } },
+        { player: host.id, move: { row: 7, col: 4 } },
+        { player: guest.id, move: { row: 8, col: 4 } },
+        { player: host.id, move: { row: 7, col: 5 } },
+        { player: guest.id, move: { row: 8, col: 5 } },
+        { player: host.id, move: { row: 7, col: 6 } },
+        { player: guest.id, move: { row: 8, col: 6 } },
+        { player: host.id, move: { row: 7, col: 7 } },
+      ];
+      for (const m of moves) {
+        gm.processMove(room.id, m.player, m.move);
+      }
+      expect(gm.getRoom(room.id)!.status).toBe("finished");
+
+      const updated = gm.removePlayer(room.id, guest.id);
+      expect(updated!.status).toBe("waiting");
+      expect(gm.getGameState(room.id)).toBeNull();
+    });
   });
 
   describe("toggleReady", () => {

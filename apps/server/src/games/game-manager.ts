@@ -62,8 +62,12 @@ export class GameManager {
     if (room.hostId === playerId) {
       room.hostId = room.players[0].id;
     }
-    // If game was in progress and not enough players, end it
-    if (room.status === "playing") {
+    if (room.status === "finished") {
+      room.status = "waiting";
+      this.gameStates.delete(roomId);
+      this.holdemInstances.delete(roomId);
+      this.minesweeperInstances.delete(roomId);
+    } else if (room.status === "playing") {
       const engine = this.engines.get(room.gameType)!;
       if (room.players.length < engine.minPlayers) {
         room.status = "waiting";

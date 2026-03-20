@@ -2,6 +2,7 @@
 
 import { useEffect, useCallback } from "react";
 import { useLobbyStore } from "@/stores/lobby-store";
+import { useGameStore } from "@/stores/game-store";
 import type { GameSocket } from "@/lib/socket";
 import type { CreateRoomPayload, Room } from "@game-hub/shared-types";
 
@@ -59,11 +60,14 @@ export function useLobby(socket: GameSocket | null) {
     [socket, setCurrentRoom]
   );
 
+  const resetGame = useGameStore((s) => s.reset);
+
   const leaveRoom = useCallback(() => {
     if (!socket) return;
     socket.emit("lobby:leave-room");
     setCurrentRoom(null);
-  }, [socket, setCurrentRoom]);
+    resetGame();
+  }, [socket, setCurrentRoom, resetGame]);
 
   const toggleReady = useCallback(() => {
     if (!socket) return;

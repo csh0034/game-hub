@@ -11,11 +11,27 @@ type IOServer = Server<ClientToServerEvents, ServerToClientEvents, InterServerEv
 type IOSocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 
 export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: GameManager) {
+  function cleanupPreviousRoom() {
+    const prevRoomId = socket.data.roomId;
+    if (!prevRoomId) return;
+    socket.leave(prevRoomId);
+    socket.data.roomId = null;
+    const prevRoom = gameManager.removePlayer(prevRoomId, socket.id!);
+    if (prevRoom) {
+      io.to(prevRoomId).emit("lobby:player-left", socket.id!);
+      io.to(prevRoomId).emit("lobby:room-updated", prevRoom);
+      io.emit("lobby:room-updated", prevRoom);
+    } else {
+      io.emit("lobby:room-removed", prevRoomId);
+    }
+  }
+
   socket.on("lobby:get-rooms", (callback) => {
     callback(gameManager.getRooms());
   });
 
   socket.on("lobby:create-room", (payload, callback) => {
+    cleanupPreviousRoom();
     const player = {
       id: socket.id!,
       nickname: socket.data.nickname,
@@ -29,6 +45,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
   });
 
   socket.on("lobby:join-room", (payload, callback) => {
+    cleanupPreviousRoom();
     const player = {
       id: socket.id!,
       nickname: socket.data.nickname,

@@ -6,6 +6,9 @@ import { resolve } from "path";
 const rootPkg = JSON.parse(readFileSync(resolve(__dirname, "../../package.json"), "utf-8"));
 
 function getCommitHash(): string {
+  if (process.env.NEXT_PUBLIC_COMMIT_HASH) {
+    return process.env.NEXT_PUBLIC_COMMIT_HASH;
+  }
   try {
     return execSync("git rev-parse --short HEAD", { encoding: "utf-8" }).trim();
   } catch {

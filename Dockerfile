@@ -18,6 +18,9 @@ RUN pnpm install --frozen-lockfile
 FROM base AS builder
 WORKDIR /app
 
+ARG COMMIT_HASH=unknown
+ENV NEXT_PUBLIC_COMMIT_HASH=$COMMIT_HASH
+
 COPY . .
 RUN pnpm build
 

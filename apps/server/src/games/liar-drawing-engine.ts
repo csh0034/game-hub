@@ -27,7 +27,7 @@ export class LiarDrawingEngine implements GameEngine {
   private totalRounds: number;
 
   constructor(drawTimeSeconds = 60, totalRounds = 3) {
-    this.drawTimeSeconds = drawTimeSeconds;
+    this.drawTimeSeconds = Math.max(1, Math.min(120, drawTimeSeconds));
     this.totalRounds = totalRounds;
   }
 

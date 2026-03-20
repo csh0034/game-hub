@@ -24,7 +24,7 @@ export function CreateRoomDialog({ onCreateRoom }: CreateRoomDialogProps) {
   const [gameType, setGameType] = useState<GameType>("gomoku");
   const [minesweeperDifficulty, setMinesweeperDifficulty] = useState<MinesweeperDifficulty>("beginner");
   const [tetrisDifficulty, setTetrisDifficulty] = useState<TetrisDifficulty>("normal");
-  const [liarDrawingTime, setLiarDrawingTime] = useState<30 | 60 | 90>(60);
+  const [liarDrawingTime, setLiarDrawingTime] = useState(60);
   const [liarDrawingRounds, setLiarDrawingRounds] = useState(3);
 
   const handleCreate = async () => {
@@ -186,20 +186,16 @@ export function CreateRoomDialog({ onCreateRoom }: CreateRoomDialogProps) {
               <div className="space-y-3">
                 <div>
                   <label className="block text-sm font-medium mb-1.5">그리기 시간</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {([30, 60, 90] as const).map((time) => (
-                      <button
-                        key={time}
-                        onClick={() => setLiarDrawingTime(time)}
-                        className={`p-2 rounded-lg border text-sm text-center transition-colors ${
-                          liarDrawingTime === time
-                            ? "border-primary bg-primary/10 text-primary"
-                            : "border-border hover:border-border/80"
-                        }`}
-                      >
-                        {time}초
-                      </button>
-                    ))}
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="range"
+                      min={1}
+                      max={120}
+                      value={liarDrawingTime}
+                      onChange={(e) => setLiarDrawingTime(Number(e.target.value))}
+                      className="flex-1"
+                    />
+                    <span className="text-sm font-medium w-12 text-center">{liarDrawingTime}초</span>
                   </div>
                 </div>
                 <div>

@@ -6,7 +6,7 @@ export type RoomStatus = "waiting" | "playing" | "finished";
 export interface GameOptions {
   minesweeperDifficulty?: MinesweeperDifficulty;
   tetrisDifficulty?: TetrisDifficulty;
-  liarDrawingTime?: 30 | 60 | 90;
+  liarDrawingTime?: number;
   liarDrawingRounds?: number;
 }
 

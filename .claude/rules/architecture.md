@@ -26,7 +26,7 @@ game-hub/
 │   ├── minesweeper-engine.ts
 │   └── tetris-engine.ts
 └── socket/
-    ├── lobby-handler.ts     # lobby:* 이벤트
+    ├── lobby-handler.ts     # lobby:* + chat:* 이벤트
     ├── game-handler.ts      # game:* 이벤트
     ├── nickname-handler.ts  # player:* 이벤트 (닉네임/인증)
     └── broadcast-player-count.ts  # 접속자 수 브로드캐스트
@@ -41,13 +41,14 @@ game-hub/
 ├── components/
 │   ├── layout/navbar.tsx
 │   ├── lobby/               # 로비 UI (방 목록, 생성, 입장)
+│   ├── chat/chat-panel.tsx  # 채팅 UI (로비/방 공용)
 │   └── games/               # 게임별 UI
 │       ├── gomoku/
 │       ├── texas-holdem/
 │       ├── minesweeper/
 │       └── tetris/
-├── hooks/                   # useSocket, useLobby, useGame
-├── stores/                  # Zustand (lobby-store, game-store)
+├── hooks/                   # useSocket, useLobby, useGame, useChat
+├── stores/                  # Zustand (lobby-store, game-store, chat-store)
 └── lib/
     ├── socket.ts            # Socket.IO 클라이언트
     ├── game-registry.tsx    # GameType → lazy component 매핑
@@ -60,7 +61,7 @@ game-hub/
 
 ## 소켓 이벤트 네이밍
 
-`lobby:*` (방 CRUD), `game:*` (게임 진행), `player:*` (닉네임/인증), `chat:*` (채팅), `system:*` (시스템)
+`lobby:*` (방 CRUD), `game:*` (게임 진행), `player:*` (닉네임/인증), `chat:*` (로비 채팅, 방 채팅), `system:*` (시스템)
 
 ## 게임 추가 흐름
 

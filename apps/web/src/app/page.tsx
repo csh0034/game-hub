@@ -47,7 +47,7 @@ function nicknameStore() {
 const store = nicknameStore();
 
 export default function LobbyPage() {
-  const { socket, isConnected, playerCount } = useSocket();
+  const { socket, isConnected, playerCount, onlineNicknames } = useSocket();
   const { rooms, currentRoom, createRoom, joinRoom, leaveRoom, toggleReady } =
     useLobby(socket);
   const isNavigatingBack = useRef(false);
@@ -207,7 +207,7 @@ export default function LobbyPage() {
   if (currentRoom) {
     return (
       <div className="min-h-screen flex flex-col">
-        <Navbar isConnected={isConnected} playerCount={playerCount} nickname={nickname} onGoHome={handleGoHome} onLogout={handleLogout} />
+        <Navbar isConnected={isConnected} playerCount={playerCount} onlineNicknames={onlineNicknames} nickname={nickname} onGoHome={handleGoHome} onLogout={handleLogout} />
         <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-6">
           <RoomView
             room={currentRoom}
@@ -224,7 +224,7 @@ export default function LobbyPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar isConnected={isConnected} playerCount={playerCount} nickname={nickname} onGoHome={handleGoHome} onLogout={handleLogout} />
+      <Navbar isConnected={isConnected} playerCount={playerCount} onlineNicknames={onlineNicknames} nickname={nickname} onGoHome={handleGoHome} onLogout={handleLogout} />
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-6 space-y-8">
         <section>
           <div className="flex items-center justify-between mb-6">

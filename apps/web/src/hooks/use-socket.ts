@@ -24,13 +24,17 @@ export function useSocket() {
   const socket = useSyncExternalStore(subscribeSocket, getSocketSnapshot, () => null);
   const [isConnected, setIsConnected] = useState(false);
   const [playerCount, setPlayerCount] = useState(0);
+  const [onlineNicknames, setOnlineNicknames] = useState<string[]>([]);
   useEffect(() => {
     const s = getSocket();
     globalSocket = s;
 
     s.on("connect", () => setIsConnected(true));
     s.on("disconnect", () => setIsConnected(false));
-    s.on("system:player-count", (count) => setPlayerCount(count));
+    s.on("system:player-count", ({ count, nicknames }) => {
+      setPlayerCount(count);
+      setOnlineNicknames(nicknames);
+    });
 
     if (!s.connected) {
       s.connect();
@@ -43,5 +47,5 @@ export function useSocket() {
     };
   }, []);
 
-  return { socket, isConnected, playerCount };
+  return { socket, isConnected, playerCount, onlineNicknames };
 }

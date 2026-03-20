@@ -50,7 +50,7 @@ describe("setupNicknameHandler", () => {
     expect(callback).toHaveBeenCalledWith({ success: true });
     expect(socket.data.nickname).toBe("홍길동");
     expect(socket.data.authenticated).toBe(true);
-    expect(io.emit).toHaveBeenCalledWith("system:player-count", 1);
+    expect(io.emit).toHaveBeenCalledWith("system:player-count", { count: 1, nicknames: ["홍길동"] });
   });
 
   it("닉네임 앞뒤 공백을 제거한다", () => {
@@ -126,6 +126,6 @@ describe("setupNicknameHandler", () => {
 
     socket._trigger("player:logout");
     expect(socket.data.authenticated).toBe(false);
-    expect(io.emit).toHaveBeenLastCalledWith("system:player-count", 0);
+    expect(io.emit).toHaveBeenLastCalledWith("system:player-count", { count: 0, nicknames: [] });
   });
 });

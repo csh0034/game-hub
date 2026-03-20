@@ -5,12 +5,13 @@ import { Gamepad2, LogOut, Users, Wifi, WifiOff } from "lucide-react";
 interface NavbarProps {
   isConnected: boolean;
   playerCount: number;
+  onlineNicknames?: string[];
   nickname: string;
   onGoHome?: () => void;
   onLogout?: () => void;
 }
 
-export function Navbar({ isConnected, playerCount, nickname, onGoHome, onLogout }: NavbarProps) {
+export function Navbar({ isConnected, playerCount, onlineNicknames = [], nickname, onGoHome, onLogout }: NavbarProps) {
   return (
     <nav className="border-b border-border bg-card/80 backdrop-blur-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -31,9 +32,21 @@ export function Navbar({ isConnected, playerCount, nickname, onGoHome, onLogout 
           </button>
 
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Users className="w-4 h-4" />
-              <span>{playerCount} 온라인</span>
+            <div className="relative group">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground cursor-default">
+                <Users className="w-4 h-4" />
+                <span>{playerCount} 온라인</span>
+              </div>
+              {onlineNicknames.length > 0 && (
+                <div className="absolute top-full right-0 mt-2 w-48 bg-popover border border-border rounded-lg shadow-lg py-2 px-3 hidden group-hover:block z-50">
+                  <p className="text-xs font-medium text-muted-foreground mb-1.5">접속 중인 플레이어</p>
+                  <ul className="space-y-0.5">
+                    {onlineNicknames.map((name) => (
+                      <li key={name} className="text-sm text-foreground truncate">{name}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-2">

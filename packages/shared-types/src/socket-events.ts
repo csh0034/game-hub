@@ -51,7 +51,7 @@ export interface ServerToClientEvents {
   "chat:message": (data: { playerId: string; nickname: string; message: string; timestamp: number }) => void;
 
   // System
-  "system:player-count": (count: number) => void;
+  "system:player-count": (data: { count: number; nicknames: string[] }) => void;
 }
 
 export interface InterServerEvents {

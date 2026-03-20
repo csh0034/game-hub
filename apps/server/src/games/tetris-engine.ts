@@ -110,7 +110,7 @@ interface PlayerInternalState {
 export class TetrisEngine implements GameEngine {
   gameType = "tetris" as const;
   minPlayers = 1;
-  maxPlayers = 2;
+  maxPlayers = 6;
 
   private playerStates: Map<string, PlayerInternalState> = new Map();
   private playerIds: string[] = [];
@@ -210,7 +210,7 @@ export class TetrisEngine implements GameEngine {
     });
 
     if (alive.length === 1) {
-      return { winnerId: alive[0], reason: "상대가 탑아웃되었습니다" };
+      return { winnerId: alive[0], reason: "마지막까지 생존했습니다!" };
     }
     if (alive.length === 0) {
       return { winnerId: null, reason: "무승부" };

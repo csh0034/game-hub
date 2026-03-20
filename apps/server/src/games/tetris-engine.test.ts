@@ -22,9 +22,9 @@ describe("TetrisEngine", () => {
     expect(engine.gameType).toBe("tetris");
   });
 
-  it("1~2인 게임이다", () => {
+  it("1~6인 게임이다", () => {
     expect(engine.minPlayers).toBe(1);
-    expect(engine.maxPlayers).toBe(2);
+    expect(engine.maxPlayers).toBe(6);
   });
 
   describe("initState", () => {

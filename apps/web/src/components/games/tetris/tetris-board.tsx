@@ -131,7 +131,7 @@ function PlayerBoard({
   isMe: boolean;
   nickname?: string;
 }) {
-  const cellSize = isMe ? 28 : 20;
+  const cellSize = isMe ? 32 : 18;
 
   // Build display grid with active piece and ghost
   const displayGrid: { type: TetrominoType | null; isGhost: boolean; isActive: boolean }[][] =
@@ -243,9 +243,9 @@ export default function TetrisBoard({ roomId }: GameComponentProps) {
   const state = gameState as TetrisPublicState | null;
   const myId = socket?.id;
   const myBoard = state && myId ? state.players[myId] : null;
-  const opponentEntry = state && myId
-    ? Object.entries(state.players).find(([id]) => id !== myId)
-    : null;
+  const opponentEntries = state && myId
+    ? Object.entries(state.players).filter(([id]) => id !== myId)
+    : [];
 
   // Tick timer
   useEffect(() => {
@@ -330,16 +330,16 @@ export default function TetrisBoard({ roomId }: GameComponentProps) {
       )}
 
       {/* Boards */}
-      <div className={`flex ${state.mode === "versus" ? "gap-8" : ""} items-start`}>
+      <div className={`flex ${state.mode === "versus" ? "gap-6" : ""} items-start flex-wrap justify-center`}>
         <div className="relative">
           <PlayerBoard board={myBoard} isMe={true} />
         </div>
 
-        {opponentEntry && (
-          <div className="relative">
-            <PlayerBoard board={opponentEntry[1]} isMe={false} nickname="상대" />
+        {opponentEntries.map(([id, board], i) => (
+          <div key={id} className="relative">
+            <PlayerBoard board={board} isMe={false} nickname={`상대 ${opponentEntries.length > 1 ? i + 1 : ""}`} />
           </div>
-        )}
+        ))}
       </div>
 
       {/* Controls hint */}

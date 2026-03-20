@@ -39,7 +39,7 @@ pnpm --filter web lint                 # 웹 린트
 | 오목 (Gomoku) | `docs/games/gomoku.md` | 2인, 15×15 보드, 5목 먼저 완성 시 승리. 금수 없음, 장목 허용 |
 | 텍사스 홀덤 (Texas Hold'em) | `docs/games/texas-holdem.md` | 2~8인, 홀카드 2장 + 커뮤니티 5장으로 최고 5장 조합 승부. 시작칩 1000, SB/BB 10/20 |
 | 지뢰찾기 (Minesweeper) | `docs/games/minesweeper.md` | 1인, 초급(9×9)/중급(16×16)/고급(16×30) 난이도. 모든 안전한 칸을 열면 승리. 첫 클릭 안전 보장 |
-| 테트리스 (Tetris) | `docs/games/tetris.md` | 1~2인, 10×20 보드, 7-bag 랜덤, SRS 벽차기, 대전 시 쓰레기 줄 공격 |
+| 테트리스 (Tetris) | `docs/games/tetris.md` | 1~6인, 10×20 보드, 7-bag 랜덤, SRS 벽차기, 대전 시 쓰레기 줄 공격 |
 | 라이어 드로잉 (Liar Drawing) | `docs/games/liar-drawing.md` | 3~8인, 소셜 디덕션 그림 게임. **미구현** — 규칙 문서만 존재 |
 
 ## 규칙 파일 안내

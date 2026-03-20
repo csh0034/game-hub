@@ -8,7 +8,7 @@ interface ChatPanelProps {
   messages: ChatMessage[];
   onSendMessage: (message: string) => void;
   placeholder?: string;
-  myPlayerId?: string;
+  myNickname?: string;
 }
 
 function formatTime(timestamp: number): string {
@@ -20,7 +20,7 @@ export function ChatPanel({
   messages,
   onSendMessage,
   placeholder = "메시지를 입력하세요...",
-  myPlayerId,
+  myNickname,
 }: ChatPanelProps) {
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -66,7 +66,7 @@ export function ChatPanel({
           </p>
         )}
         {messages.map((msg, idx) => {
-          const isMe = msg.playerId === myPlayerId;
+          const isMe = msg.nickname === myNickname;
           return (
             <div key={idx} className={`text-sm ${isMe ? "text-right" : ""}`}>
               <span className="text-muted-foreground text-xs mr-1">

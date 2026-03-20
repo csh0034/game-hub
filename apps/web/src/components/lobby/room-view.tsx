@@ -66,6 +66,7 @@ function PlayerLeftOverlay({
 interface RoomViewProps {
   room: Room;
   socket: GameSocket | null;
+  nickname: string;
   onLeave: () => void;
   onLeaveImmediate: () => void;
   onToggleReady: () => void;
@@ -73,7 +74,7 @@ interface RoomViewProps {
   onSendRoomMessage: (message: string) => void;
 }
 
-export function RoomView({ room, socket, onLeave, onLeaveImmediate, onToggleReady, roomMessages, onSendRoomMessage }: RoomViewProps) {
+export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, onToggleReady, roomMessages, onSendRoomMessage }: RoomViewProps) {
   const { gameState, gameResult, playerLeftInfo, startGame, requestRematch, setPlayerLeftInfo } = useGame(socket);
   const [chatOpen, setChatOpen] = useState(false);
   const config = GAME_CONFIGS[room.gameType];
@@ -161,7 +162,7 @@ export function RoomView({ room, socket, onLeave, onLeaveImmediate, onToggleRead
                 messages={roomMessages}
                 onSendMessage={onSendRoomMessage}
                 placeholder="게임 채팅..."
-                myPlayerId={socket?.id ?? undefined}
+                myNickname={nickname}
               />
             </div>
           )}
@@ -255,7 +256,7 @@ export function RoomView({ room, socket, onLeave, onLeaveImmediate, onToggleRead
           messages={roomMessages}
           onSendMessage={onSendRoomMessage}
           placeholder="방 채팅..."
-          myPlayerId={socket?.id ?? undefined}
+          myNickname={nickname}
         />
       </div>
     </div>

@@ -223,6 +223,7 @@ export default function LobbyPage() {
           <RoomView
             room={currentRoom}
             socket={socket}
+            nickname={nickname}
             onLeave={handleLeaveRoom}
             onLeaveImmediate={doLeaveRoom}
             onToggleReady={toggleReady}
@@ -265,7 +266,7 @@ export default function LobbyPage() {
               messages={lobbyMessages}
               onSendMessage={sendLobbyMessage}
               placeholder="로비 채팅..."
-              myPlayerId={socket?.id ?? undefined}
+              myNickname={nickname ?? undefined}
             />
           </aside>
         </div>

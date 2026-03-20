@@ -210,7 +210,8 @@ export class TetrisEngine implements GameEngine {
     });
 
     if (alive.length === 1) {
-      return { winnerId: alive[0], reason: "마지막까지 생존했습니다!" };
+      const winnerScore = this.playerStates.get(alive[0])?.score ?? 0;
+      return { winnerId: alive[0], reason: `점수: ${winnerScore}` };
     }
     if (alive.length === 0) {
       return { winnerId: null, reason: "무승부" };

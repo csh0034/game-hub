@@ -119,7 +119,13 @@ export function RoomView({ room, socket, onLeave, onLeaveImmediate, onToggleRead
 
         {gameResult && (
           <div className="bg-card border border-primary/30 rounded-lg p-4 text-center">
-            <p className="text-lg font-bold">{gameResult.reason}</p>
+            <p className="text-lg font-bold">
+              {gameResult.winnerId
+                ? gameResult.winnerId === socket?.id
+                  ? "승리 하였습니다."
+                  : "패배 하였습니다."
+                : gameResult.reason}
+            </p>
           </div>
         )}
 

@@ -329,20 +329,6 @@ export default function TetrisBoard({ roomId }: GameComponentProps) {
 
   return (
     <div className="flex flex-col items-center gap-4 p-4">
-      {/* Game result overlay */}
-      {gameResult && (
-        <div className="bg-card border border-border rounded-lg p-4 text-center">
-          <div className="text-lg font-bold mb-1">
-            {gameResult.winnerId === myId ? "승리!" : gameResult.winnerId ? "패배" : "게임 오버"}
-          </div>
-          <div className="text-sm text-muted-foreground">
-            {gameResult.winnerId && gameResult.winnerId !== myId
-              ? "상대가 끝까지 생존했습니다."
-              : gameResult.reason}
-          </div>
-        </div>
-      )}
-
       {/* Boards */}
       <div className="flex items-start gap-6">
         {/* My board */}

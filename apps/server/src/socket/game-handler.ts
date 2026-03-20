@@ -98,59 +98,70 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
     });
   }
 
-  function startLiarDrawingNextRound(roomId: string) {
+  function advanceLiarDrawingRound(roomId: string) {
     const liarEngine = gameManager.getLiarDrawingEngine(roomId);
     if (!liarEngine) return;
 
+    const room = gameManager.getRoom(roomId);
+    const state = gameManager.getGameState(roomId) as LiarDrawingPublicState | null;
+    if (!room || !state || room.status !== "playing") return;
+    if (state.phase !== "round-result") return;
+
+    const result = gameManager.processMove(roomId, room.hostId, { type: "phase-ready" });
+    if (!result) return;
+
+    const newState = result.state as LiarDrawingPublicState;
+    io.to(roomId).emit("game:state-updated", newState);
+
+    if (newState.phase === "final-result") {
+      const gameResult = liarEngine.checkWin(newState);
+      if (gameResult) {
+        room.status = "finished";
+        io.to(roomId).emit("game:ended", gameResult);
+        io.emit("lobby:room-updated", room);
+      }
+      return;
+    }
+
+    // New round started - send private states
+    if (newState.phase === "role-reveal") {
+      for (const player of room.players) {
+        const playerSocket = io.sockets.sockets.get(player.id);
+        if (playerSocket) {
+          const isLiar = player.id === liarEngine.getLiarId();
+          playerSocket.emit("game:private-state", {
+            role: isLiar ? "liar" : "citizen",
+            keyword: isLiar ? null : liarEngine.getKeyword(),
+          });
+        }
+      }
+      // Auto-advance to drawing after 5 seconds
+      startLiarDrawingTimer(roomId, 5000, () => {
+        const currentState = gameManager.getGameState(roomId) as LiarDrawingPublicState | null;
+        const currentRoom = gameManager.getRoom(roomId);
+        if (!currentState || !currentRoom || currentRoom.status !== "playing") return;
+        if (currentState.phase !== "role-reveal") return;
+
+        const drawingState = liarEngine.startDrawingPhase(currentState);
+        gameManager.setGameState(roomId, drawingState);
+        io.to(roomId).emit("game:state-updated", drawingState);
+        startLiarDrawingTurnTimer(roomId);
+      });
+    }
+  }
+
+  function startLiarDrawingNextRound(roomId: string) {
+    const state = gameManager.getGameState(roomId) as LiarDrawingPublicState | null;
+    if (!state) return;
+
+    // Last round - skip countdown and show final result immediately
+    if (state.roundNumber >= state.totalRounds) {
+      advanceLiarDrawingRound(roomId);
+      return;
+    }
+
     startLiarDrawingTimer(roomId, 10000, () => {
-      const room = gameManager.getRoom(roomId);
-      const state = gameManager.getGameState(roomId) as LiarDrawingPublicState | null;
-      if (!room || !state || room.status !== "playing") return;
-
-      if (state.phase !== "round-result") return;
-
-      // Advance to next round or final result
-      const result = gameManager.processMove(roomId, room.hostId, { type: "phase-ready" });
-      if (!result) return;
-
-      const newState = result.state as LiarDrawingPublicState;
-      io.to(roomId).emit("game:state-updated", newState);
-
-      if (newState.phase === "final-result") {
-        const gameResult = liarEngine.checkWin(newState);
-        if (gameResult) {
-          room.status = "finished";
-          io.to(roomId).emit("game:ended", gameResult);
-          io.emit("lobby:room-updated", room);
-        }
-        return;
-      }
-
-      // New round started - send private states
-      if (newState.phase === "role-reveal") {
-        for (const player of room.players) {
-          const playerSocket = io.sockets.sockets.get(player.id);
-          if (playerSocket) {
-            const isLiar = player.id === liarEngine.getLiarId();
-            playerSocket.emit("game:private-state", {
-              role: isLiar ? "liar" : "citizen",
-              keyword: isLiar ? null : liarEngine.getKeyword(),
-            });
-          }
-        }
-        // Auto-advance to drawing after 5 seconds
-        startLiarDrawingTimer(roomId, 5000, () => {
-          const currentState = gameManager.getGameState(roomId) as LiarDrawingPublicState | null;
-          const currentRoom = gameManager.getRoom(roomId);
-          if (!currentState || !currentRoom || currentRoom.status !== "playing") return;
-          if (currentState.phase !== "role-reveal") return;
-
-          const drawingState = liarEngine.startDrawingPhase(currentState);
-          gameManager.setGameState(roomId, drawingState);
-          io.to(roomId).emit("game:state-updated", drawingState);
-          startLiarDrawingTurnTimer(roomId);
-        });
-      }
+      advanceLiarDrawingRound(roomId);
     });
   }
 

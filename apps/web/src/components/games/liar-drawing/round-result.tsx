@@ -10,14 +10,16 @@ interface RoundResultProps {
 const NEXT_ROUND_SECONDS = 10;
 
 export function RoundResult({ state }: RoundResultProps) {
+  const isLastRound = state.roundNumber >= state.totalRounds;
   const [countdown, setCountdown] = useState(NEXT_ROUND_SECONDS);
 
   useEffect(() => {
+    if (isLastRound) return;
     const interval = setInterval(() => {
       setCountdown((prev) => Math.max(0, prev - 1));
     }, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isLastRound]);
 
   const liar = state.players.find((p) => p.id === state.liarId);
   const accused = state.accusedPlayerId ? state.players.find((p) => p.id === state.accusedPlayerId) : null;
@@ -77,7 +79,11 @@ export function RoundResult({ state }: RoundResultProps) {
         </div>
       </div>
 
-      <div className="text-sm text-muted-foreground">다음 라운드까지 <span className="font-mono font-bold">{countdown}초</span></div>
+      {isLastRound ? (
+        <div className="text-sm text-muted-foreground">최종 결과를 집계 중...</div>
+      ) : (
+        <div className="text-sm text-muted-foreground">다음 라운드까지 <span className="font-mono font-bold">{countdown}초</span></div>
+      )}
     </div>
   );
 }

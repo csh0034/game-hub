@@ -186,4 +186,40 @@ describe("setupRequestHandler", () => {
       expect(callback).toHaveBeenCalledWith({ success: false, error: "커밋 해시를 입력해주세요" });
     });
   });
+
+  describe("request:delete", () => {
+    it("관리자가 요청을 삭제한다", () => {
+      setupRequestHandler(io as unknown as GameServer, socket as unknown as GameSocket);
+
+      // 먼저 요청 생성
+      const createCallback = vi.fn();
+      socket._trigger("request:create", { title: "삭제 대상", description: "설명" }, createCallback);
+      const created = createCallback.mock.calls[0][0] as FeatureRequest;
+
+      // 삭제
+      const deleteCallback = vi.fn();
+      socket._trigger("request:delete", created.id, deleteCallback);
+
+      expect(deleteCallback).toHaveBeenCalledWith({ success: true });
+      expect((io as unknown as { emit: ReturnType<typeof vi.fn> }).emit).toHaveBeenCalledWith(
+        "request:deleted",
+        created.id,
+      );
+    });
+
+    it("비관리자는 거부한다", () => {
+      const normalSocket = createMockSocket("socket-2", "NormalUser");
+      setupRequestHandler(io as unknown as GameServer, normalSocket as unknown as GameSocket);
+      const callback = vi.fn();
+      normalSocket._trigger("request:delete", "req-1", callback);
+      expect(callback).toHaveBeenCalledWith({ success: false, error: "권한이 없습니다" });
+    });
+
+    it("없는 요청 ID는 에러를 반환한다", () => {
+      setupRequestHandler(io as unknown as GameServer, socket as unknown as GameSocket);
+      const callback = vi.fn();
+      socket._trigger("request:delete", "nonexistent", callback);
+      expect(callback).toHaveBeenCalledWith({ success: false, error: "요청사항을 찾을 수 없습니다" });
+    });
+  });
 });

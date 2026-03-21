@@ -6,6 +6,7 @@ interface RequestStore {
   setRequests: (requests: FeatureRequest[]) => void;
   addRequest: (request: FeatureRequest) => void;
   updateRequest: (request: FeatureRequest) => void;
+  removeRequest: (requestId: string) => void;
 }
 
 export const useRequestStore = create<RequestStore>((set) => ({
@@ -20,5 +21,9 @@ export const useRequestStore = create<RequestStore>((set) => ({
       requests: state.requests.map((r) =>
         r.id === request.id ? request : r,
       ),
+    })),
+  removeRequest: (requestId) =>
+    set((state) => ({
+      requests: state.requests.filter((r) => r.id !== requestId),
     })),
 }));

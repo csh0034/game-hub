@@ -41,6 +41,7 @@ export interface ClientToServerEvents {
   "request:create": (payload: CreateRequestPayload, callback: (request: FeatureRequest | null, error?: string) => void) => void;
   "request:get-all": (callback: (requests: FeatureRequest[]) => void) => void;
   "request:resolve": (payload: ResolveRequestPayload, callback: (result: { success: boolean; error?: string }) => void) => void;
+  "request:delete": (requestId: string, callback: (result: { success: boolean; error?: string }) => void) => void;
 }
 
 // Server → Client
@@ -79,6 +80,7 @@ export interface ServerToClientEvents {
   // Request Board
   "request:created": (request: FeatureRequest) => void;
   "request:resolved": (request: FeatureRequest) => void;
+  "request:deleted": (requestId: string) => void;
 
   // System
   "system:player-count": (data: { count: number; players: { nickname: string; connectedAt: number }[] }) => void;

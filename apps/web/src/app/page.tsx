@@ -56,7 +56,7 @@ export default function LobbyPage() {
     useLobby(socket);
   const { lobbyMessages, roomMessages, sendLobbyMessage, sendRoomMessage, clearRoomMessages, requestLobbyHistory, requestRoomHistory } =
     useChat(socket);
-  const { requests, createRequest, resolveRequest } = useRequests(socket);
+  const { requests, createRequest, resolveRequest, deleteRequest } = useRequests(socket);
   const [activeTab, setActiveTab] = useState<"lobby" | "requests">("lobby");
   const [isAdmin, setIsAdmin] = useState(false);
   const isNavigatingBack = useRef(false);
@@ -304,6 +304,7 @@ export default function LobbyPage() {
                 requests={requests}
                 onCreateRequest={createRequest}
                 onResolveRequest={resolveRequest}
+                onDeleteRequest={deleteRequest}
                 isAdmin={isAdmin}
               />
             )}

@@ -123,4 +123,37 @@ export function setupRequestHandler(
     io.emit("request:resolved", resolved);
     callback({ success: true });
   });
+
+  socket.on("request:delete", async (requestId, callback) => {
+    if (!socket.data.authenticated) {
+      callback({ success: false, error: "인증이 필요합니다" });
+      return;
+    }
+
+    if (!isAdmin(socket.data.nickname)) {
+      callback({ success: false, error: "권한이 없습니다" });
+      return;
+    }
+
+    let request: FeatureRequest | null = null;
+    if (requestStore) {
+      request = await requestStore.getRequest(requestId);
+    } else {
+      request = inMemoryRequests.get(requestId) ?? null;
+    }
+
+    if (!request) {
+      callback({ success: false, error: "요청사항을 찾을 수 없습니다" });
+      return;
+    }
+
+    if (requestStore) {
+      await requestStore.deleteRequest(requestId);
+    } else {
+      inMemoryRequests.delete(requestId);
+    }
+
+    io.emit("request:deleted", requestId);
+    callback({ success: true });
+  });
 }

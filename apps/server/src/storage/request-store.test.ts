@@ -123,4 +123,21 @@ describe("RedisRequestStore", () => {
       );
     });
   });
+
+  describe("deleteRequest", () => {
+    it("요청을 삭제한다", async () => {
+      const pipeline = {
+        del: vi.fn().mockReturnThis(),
+        srem: vi.fn().mockReturnThis(),
+        exec: vi.fn().mockResolvedValue([]),
+      };
+      redis.pipeline.mockReturnValue(pipeline as never);
+
+      await store.deleteRequest("req-1");
+
+      expect(pipeline.del).toHaveBeenCalledWith("request:req-1");
+      expect(pipeline.srem).toHaveBeenCalledWith("requests", "req-1");
+      expect(pipeline.exec).toHaveBeenCalled();
+    });
+  });
 });

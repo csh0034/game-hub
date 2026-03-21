@@ -11,6 +11,7 @@ interface RequestBoardProps {
   requests: FeatureRequest[];
   onCreateRequest: (payload: CreateRequestPayload) => Promise<{ success: boolean; error?: string }>;
   onResolveRequest: (requestId: string, commitHash: string) => Promise<{ success: boolean; error?: string }>;
+  onDeleteRequest: (requestId: string) => Promise<{ success: boolean; error?: string }>;
   isAdmin: boolean;
 }
 
@@ -18,12 +19,23 @@ export function RequestBoard({
   requests,
   onCreateRequest,
   onResolveRequest,
+  onDeleteRequest,
   isAdmin,
 }: RequestBoardProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resolveTarget, setResolveTarget] = useState<string | null>(null);
+
+  const handleDelete = useCallback(
+    async (requestId: string) => {
+      const result = await onDeleteRequest(requestId);
+      if (!result.success) {
+        toast.error(result.error ?? "삭제에 실패했습니다");
+      }
+    },
+    [onDeleteRequest],
+  );
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -111,6 +123,7 @@ export function RequestBoard({
                 request={request}
                 isAdmin={isAdmin}
                 onResolve={setResolveTarget}
+                onDelete={handleDelete}
               />
             ))}
           </div>
@@ -130,6 +143,7 @@ export function RequestBoard({
                 request={request}
                 isAdmin={isAdmin}
                 onResolve={setResolveTarget}
+                onDelete={handleDelete}
               />
             ))}
           </div>

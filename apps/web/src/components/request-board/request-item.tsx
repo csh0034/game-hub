@@ -1,15 +1,16 @@
 "use client";
 
 import type { FeatureRequest } from "@game-hub/shared-types";
-import { Check, ExternalLink, Clock } from "lucide-react";
+import { Check, ExternalLink, Clock, Trash2 } from "lucide-react";
 
 interface RequestItemProps {
   request: FeatureRequest;
   isAdmin: boolean;
   onResolve: (requestId: string) => void;
+  onDelete: (requestId: string) => void;
 }
 
-export function RequestItem({ request, isAdmin, onResolve }: RequestItemProps) {
+export function RequestItem({ request, isAdmin, onResolve, onDelete }: RequestItemProps) {
   const isResolved = request.status === "resolved";
 
   return (
@@ -67,13 +68,24 @@ export function RequestItem({ request, isAdmin, onResolve }: RequestItemProps) {
           </div>
         </div>
 
-        {isAdmin && !isResolved && (
-          <button
-            onClick={() => onResolve(request.id)}
-            className="flex-shrink-0 px-3 py-1.5 text-xs font-medium rounded-lg bg-success/15 text-success hover:bg-success/25 transition-colors"
-          >
-            완료 처리
-          </button>
+        {isAdmin && (
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {!isResolved && (
+              <button
+                onClick={() => onResolve(request.id)}
+                className="px-3 py-1.5 text-xs font-medium rounded-lg bg-success/15 text-success hover:bg-success/25 transition-colors"
+              >
+                완료 처리
+              </button>
+            )}
+            <button
+              onClick={() => onDelete(request.id)}
+              className="p-1.5 text-xs rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+              title="삭제"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
         )}
       </div>
     </div>

@@ -6,6 +6,7 @@ export interface RequestStore {
   getRequest(id: string): Promise<FeatureRequest | null>;
   getAllRequests(): Promise<FeatureRequest[]>;
   updateRequest(request: FeatureRequest): Promise<void>;
+  deleteRequest(id: string): Promise<void>;
 }
 
 export class RedisRequestStore implements RequestStore {
@@ -72,6 +73,17 @@ export class RedisRequestStore implements RequestStore {
       await this.redis.set(`request:${request.id}`, JSON.stringify(request));
     } catch (err) {
       console.error("[request-store] failed to update request:", err);
+    }
+  }
+
+  async deleteRequest(id: string): Promise<void> {
+    try {
+      const pipeline = this.redis.pipeline();
+      pipeline.del(`request:${id}`);
+      pipeline.srem("requests", id);
+      await pipeline.exec();
+    } catch (err) {
+      console.error("[request-store] failed to delete request:", err);
     }
   }
 }

@@ -1,39 +1,52 @@
 "use client";
 
 import type { FeatureRequest } from "@game-hub/shared-types";
-import { Check, ExternalLink, Clock, Trash2 } from "lucide-react";
+import { Check, ExternalLink, Clock, Trash2, X, Play, MessageSquare } from "lucide-react";
 
 interface RequestItemProps {
   request: FeatureRequest;
   isAdmin: boolean;
+  onAccept: (requestId: string) => void;
+  onReject: (requestId: string) => void;
   onResolve: (requestId: string) => void;
   onDelete: (requestId: string) => void;
 }
 
-export function RequestItem({ request, isAdmin, onResolve, onDelete }: RequestItemProps) {
-  const isResolved = request.status === "resolved";
+const statusConfig = {
+  open: {
+    icon: <div className="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0 mt-1.5" />,
+    border: "border-border bg-card hover:border-border/80",
+    titleClass: "",
+  },
+  "in-progress": {
+    icon: <Play className="w-4 h-4 text-blue-500 flex-shrink-0" />,
+    border: "border-blue-500/30 bg-blue-500/5",
+    titleClass: "",
+  },
+  resolved: {
+    icon: <Check className="w-4 h-4 text-success flex-shrink-0" />,
+    border: "border-success/30 bg-success/5",
+    titleClass: "text-muted-foreground line-through",
+  },
+  rejected: {
+    icon: <X className="w-4 h-4 text-destructive flex-shrink-0" />,
+    border: "border-destructive/30 bg-destructive/5",
+    titleClass: "text-muted-foreground line-through",
+  },
+};
+
+export function RequestItem({ request, isAdmin, onAccept, onReject, onResolve, onDelete }: RequestItemProps) {
+  const config = statusConfig[request.status];
+  const isOpen = request.status === "open";
+  const isInProgress = request.status === "in-progress";
 
   return (
-    <div
-      className={`border rounded-lg px-4 py-3 transition-colors ${
-        isResolved
-          ? "border-success/30 bg-success/5"
-          : "border-border bg-card hover:border-border/80"
-      }`}
-    >
+    <div className={`border rounded-lg px-4 py-3 transition-colors ${config.border}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            {isResolved ? (
-              <Check className="w-4 h-4 text-success flex-shrink-0" />
-            ) : (
-              <div className="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0 mt-1.5" />
-            )}
-            <h3
-              className={`font-medium truncate ${
-                isResolved ? "text-muted-foreground line-through" : ""
-              }`}
-            >
+            {config.icon}
+            <h3 className={`font-medium truncate ${config.titleClass}`}>
               {request.title}
             </h3>
           </div>
@@ -42,13 +55,22 @@ export function RequestItem({ request, isAdmin, onResolve, onDelete }: RequestIt
             {request.description}
           </p>
 
+          {request.adminResponse && (
+            <div className="flex items-start gap-1.5 mt-2 ml-6 text-sm">
+              <MessageSquare className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0 mt-0.5" />
+              <p className="text-muted-foreground whitespace-pre-wrap break-words">
+                {request.adminResponse}
+              </p>
+            </div>
+          )}
+
           <div className="flex items-center gap-3 mt-2 ml-6 text-xs text-muted-foreground">
             <span>{request.author}</span>
             <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
               {formatTime(request.createdAt)}
             </span>
-            {isResolved && request.commitHash && (
+            {request.status === "resolved" && request.commitHash && (
               <span className="flex items-center gap-1">
                 {request.commitUrl ? (
                   <a
@@ -70,12 +92,28 @@ export function RequestItem({ request, isAdmin, onResolve, onDelete }: RequestIt
 
         {isAdmin && (
           <div className="flex items-center gap-1.5 flex-shrink-0">
-            {!isResolved && (
+            {isOpen && (
+              <button
+                onClick={() => onAccept(request.id)}
+                className="px-3 py-1.5 text-xs font-medium rounded-lg bg-blue-500/15 text-blue-500 hover:bg-blue-500/25 transition-colors"
+              >
+                진행
+              </button>
+            )}
+            {(isOpen || isInProgress) && (
               <button
                 onClick={() => onResolve(request.id)}
                 className="px-3 py-1.5 text-xs font-medium rounded-lg bg-success/15 text-success hover:bg-success/25 transition-colors"
               >
                 완료 처리
+              </button>
+            )}
+            {(isOpen || isInProgress) && (
+              <button
+                onClick={() => onReject(request.id)}
+                className="px-3 py-1.5 text-xs font-medium rounded-lg bg-destructive/15 text-destructive hover:bg-destructive/25 transition-colors"
+              >
+                거부
               </button>
             )}
             <button

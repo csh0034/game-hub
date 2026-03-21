@@ -4,6 +4,8 @@ import { useState, useCallback } from "react";
 import type { FeatureRequest, CreateRequestPayload } from "@game-hub/shared-types";
 import { Send } from "lucide-react";
 import { RequestItem } from "./request-item";
+import { AcceptDialog } from "./accept-dialog";
+import { RejectDialog } from "./reject-dialog";
 import { ResolveDialog } from "./resolve-dialog";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import { toast } from "sonner";
@@ -11,7 +13,9 @@ import { toast } from "sonner";
 interface RequestBoardProps {
   requests: FeatureRequest[];
   onCreateRequest: (payload: CreateRequestPayload) => Promise<{ success: boolean; error?: string }>;
-  onResolveRequest: (requestId: string, commitHash: string) => Promise<{ success: boolean; error?: string }>;
+  onAcceptRequest: (requestId: string, adminResponse?: string) => Promise<{ success: boolean; error?: string }>;
+  onRejectRequest: (requestId: string, adminResponse: string) => Promise<{ success: boolean; error?: string }>;
+  onResolveRequest: (requestId: string, commitHash: string, adminResponse?: string) => Promise<{ success: boolean; error?: string }>;
   onDeleteRequest: (requestId: string) => Promise<{ success: boolean; error?: string }>;
   isAdmin: boolean;
 }
@@ -19,6 +23,8 @@ interface RequestBoardProps {
 export function RequestBoard({
   requests,
   onCreateRequest,
+  onAcceptRequest,
+  onRejectRequest,
   onResolveRequest,
   onDeleteRequest,
   isAdmin,
@@ -26,6 +32,8 @@ export function RequestBoard({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [acceptTarget, setAcceptTarget] = useState<string | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<string | null>(null);
   const [resolveTarget, setResolveTarget] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
@@ -60,10 +68,36 @@ export function RequestBoard({
     [title, description, isSubmitting, onCreateRequest],
   );
 
+  const handleAccept = useCallback(
+    async (adminResponse?: string) => {
+      if (!acceptTarget) return;
+      const result = await onAcceptRequest(acceptTarget, adminResponse);
+      if (result.success) {
+        setAcceptTarget(null);
+      } else {
+        toast.error(result.error ?? "진행 처리에 실패했습니다");
+      }
+    },
+    [acceptTarget, onAcceptRequest],
+  );
+
+  const handleReject = useCallback(
+    async (adminResponse: string) => {
+      if (!rejectTarget) return;
+      const result = await onRejectRequest(rejectTarget, adminResponse);
+      if (result.success) {
+        setRejectTarget(null);
+      } else {
+        toast.error(result.error ?? "거부 처리에 실패했습니다");
+      }
+    },
+    [rejectTarget, onRejectRequest],
+  );
+
   const handleResolve = useCallback(
-    async (commitHash: string) => {
+    async (commitHash: string, adminResponse?: string) => {
       if (!resolveTarget) return;
-      const result = await onResolveRequest(resolveTarget, commitHash);
+      const result = await onResolveRequest(resolveTarget, commitHash, adminResponse);
       if (result.success) {
         setResolveTarget(null);
       } else {
@@ -74,7 +108,9 @@ export function RequestBoard({
   );
 
   const openRequests = requests.filter((r) => r.status === "open");
+  const inProgressRequests = requests.filter((r) => r.status === "in-progress");
   const resolvedRequests = requests.filter((r) => r.status === "resolved");
+  const rejectedRequests = requests.filter((r) => r.status === "rejected");
 
   return (
     <div className="space-y-6">
@@ -111,11 +147,11 @@ export function RequestBoard({
         </div>
       </form>
 
-      {/* 진행 중 목록 */}
+      {/* 요청 목록 */}
       {openRequests.length > 0 && (
         <section>
           <h3 className="text-sm font-medium text-muted-foreground mb-2">
-            진행 중 ({openRequests.length})
+            요청 ({openRequests.length})
           </h3>
           <div className="space-y-2">
             {openRequests.map((request) => (
@@ -123,6 +159,30 @@ export function RequestBoard({
                 key={request.id}
                 request={request}
                 isAdmin={isAdmin}
+                onAccept={setAcceptTarget}
+                onReject={setRejectTarget}
+                onResolve={setResolveTarget}
+                onDelete={setDeleteTarget}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* 진행중 목록 */}
+      {inProgressRequests.length > 0 && (
+        <section>
+          <h3 className="text-sm font-medium text-muted-foreground mb-2">
+            진행중 ({inProgressRequests.length})
+          </h3>
+          <div className="space-y-2">
+            {inProgressRequests.map((request) => (
+              <RequestItem
+                key={request.id}
+                request={request}
+                isAdmin={isAdmin}
+                onAccept={setAcceptTarget}
+                onReject={setRejectTarget}
                 onResolve={setResolveTarget}
                 onDelete={setDeleteTarget}
               />
@@ -143,6 +203,30 @@ export function RequestBoard({
                 key={request.id}
                 request={request}
                 isAdmin={isAdmin}
+                onAccept={setAcceptTarget}
+                onReject={setRejectTarget}
+                onResolve={setResolveTarget}
+                onDelete={setDeleteTarget}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* 거부 목록 */}
+      {rejectedRequests.length > 0 && (
+        <section>
+          <h3 className="text-sm font-medium text-muted-foreground mb-2">
+            거부 ({rejectedRequests.length})
+          </h3>
+          <div className="space-y-2">
+            {rejectedRequests.map((request) => (
+              <RequestItem
+                key={request.id}
+                request={request}
+                isAdmin={isAdmin}
+                onAccept={setAcceptTarget}
+                onReject={setRejectTarget}
                 onResolve={setResolveTarget}
                 onDelete={setDeleteTarget}
               />
@@ -158,6 +242,20 @@ export function RequestBoard({
           <p className="text-sm mt-1">첫 번째 요청을 등록해보세요!</p>
         </div>
       )}
+
+      {/* 진행 처리 다이얼로그 */}
+      <AcceptDialog
+        open={acceptTarget !== null}
+        onConfirm={handleAccept}
+        onCancel={() => setAcceptTarget(null)}
+      />
+
+      {/* 거부 다이얼로그 */}
+      <RejectDialog
+        open={rejectTarget !== null}
+        onConfirm={handleReject}
+        onCancel={() => setRejectTarget(null)}
+      />
 
       {/* 완료 처리 다이얼로그 */}
       <ResolveDialog

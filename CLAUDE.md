@@ -47,8 +47,14 @@ pnpm --filter web lint                 # 웹 린트
 
 ## 요청사항 게시판
 
-로비 내 탭으로 접근하는 기능 요청 게시판. 모든 접속자가 요청을 등록하고, 관리자가 커밋 해시 입력으로 완료 처리한다.
+로비 내 탭으로 접근하는 기능 요청 게시판. 모든 접속자가 요청을 등록하고, 관리자가 상태를 관리한다.
 
+- **상태**: `open`(요청) → `in-progress`(진행중) → `resolved`(완료) 또는 `rejected`(거부)
+  - open → in-progress: 관리자 수락 (선택적 답변)
+  - open/in-progress → resolved: 관리자 완료 처리 (커밋 해시 필수, 선택적 답변)
+  - open/in-progress → rejected: 관리자 거부 (사유 필수)
+  - rejected, resolved는 최종 상태 (되돌리기 불가, 삭제만 가능)
+- **관리자 답변**: `adminResponse` 필드 — 거부 시 필수, 수락/완료 시 선택
 - **관리자 설정**: 환경변수 `ADMIN_NICKNAMES` (서버) — 쉼표 구분, 기본값 `"admin"`. 닉네임 인증 시 서버가 `isAdmin` 응답
 - **GitHub 링크**: 환경변수 `GITHUB_REPO_URL` — 기본값 `https://github.com/csh0034/game-hub`
 - **완료 처리**: 관리자가 커밋 해시 입력 → GitHub 커밋 페이지 링크 자동 생성

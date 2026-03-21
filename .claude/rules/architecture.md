@@ -54,7 +54,7 @@ game-hub/
     ├── lobby-handler.ts     # lobby:* + chat:* 이벤트 (ChatStore 사용)
     ├── game-handler.ts      # game:* 이벤트
     ├── nickname-handler.ts  # player:* 이벤트 (SessionStore 사용, 재접속 지원)
-    ├── request-handler.ts   # request:* 이벤트 (요청사항 CRUD, 관리자 완료 처리)
+    ├── request-handler.ts   # request:* 이벤트 (요청사항 CRUD, 관리자 수락/거부/완료 처리)
     └── broadcast-player-count.ts  # 접속자 수 브로드캐스트
 ```
 
@@ -67,7 +67,7 @@ game-hub/
 - **채팅**: `chat:lobby` (LIST), `chat:room:{roomId}` (LIST) — 각 최근 50개
 - **방**: `room:{roomId}` (STRING/JSON), `rooms` (SET) — 서버 시작 시 복구
 - **세션**: `session:{socketId}` (STRING/JSON, TTL 24h), `nickname:{nickname}` (STRING) — 재접속 지원
-- **요청사항**: `request:{id}` (STRING/JSON), `requests` (SET) — 기능 요청 게시판, 커밋 해시로 완료 처리
+- **요청사항**: `request:{id}` (STRING/JSON), `requests` (SET) — 기능 요청 게시판, 4단계 상태 (open/in-progress/rejected/resolved)
 
 ## 프론트엔드 (apps/web/src)
 
@@ -77,7 +77,7 @@ game-hub/
 │   ├── layout/navbar.tsx
 │   ├── lobby/               # 로비 UI (방 목록, 생성, 입장)
 │   ├── chat/chat-panel.tsx  # 채팅 UI (로비/방 공용)
-│   ├── request-board/       # 요청사항 게시판 UI (목록, 작성, 완료 처리)
+│   ├── request-board/       # 요청사항 게시판 UI (목록, 작성, 수락/거부/완료 처리)
 │   └── games/               # 게임별 UI
 │       ├── gomoku/
 │       ├── texas-holdem/

@@ -2,6 +2,15 @@ import type Redis from "ioredis";
 import type { FeatureRequest } from "@game-hub/shared-types";
 import type { RequestStore } from "../interfaces/request-store.js";
 
+function normalizeRequest(raw: Record<string, unknown>): FeatureRequest {
+  return {
+    ...raw,
+    adminResponse: raw.adminResponse ?? null,
+    rejectedAt: raw.rejectedAt ?? null,
+    inProgressAt: raw.inProgressAt ?? null,
+  } as FeatureRequest;
+}
+
 export class RedisRequestStore implements RequestStore {
   constructor(private redis: Redis) {}
 
@@ -19,7 +28,7 @@ export class RedisRequestStore implements RequestStore {
   async getRequest(id: string): Promise<FeatureRequest | null> {
     try {
       const data = await this.redis.get(`request:${id}`);
-      return data ? (JSON.parse(data) as FeatureRequest) : null;
+      return data ? normalizeRequest(JSON.parse(data) as Record<string, unknown>) : null;
     } catch (err) {
       console.error("[request-store] failed to get request:", err);
       return null;
@@ -44,7 +53,7 @@ export class RedisRequestStore implements RequestStore {
       for (let i = 0; i < results.length; i++) {
         const [err, data] = results[i];
         if (!err && data) {
-          requests.push(JSON.parse(data as string) as FeatureRequest);
+          requests.push(normalizeRequest(JSON.parse(data as string) as Record<string, unknown>));
         } else if (!err && !data) {
           staleIds.push(ids[i]);
         }

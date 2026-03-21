@@ -56,7 +56,7 @@ export default function LobbyPage() {
     useLobby(socket);
   const { lobbyMessages, roomMessages, sendLobbyMessage, sendRoomMessage, clearRoomMessages, requestLobbyHistory, requestRoomHistory, deleteMessage } =
     useChat(socket);
-  const { requests, createRequest, resolveRequest, deleteRequest } = useRequests(socket);
+  const { requests, createRequest, acceptRequest, rejectRequest, resolveRequest, deleteRequest } = useRequests(socket);
   const [activeTab, setActiveTab] = useState<"lobby" | "requests">("lobby");
   const [isAdmin, setIsAdmin] = useState(false);
   const [githubRepoUrl, setGithubRepoUrl] = useState<string | undefined>();
@@ -305,6 +305,8 @@ export default function LobbyPage() {
               <RequestBoard
                 requests={requests}
                 onCreateRequest={createRequest}
+                onAcceptRequest={acceptRequest}
+                onRejectRequest={rejectRequest}
                 onResolveRequest={resolveRequest}
                 onDeleteRequest={deleteRequest}
                 isAdmin={isAdmin}

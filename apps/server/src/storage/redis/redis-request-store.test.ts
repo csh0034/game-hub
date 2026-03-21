@@ -25,7 +25,10 @@ const request: FeatureRequest = {
   author: "Player1",
   status: "open",
   createdAt: 1000,
+  inProgressAt: null,
+  rejectedAt: null,
   resolvedAt: null,
+  adminResponse: null,
   commitHash: null,
   commitUrl: null,
 };
@@ -65,6 +68,28 @@ describe("RedisRequestStore", () => {
       const result = await store.getRequest("req-1");
       expect(result).toEqual(request);
       expect(redis.get).toHaveBeenCalledWith("request:req-1");
+    });
+
+    it("새 필드가 없는 기존 데이터를 정규화한다", async () => {
+      const legacyRequest = {
+        id: "req-1",
+        title: "테스트 요청",
+        description: "테스트 설명",
+        author: "Player1",
+        status: "open",
+        createdAt: 1000,
+        resolvedAt: null,
+        commitHash: null,
+        commitUrl: null,
+      };
+      redis.get.mockResolvedValue(JSON.stringify(legacyRequest));
+      const result = await store.getRequest("req-1");
+      expect(result).toEqual({
+        ...legacyRequest,
+        inProgressAt: null,
+        rejectedAt: null,
+        adminResponse: null,
+      });
     });
 
     it("없는 ID에 null을 반환한다", async () => {

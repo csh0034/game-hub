@@ -1,28 +1,27 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Check } from "lucide-react";
+import { Play } from "lucide-react";
 
-interface ResolveDialogProps {
+interface AcceptDialogProps {
   open: boolean;
-  onConfirm: (commitHash: string, adminResponse?: string) => void;
+  onConfirm: (adminResponse?: string) => void;
   onCancel: () => void;
 }
 
-export function ResolveDialog({ open, onConfirm, onCancel }: ResolveDialogProps) {
+export function AcceptDialog({ open, onConfirm, onCancel }: AcceptDialogProps) {
   if (!open) return null;
 
-  return <ResolveDialogInner onConfirm={onConfirm} onCancel={onCancel} />;
+  return <AcceptDialogInner onConfirm={onConfirm} onCancel={onCancel} />;
 }
 
-function ResolveDialogInner({
+function AcceptDialogInner({
   onConfirm,
   onCancel,
-}: Omit<ResolveDialogProps, "open">) {
-  const [commitHash, setCommitHash] = useState("");
+}: Omit<AcceptDialogProps, "open">) {
   const [adminResponse, setAdminResponse] = useState("");
 
-  const handleFocus = useCallback((node: HTMLInputElement | null) => {
+  const handleFocus = useCallback((node: HTMLButtonElement | null) => {
     node?.focus();
   }, []);
 
@@ -36,9 +35,7 @@ function ResolveDialogInner({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (commitHash.trim()) {
-      onConfirm(commitHash.trim(), adminResponse.trim() || undefined);
-    }
+    onConfirm(adminResponse.trim() || undefined);
   };
 
   return (
@@ -47,26 +44,14 @@ function ResolveDialogInner({
       <div className="fixed inset-0 z-50 flex items-start justify-center pt-[30vh] p-4">
         <div className="bg-card border border-border rounded-xl p-6 w-full max-w-sm shadow-2xl">
           <div className="flex items-center gap-3 mb-4">
-            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-success/15 flex items-center justify-center">
-              <Check className="w-5 h-5 text-success" />
+            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-500/15 flex items-center justify-center">
+              <Play className="w-5 h-5 text-blue-500" />
             </div>
-            <h2 className="text-lg font-bold">요청사항 완료 처리</h2>
+            <h2 className="text-lg font-bold">요청사항 진행 처리</h2>
           </div>
 
           <form onSubmit={handleSubmit}>
             <label className="block text-sm text-muted-foreground mb-2 ml-[52px]">
-              커밋 해시를 입력해주세요
-            </label>
-            <input
-              ref={handleFocus}
-              type="text"
-              value={commitHash}
-              onChange={(e) => setCommitHash(e.target.value)}
-              placeholder="예: a1b2c3d"
-              className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary mb-3 font-mono"
-            />
-
-            <label className="block text-sm text-muted-foreground mb-2">
               답변 (선택)
             </label>
             <textarea
@@ -87,11 +72,11 @@ function ResolveDialogInner({
                 취소
               </button>
               <button
+                ref={handleFocus}
                 type="submit"
-                disabled={!commitHash.trim()}
-                className="px-4 py-2 rounded-lg text-sm font-medium bg-success hover:bg-success/90 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-500 hover:bg-blue-600 text-white transition-colors"
               >
-                완료
+                진행
               </button>
             </div>
           </form>

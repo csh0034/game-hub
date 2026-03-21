@@ -51,7 +51,10 @@ export function setupRequestHandler(
       author: socket.data.nickname,
       status: "open",
       createdAt: Date.now(),
+      inProgressAt: null,
+      rejectedAt: null,
       resolvedAt: null,
+      adminResponse: null,
       commitHash: null,
       commitUrl: null,
     };
@@ -60,6 +63,86 @@ export function setupRequestHandler(
 
     io.emit("request:created", request);
     callback(request);
+  });
+
+  socket.on("request:accept", async (payload, callback) => {
+    if (!socket.data.authenticated) {
+      callback({ success: false, error: "인증이 필요합니다" });
+      return;
+    }
+
+    if (!isAdmin(socket.data.nickname)) {
+      callback({ success: false, error: "권한이 없습니다" });
+      return;
+    }
+
+    const { requestId, adminResponse } = payload;
+    const request = await requestStore.getRequest(requestId);
+
+    if (!request) {
+      callback({ success: false, error: "요청사항을 찾을 수 없습니다" });
+      return;
+    }
+
+    if (request.status !== "open") {
+      callback({ success: false, error: "요청 상태의 항목만 수락할 수 있습니다" });
+      return;
+    }
+
+    const accepted: FeatureRequest = {
+      ...request,
+      status: "in-progress",
+      inProgressAt: Date.now(),
+      adminResponse: adminResponse?.trim() || null,
+    };
+
+    await requestStore.updateRequest(accepted);
+
+    io.emit("request:accepted", accepted);
+    callback({ success: true });
+  });
+
+  socket.on("request:reject", async (payload, callback) => {
+    if (!socket.data.authenticated) {
+      callback({ success: false, error: "인증이 필요합니다" });
+      return;
+    }
+
+    if (!isAdmin(socket.data.nickname)) {
+      callback({ success: false, error: "권한이 없습니다" });
+      return;
+    }
+
+    const { requestId, adminResponse } = payload;
+
+    if (!adminResponse?.trim()) {
+      callback({ success: false, error: "거부 사유를 입력해주세요" });
+      return;
+    }
+
+    const request = await requestStore.getRequest(requestId);
+
+    if (!request) {
+      callback({ success: false, error: "요청사항을 찾을 수 없습니다" });
+      return;
+    }
+
+    if (request.status !== "open" && request.status !== "in-progress") {
+      callback({ success: false, error: "요청 또는 진행중 상태의 항목만 거부할 수 있습니다" });
+      return;
+    }
+
+    const rejected: FeatureRequest = {
+      ...request,
+      status: "rejected",
+      rejectedAt: Date.now(),
+      adminResponse: adminResponse.trim(),
+    };
+
+    await requestStore.updateRequest(rejected);
+
+    io.emit("request:rejected", rejected);
+    callback({ success: true });
   });
 
   socket.on("request:resolve", async (payload, callback) => {
@@ -73,7 +156,7 @@ export function setupRequestHandler(
       return;
     }
 
-    const { requestId, commitHash } = payload;
+    const { requestId, commitHash, adminResponse } = payload;
     if (!commitHash?.trim()) {
       callback({ success: false, error: "커밋 해시를 입력해주세요" });
       return;
@@ -86,6 +169,11 @@ export function setupRequestHandler(
       return;
     }
 
+    if (request.status !== "open" && request.status !== "in-progress") {
+      callback({ success: false, error: "요청 또는 진행중 상태의 항목만 완료할 수 있습니다" });
+      return;
+    }
+
     const hash = commitHash.trim();
     const resolved: FeatureRequest = {
       ...request,
@@ -93,6 +181,7 @@ export function setupRequestHandler(
       resolvedAt: Date.now(),
       commitHash: hash,
       commitUrl: GITHUB_REPO_URL ? `${GITHUB_REPO_URL}/commit/${hash}` : null,
+      adminResponse: adminResponse?.trim() || request.adminResponse,
     };
 
     await requestStore.updateRequest(resolved);

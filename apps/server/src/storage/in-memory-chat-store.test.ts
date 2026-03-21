@@ -4,6 +4,7 @@ import { InMemoryChatStore } from "./in-memory-chat-store.js";
 
 function createMsg(id: number): ChatMessage {
   return {
+    id: `id-${id}`,
     playerId: `player-${id}`,
     nickname: `Player${id}`,
     message: `msg-${id}`,

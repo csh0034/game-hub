@@ -31,6 +31,7 @@ describe("setupRequestHandler", () => {
           id: "req-1",
           title: "테스트",
           description: "설명",
+          label: "feature",
           author: "admin",
           status: "open",
           createdAt: 1000,
@@ -64,13 +65,14 @@ describe("setupRequestHandler", () => {
     it("인증된 사용자가 요청을 생성한다", async () => {
       setupRequestHandler(io as unknown as GameServer, socket as unknown as GameSocket, requestStore);
       const callback = vi.fn();
-      socket._trigger("request:create", { title: "새 기능", description: "설명입니다" }, callback);
+      socket._trigger("request:create", { title: "새 기능", description: "설명입니다", label: "bug" }, callback);
 
       await vi.waitFor(() => {
         expect(callback).toHaveBeenCalledWith(
           expect.objectContaining({
             title: "새 기능",
             description: "설명입니다",
+            label: "bug",
             author: "admin",
             status: "open",
           }),
@@ -86,7 +88,7 @@ describe("setupRequestHandler", () => {
       const unauthSocket = createMockSocket("socket-2", "Player2", { authenticated: false });
       setupRequestHandler(io as unknown as GameServer, unauthSocket as unknown as GameSocket, requestStore);
       const callback = vi.fn();
-      unauthSocket._trigger("request:create", { title: "테스트", description: "설명" }, callback);
+      unauthSocket._trigger("request:create", { title: "테스트", description: "설명", label: "feature" }, callback);
 
       expect(callback).toHaveBeenCalledWith(null, "인증이 필요합니다");
     });
@@ -94,21 +96,35 @@ describe("setupRequestHandler", () => {
     it("빈 제목은 거부한다", () => {
       setupRequestHandler(io as unknown as GameServer, socket as unknown as GameSocket, requestStore);
       const callback = vi.fn();
-      socket._trigger("request:create", { title: "", description: "설명" }, callback);
+      socket._trigger("request:create", { title: "", description: "설명", label: "feature" }, callback);
       expect(callback).toHaveBeenCalledWith(null, "제목은 1~100자여야 합니다");
     });
 
     it("빈 설명은 거부한다", () => {
       setupRequestHandler(io as unknown as GameServer, socket as unknown as GameSocket, requestStore);
       const callback = vi.fn();
-      socket._trigger("request:create", { title: "제목", description: "" }, callback);
+      socket._trigger("request:create", { title: "제목", description: "", label: "feature" }, callback);
       expect(callback).toHaveBeenCalledWith(null, "설명은 1~1000자여야 합니다");
+    });
+
+    it("유효하지 않은 label은 기본값 feature로 설정한다", async () => {
+      setupRequestHandler(io as unknown as GameServer, socket as unknown as GameSocket, requestStore);
+      const callback = vi.fn();
+      socket._trigger("request:create", { title: "테스트", description: "설명", label: "invalid" as never }, callback);
+
+      await vi.waitFor(() => {
+        expect(callback).toHaveBeenCalledWith(
+          expect.objectContaining({
+            label: "feature",
+          }),
+        );
+      });
     });
 
     it("100자 초과 제목은 거부한다", () => {
       setupRequestHandler(io as unknown as GameServer, socket as unknown as GameSocket, requestStore);
       const callback = vi.fn();
-      socket._trigger("request:create", { title: "a".repeat(101), description: "설명" }, callback);
+      socket._trigger("request:create", { title: "a".repeat(101), description: "설명", label: "feature" }, callback);
       expect(callback).toHaveBeenCalledWith(null, "제목은 1~100자여야 합니다");
     });
   });
@@ -118,7 +134,7 @@ describe("setupRequestHandler", () => {
       setupRequestHandler(io as unknown as GameServer, socket as unknown as GameSocket, requestStore);
 
       const createCallback = vi.fn();
-      socket._trigger("request:create", { title: "기능 요청", description: "설명" }, createCallback);
+      socket._trigger("request:create", { title: "기능 요청", description: "설명", label: "feature" }, createCallback);
       await vi.waitFor(() => expect(createCallback).toHaveBeenCalled());
       const created = createCallback.mock.calls[0][0] as FeatureRequest;
 
@@ -142,7 +158,7 @@ describe("setupRequestHandler", () => {
       setupRequestHandler(io as unknown as GameServer, socket as unknown as GameSocket, requestStore);
 
       const createCallback = vi.fn();
-      socket._trigger("request:create", { title: "기능 요청", description: "설명" }, createCallback);
+      socket._trigger("request:create", { title: "기능 요청", description: "설명", label: "feature" }, createCallback);
       await vi.waitFor(() => expect(createCallback).toHaveBeenCalled());
       const created = createCallback.mock.calls[0][0] as FeatureRequest;
 
@@ -180,7 +196,7 @@ describe("setupRequestHandler", () => {
       setupRequestHandler(io as unknown as GameServer, socket as unknown as GameSocket, requestStore);
 
       const createCallback = vi.fn();
-      socket._trigger("request:create", { title: "기능 요청", description: "설명" }, createCallback);
+      socket._trigger("request:create", { title: "기능 요청", description: "설명", label: "feature" }, createCallback);
       await vi.waitFor(() => expect(createCallback).toHaveBeenCalled());
       const created = createCallback.mock.calls[0][0] as FeatureRequest;
 
@@ -212,7 +228,7 @@ describe("setupRequestHandler", () => {
       setupRequestHandler(io as unknown as GameServer, socket as unknown as GameSocket, requestStore);
 
       const createCallback = vi.fn();
-      socket._trigger("request:create", { title: "기능 요청", description: "설명" }, createCallback);
+      socket._trigger("request:create", { title: "기능 요청", description: "설명", label: "feature" }, createCallback);
       await vi.waitFor(() => expect(createCallback).toHaveBeenCalled());
       const created = createCallback.mock.calls[0][0] as FeatureRequest;
 
@@ -237,7 +253,7 @@ describe("setupRequestHandler", () => {
       setupRequestHandler(io as unknown as GameServer, socket as unknown as GameSocket, requestStore);
 
       const createCallback = vi.fn();
-      socket._trigger("request:create", { title: "기능 요청", description: "설명" }, createCallback);
+      socket._trigger("request:create", { title: "기능 요청", description: "설명", label: "feature" }, createCallback);
       await vi.waitFor(() => expect(createCallback).toHaveBeenCalled());
       const created = createCallback.mock.calls[0][0] as FeatureRequest;
 
@@ -281,7 +297,7 @@ describe("setupRequestHandler", () => {
       setupRequestHandler(io as unknown as GameServer, socket as unknown as GameSocket, requestStore);
 
       const createCallback = vi.fn();
-      socket._trigger("request:create", { title: "기능 요청", description: "설명" }, createCallback);
+      socket._trigger("request:create", { title: "기능 요청", description: "설명", label: "feature" }, createCallback);
       await vi.waitFor(() => expect(createCallback).toHaveBeenCalled());
       const created = createCallback.mock.calls[0][0] as FeatureRequest;
 
@@ -314,7 +330,7 @@ describe("setupRequestHandler", () => {
 
       // 먼저 요청 생성
       const createCallback = vi.fn();
-      socket._trigger("request:create", { title: "기능 요청", description: "설명" }, createCallback);
+      socket._trigger("request:create", { title: "기능 요청", description: "설명", label: "feature" }, createCallback);
 
       await vi.waitFor(() => {
         expect(createCallback).toHaveBeenCalled();
@@ -366,7 +382,7 @@ describe("setupRequestHandler", () => {
       setupRequestHandler(io as unknown as GameServer, socket as unknown as GameSocket, requestStore);
 
       const createCallback = vi.fn();
-      socket._trigger("request:create", { title: "기능 요청", description: "설명" }, createCallback);
+      socket._trigger("request:create", { title: "기능 요청", description: "설명", label: "feature" }, createCallback);
       await vi.waitFor(() => expect(createCallback).toHaveBeenCalled());
       const created = createCallback.mock.calls[0][0] as FeatureRequest;
 
@@ -390,7 +406,7 @@ describe("setupRequestHandler", () => {
 
       // 먼저 요청 생성
       const createCallback = vi.fn();
-      socket._trigger("request:create", { title: "삭제 대상", description: "설명" }, createCallback);
+      socket._trigger("request:create", { title: "삭제 대상", description: "설명", label: "feature" }, createCallback);
 
       await vi.waitFor(() => {
         expect(createCallback).toHaveBeenCalled();

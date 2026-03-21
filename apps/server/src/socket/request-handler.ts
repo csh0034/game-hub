@@ -7,6 +7,7 @@ import type {
   SocketData,
   FeatureRequest,
 } from "@game-hub/shared-types";
+import { REQUEST_LABELS } from "@game-hub/shared-types";
 import type { RequestStore } from "../storage/index.js";
 import { isAdmin } from "../admin.js";
 
@@ -44,10 +45,13 @@ export function setupRequestHandler(
       return;
     }
 
+    const label = REQUEST_LABELS.includes(payload.label) ? payload.label : "feature";
+
     const request: FeatureRequest = {
       id: randomUUID(),
       title,
       description,
+      label,
       author: socket.data.nickname,
       status: "open",
       createdAt: Date.now(),

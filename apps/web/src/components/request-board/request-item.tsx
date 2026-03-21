@@ -1,7 +1,14 @@
 "use client";
 
-import type { FeatureRequest } from "@game-hub/shared-types";
+import type { FeatureRequest, RequestLabel } from "@game-hub/shared-types";
 import { Check, ExternalLink, Clock, Trash2, X, Play, MessageSquare } from "lucide-react";
+
+const labelConfig: Record<RequestLabel, { name: string; className: string }> = {
+  feature: { name: "기능 요청", className: "bg-blue-500/15 text-blue-500" },
+  bug: { name: "버그", className: "bg-red-500/15 text-red-500" },
+  improvement: { name: "개선", className: "bg-emerald-500/15 text-emerald-500" },
+  "new-game": { name: "게임 추가", className: "bg-purple-500/15 text-purple-500" },
+};
 
 interface RequestItemProps {
   request: FeatureRequest;
@@ -46,6 +53,11 @@ export function RequestItem({ request, isAdmin, onAccept, onReject, onResolve, o
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             {config.icon}
+            {request.label && labelConfig[request.label] && (
+              <span className={`px-1.5 py-0.5 text-[10px] font-medium rounded-full flex-shrink-0 ${labelConfig[request.label].className}`}>
+                {labelConfig[request.label].name}
+              </span>
+            )}
             <h3 className={`font-medium truncate ${config.titleClass}`}>
               {request.title}
             </h3>

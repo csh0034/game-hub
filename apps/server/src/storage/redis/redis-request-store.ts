@@ -5,6 +5,7 @@ import type { RequestStore } from "../interfaces/request-store.js";
 function normalizeRequest(raw: Record<string, unknown>): FeatureRequest {
   return {
     ...raw,
+    label: raw.label ?? "feature",
     adminResponse: raw.adminResponse ?? null,
     rejectedAt: raw.rejectedAt ?? null,
     inProgressAt: raw.inProgressAt ?? null,

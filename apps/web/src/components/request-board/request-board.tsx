@@ -1,8 +1,15 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import type { FeatureRequest, CreateRequestPayload } from "@game-hub/shared-types";
+import type { FeatureRequest, CreateRequestPayload, RequestLabel } from "@game-hub/shared-types";
 import { Send } from "lucide-react";
+
+const labelOptions: { value: RequestLabel; name: string; color: string }[] = [
+  { value: "feature", name: "기능 요청", color: "bg-blue-500/15 text-blue-500 border-blue-500/30" },
+  { value: "bug", name: "버그", color: "bg-red-500/15 text-red-500 border-red-500/30" },
+  { value: "improvement", name: "개선", color: "bg-emerald-500/15 text-emerald-500 border-emerald-500/30" },
+  { value: "new-game", name: "게임 추가", color: "bg-purple-500/15 text-purple-500 border-purple-500/30" },
+];
 import { RequestItem } from "./request-item";
 import { AcceptDialog } from "./accept-dialog";
 import { RejectDialog } from "./reject-dialog";
@@ -31,6 +38,7 @@ export function RequestBoard({
 }: RequestBoardProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [label, setLabel] = useState<RequestLabel>("feature");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [acceptTarget, setAcceptTarget] = useState<string | null>(null);
   const [rejectTarget, setRejectTarget] = useState<string | null>(null);
@@ -55,17 +63,19 @@ export function RequestBoard({
       const result = await onCreateRequest({
         title: title.trim(),
         description: description.trim(),
+        label,
       });
       setIsSubmitting(false);
 
       if (result.success) {
         setTitle("");
         setDescription("");
+        setLabel("feature");
       } else {
         toast.error(result.error ?? "요청 생성에 실패했습니다");
       }
     },
-    [title, description, isSubmitting, onCreateRequest],
+    [title, description, label, isSubmitting, onCreateRequest],
   );
 
   const handleAccept = useCallback(
@@ -135,7 +145,23 @@ export function RequestBoard({
           rows={3}
           className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none"
         />
-        <div className="flex justify-end">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            {labelOptions.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setLabel(opt.value)}
+                className={`px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ${
+                  label === opt.value
+                    ? opt.color
+                    : "border-border text-muted-foreground hover:border-border/80"
+                }`}
+              >
+                {opt.name}
+              </button>
+            ))}
+          </div>
           <button
             type="submit"
             disabled={!title.trim() || !description.trim() || isSubmitting}

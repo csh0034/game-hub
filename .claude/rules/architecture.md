@@ -68,7 +68,7 @@ game-hub/
 - **채팅**: `chat:lobby` (LIST), `chat:room:{roomId}` (LIST) — 각 최근 50개
 - **방**: `room:{roomId}` (STRING/JSON), `rooms` (SET) — 서버 시작 시 복구
 - **세션**: `session:{socketId}` (STRING/JSON, TTL 24h), `nickname:{nickname}` (STRING) — 재접속 지원
-- **요청사항**: `request:{id}` (STRING/JSON), `requests` (SET) — 기능 요청 게시판, 4단계 상태 (open/in-progress/rejected/resolved)
+- **요청사항**: `request:{id}` (STRING/JSON), `requests` (SET) — 기능 요청 게시판, 라벨 4종 (feature/bug/improvement/new-game), 4단계 상태 (open/in-progress/rejected/resolved)
 
 ## 프론트엔드 (apps/web/src)
 

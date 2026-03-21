@@ -7,6 +7,7 @@ function createRequest(id: string, createdAt: number): FeatureRequest {
     id,
     title: `요청-${id}`,
     description: `설명-${id}`,
+    label: "feature",
     author: "Player1",
     status: "open",
     createdAt,

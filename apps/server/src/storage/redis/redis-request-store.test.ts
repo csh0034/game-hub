@@ -22,6 +22,7 @@ const request: FeatureRequest = {
   id: "req-1",
   title: "테스트 요청",
   description: "테스트 설명",
+  label: "feature",
   author: "Player1",
   status: "open",
   createdAt: 1000,
@@ -86,6 +87,7 @@ describe("RedisRequestStore", () => {
       const result = await store.getRequest("req-1");
       expect(result).toEqual({
         ...legacyRequest,
+        label: "feature",
         inProgressAt: null,
         rejectedAt: null,
         adminResponse: null,

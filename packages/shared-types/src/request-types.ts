@@ -1,9 +1,14 @@
 export type RequestStatus = "open" | "in-progress" | "rejected" | "resolved";
 
+export type RequestLabel = "feature" | "bug" | "improvement" | "new-game";
+
+export const REQUEST_LABELS: readonly RequestLabel[] = ["feature", "bug", "improvement", "new-game"] as const;
+
 export interface FeatureRequest {
   id: string;
   title: string;
   description: string;
+  label: RequestLabel;
   author: string;
   status: RequestStatus;
   createdAt: number;
@@ -18,6 +23,7 @@ export interface FeatureRequest {
 export interface CreateRequestPayload {
   title: string;
   description: string;
+  label: RequestLabel;
 }
 
 export interface AcceptRequestPayload {

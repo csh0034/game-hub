@@ -59,6 +59,7 @@ export default function LobbyPage() {
   const { requests, createRequest, resolveRequest, deleteRequest } = useRequests(socket);
   const [activeTab, setActiveTab] = useState<"lobby" | "requests">("lobby");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [githubRepoUrl, setGithubRepoUrl] = useState<string | undefined>();
   const isNavigatingBack = useRef(false);
   const [confirmState, setConfirmState] = useState<{
     open: boolean;
@@ -82,6 +83,7 @@ export default function LobbyPage() {
         setIsAdmin(false);
       } else {
         setIsAdmin(result.isAdmin ?? false);
+        setGithubRepoUrl(result.githubRepoUrl);
         requestLobbyHistory();
       }
     });
@@ -226,7 +228,7 @@ export default function LobbyPage() {
   if (currentRoom) {
     return (
       <div className="min-h-screen flex flex-col">
-        <Navbar isConnected={isConnected} playerCount={playerCount} onlinePlayers={onlinePlayers} nickname={nickname} onGoHome={handleGoHome} onLogout={handleLogout} />
+        <Navbar isConnected={isConnected} playerCount={playerCount} onlinePlayers={onlinePlayers} nickname={nickname} githubRepoUrl={githubRepoUrl} onGoHome={handleGoHome} onLogout={handleLogout} />
         <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-6">
           <RoomView
             room={currentRoom}
@@ -246,7 +248,7 @@ export default function LobbyPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar isConnected={isConnected} playerCount={playerCount} onlinePlayers={onlinePlayers} nickname={nickname} onGoHome={handleGoHome} onLogout={handleLogout} />
+      <Navbar isConnected={isConnected} playerCount={playerCount} onlinePlayers={onlinePlayers} nickname={nickname} githubRepoUrl={githubRepoUrl} onGoHome={handleGoHome} onLogout={handleLogout} />
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-6">
         <div className={`lg:grid lg:gap-6 ${activeTab === "lobby" ? "lg:grid-cols-[1fr_320px]" : ""}`}>
           <div className="space-y-8">

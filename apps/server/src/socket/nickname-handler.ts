@@ -10,6 +10,8 @@ import type { SessionStore } from "../storage/index.js";
 import type { GameManager } from "../games/game-manager.js";
 import { isAdmin } from "../admin.js";
 
+const GITHUB_REPO_URL = process.env.GITHUB_REPO_URL || "https://github.com/csh0034/game-hub";
+
 type GameServer = Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 type GameSocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 
@@ -78,7 +80,7 @@ export function setupNicknameHandler(
     }
 
     broadcastAuthenticatedCount(io);
-    callback({ success: true, isAdmin: isAdmin(trimmed) });
+    callback({ success: true, isAdmin: isAdmin(trimmed), githubRepoUrl: GITHUB_REPO_URL });
   });
 
   socket.on("player:logout", async () => {

@@ -12,6 +12,7 @@ interface NavbarProps {
   playerCount: number;
   onlinePlayers?: OnlinePlayer[];
   nickname: string;
+  githubRepoUrl?: string;
   onGoHome?: () => void;
   onLogout?: () => void;
 }
@@ -22,26 +23,40 @@ function formatTime(timestamp: number): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
-export function Navbar({ isConnected, playerCount, onlinePlayers = [], nickname, onGoHome, onLogout }: NavbarProps) {
+export function Navbar({ isConnected, playerCount, onlinePlayers = [], nickname, githubRepoUrl, onGoHome, onLogout }: NavbarProps) {
   return (
     <nav className="border-b border-border bg-card/80 backdrop-blur-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <button
-            onClick={onGoHome}
-            className="flex items-center gap-3"
-          >
-            <div className="w-9 h-9 bg-gradient-to-br from-primary to-purple-500 rounded-lg flex items-center justify-center">
-              <Gamepad2 className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
-              Game Hub
-            </span>
-            <span className="text-xs text-muted-foreground">
-              v{process.env.NEXT_PUBLIC_APP_VERSION}
-              <span className="ml-1 opacity-60">({process.env.NEXT_PUBLIC_COMMIT_HASH})</span>
-            </span>
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onGoHome}
+              className="flex items-center gap-3"
+            >
+              <div className="w-9 h-9 bg-gradient-to-br from-primary to-purple-500 rounded-lg flex items-center justify-center">
+                <Gamepad2 className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-xl font-bold bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
+                Game Hub
+              </span>
+            </button>
+            {githubRepoUrl ? (
+              <a
+                href={githubRepoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                v{process.env.NEXT_PUBLIC_APP_VERSION}
+                <span className="ml-1 opacity-60">({process.env.NEXT_PUBLIC_COMMIT_HASH})</span>
+              </a>
+            ) : (
+              <span className="text-xs text-muted-foreground">
+                v{process.env.NEXT_PUBLIC_APP_VERSION}
+                <span className="ml-1 opacity-60">({process.env.NEXT_PUBLIC_COMMIT_HASH})</span>
+              </span>
+            )}
+          </div>
 
           <div className="flex items-center gap-4">
             <div className="relative group">

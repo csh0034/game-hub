@@ -28,7 +28,7 @@ export interface ClientToServerEvents {
   // Player
   "player:set-nickname": (
     nickname: string,
-    callback: (result: { success: boolean; error?: string; isAdmin?: boolean }) => void,
+    callback: (result: { success: boolean; error?: string; isAdmin?: boolean; githubRepoUrl?: string }) => void,
   ) => void;
   "player:logout": () => void;
 

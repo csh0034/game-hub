@@ -32,7 +32,14 @@ export function GameCardGrid({ onCreateRoom }: GameCardGridProps) {
   const handleQuickCreate = async (gameType: GameType) => {
     const config = GAME_CONFIGS[gameType];
     if (config.disabled) return;
-    await onCreateRoom({ name: `${config.name} 방`, gameType });
+    const payload: CreateRoomPayload = { name: `${config.name} 방`, gameType };
+    if (gameType === "tetris") {
+      payload.gameOptions = { tetrisDifficulty: "normal" };
+    }
+    if (gameType === "liar-drawing") {
+      payload.gameOptions = { liarDrawingTime: 60, liarDrawingRounds: 3 };
+    }
+    await onCreateRoom(payload);
   };
 
   const handleMinesweeperCreate = async (difficulty: MinesweeperDifficulty) => {

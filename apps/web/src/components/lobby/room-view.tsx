@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState, useCallback } from "react";
 import type { Room, ChatMessage } from "@game-hub/shared-types";
-import { GAME_CONFIGS } from "@game-hub/shared-types";
+import { GAME_CONFIGS, MINESWEEPER_DIFFICULTY_CONFIGS, TETRIS_DIFFICULTY_CONFIGS } from "@game-hub/shared-types";
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { useGame } from "@/hooks/use-game";
 import { GameRenderer } from "@/lib/game-registry";
@@ -226,6 +226,48 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
           )}
         </div>
       </div>
+
+      {room.gameOptions && (
+        <div className="bg-card border border-border rounded-xl p-6">
+          <h2 className="text-lg font-semibold mb-3">게임 옵션</h2>
+          <div className="space-y-2 text-sm">
+            {room.gameType === "minesweeper" && room.gameOptions.minesweeperDifficulty && (() => {
+              const diff = MINESWEEPER_DIFFICULTY_CONFIGS[room.gameOptions.minesweeperDifficulty!];
+              return (
+                <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
+                  <span className="text-muted-foreground">난이도</span>
+                  <span className="font-medium">{diff.label} ({diff.rows}×{diff.cols} · 💣{diff.mineCount})</span>
+                </div>
+              );
+            })()}
+            {room.gameType === "tetris" && room.gameOptions.tetrisDifficulty && (() => {
+              const diff = TETRIS_DIFFICULTY_CONFIGS[room.gameOptions.tetrisDifficulty!];
+              return (
+                <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
+                  <span className="text-muted-foreground">난이도</span>
+                  <span className="font-medium">{diff.label} (Lv.{diff.startLevel} · {diff.initialInterval}ms)</span>
+                </div>
+              );
+            })()}
+            {room.gameType === "liar-drawing" && (
+              <>
+                {room.gameOptions.liarDrawingTime != null && (
+                  <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
+                    <span className="text-muted-foreground">그리기 시간</span>
+                    <span className="font-medium">{room.gameOptions.liarDrawingTime}초</span>
+                  </div>
+                )}
+                {room.gameOptions.liarDrawingRounds != null && (
+                  <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
+                    <span className="text-muted-foreground">라운드 수</span>
+                    <span className="font-medium">{room.gameOptions.liarDrawingRounds}라운드</span>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="flex gap-3">
         {isHost ? (

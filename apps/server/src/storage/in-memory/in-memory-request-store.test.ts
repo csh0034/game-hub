@@ -10,7 +10,10 @@ function createRequest(id: string, createdAt: number): FeatureRequest {
     author: "Player1",
     status: "open",
     createdAt,
+    inProgressAt: null,
+    rejectedAt: null,
     resolvedAt: null,
+    adminResponse: null,
     commitHash: null,
     commitUrl: null,
   };

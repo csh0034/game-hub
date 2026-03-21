@@ -15,7 +15,7 @@ import { setupNicknameHandler } from "./socket/nickname-handler.js";
 import { broadcastAuthenticatedCount } from "./socket/broadcast-player-count.js";
 import { GameManager } from "./games/game-manager.js";
 import { parseCorsOrigin } from "./cors.js";
-import { getRedisClient, closeRedis, createStorage } from "./storage/index.js";
+import { connectRedis, closeRedis, createStorage } from "./storage/index.js";
 import type { ChatStore, SessionStore } from "./storage/index.js";
 
 const PORT = parseInt(process.env.PORT || "3001", 10);
@@ -46,14 +46,16 @@ async function bootstrap() {
   let gameManager: GameManager;
 
   try {
-    const redis = getRedisClient();
+    const redis = await connectRedis();
     const storage = createStorage(redis);
     chatStore = storage.chatStore;
     sessionStore = storage.sessionStore;
     gameManager = new GameManager(storage.roomStore);
     await gameManager.loadRoomsFromStore();
-  } catch (err) {
-    console.warn("[bootstrap] Redis unavailable, running in memory-only mode:", err);
+    console.log("[bootstrap] Redis connected, persistence enabled");
+  } catch {
+    console.warn("[bootstrap] Redis unavailable, running in memory-only mode");
+    await closeRedis();
     gameManager = new GameManager();
   }
 

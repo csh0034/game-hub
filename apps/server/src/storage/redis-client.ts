@@ -19,6 +19,12 @@ export function getRedisClient(): Redis {
   return client;
 }
 
+export async function connectRedis(): Promise<Redis> {
+  const redis = getRedisClient();
+  await redis.ping();
+  return redis;
+}
+
 export async function closeRedis(): Promise<void> {
   if (client) {
     await client.quit();

@@ -9,7 +9,7 @@ import { RedisSessionStore } from "./session-store.js";
 export type { ChatStore } from "./chat-store.js";
 export type { RoomStore } from "./room-store.js";
 export type { SessionStore } from "./session-store.js";
-export { getRedisClient, closeRedis } from "./redis-client.js";
+export { getRedisClient, connectRedis, closeRedis } from "./redis-client.js";
 
 export function createStorage(redis: Redis): {
   chatStore: ChatStore;

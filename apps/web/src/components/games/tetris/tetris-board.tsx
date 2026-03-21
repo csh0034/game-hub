@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, memo, useCallback } from "react";
 import { useGame } from "@/hooks/use-game";
 import { useSocket } from "@/hooks/use-socket";
 import { useGameStore } from "@/stores/game-store";
+import { useLobbyStore } from "@/stores/lobby-store";
 import { useShallow } from "zustand/react/shallow";
 import type {
   TetrisPublicState,
@@ -297,6 +298,7 @@ export default function TetrisBoard({ roomId }: GameComponentProps) {
   const { gameResult, makeMove } = useGame(socket);
 
   const myId = socket?.id;
+  const roomPlayers = useLobbyStore((s) => s.currentRoom?.players ?? []);
 
   // Phase 2: Zustand selectors for fine-grained subscriptions
   const myBoard = useGameStore((s) => {
@@ -421,7 +423,7 @@ export default function TetrisBoard({ roomId }: GameComponentProps) {
                   board={board}
                   cellSize={opponentCellSize}
                   compact
-                  nickname={`상대 ${opponentEntries.length > 1 ? i + 1 : ""}`}
+                  nickname={roomPlayers.find((p) => p.id === id)?.nickname ?? `상대 ${i + 1}`}
                 />
               </div>
             ))}

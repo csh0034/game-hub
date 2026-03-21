@@ -262,7 +262,7 @@ export default function LobbyPage() {
                     : "border-transparent text-muted-foreground hover:text-foreground"
                 }`}
               >
-                게임 로비
+                로비
               </button>
               <button
                 onClick={() => setActiveTab("requests")}

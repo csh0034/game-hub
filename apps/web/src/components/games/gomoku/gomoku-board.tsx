@@ -13,7 +13,7 @@ const BOARD_PX = CELL_SIZE * (BOARD_SIZE - 1) + PADDING * 2;
 
 export default function GomokuBoard({ roomId }: GameComponentProps) {
   const { socket } = useSocket();
-  const { gameState, makeMove } = useGame(socket);
+  const { gameState, gameResult, makeMove } = useGame(socket);
 
   const state = gameState as GomokuState | null;
 
@@ -21,13 +21,13 @@ export default function GomokuBoard({ roomId }: GameComponentProps) {
   const [elapsedTime, setElapsedTime] = useState(0);
 
   useEffect(() => {
-    if (!state) return;
+    if (!state || gameResult) return;
     const interval = setInterval(() => {
       setRemainingTime(Math.max(0, 15 - (Date.now() - state.turnStartedAt) / 1000));
       setElapsedTime(Math.floor((Date.now() - state.gameStartedAt) / 1000));
     }, 200);
     return () => clearInterval(interval);
-  }, [state?.turnStartedAt, state?.gameStartedAt, state]);
+  }, [state?.turnStartedAt, state?.gameStartedAt, state, gameResult]);
 
   if (!state) return null;
 

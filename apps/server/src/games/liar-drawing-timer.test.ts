@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { startLiarDrawingTimer, clearLiarDrawingTimer } from "../liar-drawing-timer.js";
+import { startLiarDrawingTimer, clearLiarDrawingTimer } from "./liar-drawing-timer.js";
 
 describe("LiarDrawingTimer", () => {
   beforeEach(() => {

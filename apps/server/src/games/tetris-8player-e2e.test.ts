@@ -14,11 +14,11 @@ import {
   type Room,
   type GameResult,
 } from "@game-hub/shared-types";
-import { GameManager } from "../game-manager.js";
-import { setupLobbyHandler } from "../../socket/lobby-handler.js";
-import { setupGameHandler } from "../../socket/game-handler.js";
-import { setupNicknameHandler } from "../../socket/nickname-handler.js";
-import { broadcastAuthenticatedCount } from "../../socket/broadcast-player-count.js";
+import { GameManager } from "./game-manager.js";
+import { setupLobbyHandler } from "../socket/lobby-handler.js";
+import { setupGameHandler } from "../socket/game-handler.js";
+import { setupNicknameHandler } from "../socket/nickname-handler.js";
+import { broadcastAuthenticatedCount } from "../socket/broadcast-player-count.js";
 
 const NUM_PLAYERS = 8;
 const TEST_TIMEOUT = 30_000;

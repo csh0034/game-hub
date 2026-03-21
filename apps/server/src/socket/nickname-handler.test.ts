@@ -1,47 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { Server, Socket } from "socket.io";
-import type {
-  ClientToServerEvents,
-  ServerToClientEvents,
-  InterServerEvents,
-  SocketData,
-} from "@game-hub/shared-types";
 import { setupNicknameHandler } from "./nickname-handler.js";
-
-type GameServer = Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
-type GameSocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
-
-function createMockSocket(id: string, nickname: string) {
-  const handlers = new Map<string, (...args: unknown[]) => void>();
-  return {
-    id,
-    data: { playerId: id, nickname, roomId: null, authenticated: false },
-    on: vi.fn((event: string, handler: (...args: unknown[]) => void) => {
-      handlers.set(event, handler);
-    }),
-    join: vi.fn(),
-    leave: vi.fn(),
-    _trigger: (event: string, ...args: unknown[]) => {
-      handlers.get(event)?.(...args);
-    },
-  } as unknown as GameSocket & { _trigger: (event: string, ...args: unknown[]) => void };
-}
-
-function createMockIo(sockets: GameSocket[]): GameServer {
-  const socketMap = new Map(sockets.map((s) => [s.id, s]));
-  return {
-    sockets: { sockets: socketMap },
-    emit: vi.fn(),
-  } as unknown as GameServer;
-}
+import { createMockSocket, createMockIo } from "./socket-test-helpers.js";
 
 describe("setupNicknameHandler", () => {
-  let socket: GameSocket & { _trigger: (event: string, ...args: unknown[]) => void };
-  let io: GameServer;
+  let socket: ReturnType<typeof createMockSocket>;
+  let io: ReturnType<typeof createMockIo>;
 
   beforeEach(() => {
-    socket = createMockSocket("socket-1", "Player_sock") as GameSocket & { _trigger: (event: string, ...args: unknown[]) => void };
-    io = createMockIo([socket]);
+    socket = createMockSocket("socket-1", "Player_sock", { authenticated: false });
+    io = createMockIo({ sockets: [socket] });
     setupNicknameHandler(io, socket);
   });
 
@@ -99,8 +66,8 @@ describe("setupNicknameHandler", () => {
   });
 
   it("중복 닉네임을 거부한다", () => {
-    const otherSocket = createMockSocket("socket-2", "홍길동");
-    io = createMockIo([socket, otherSocket]);
+    const otherSocket = createMockSocket("socket-2", "홍길동", { authenticated: false });
+    io = createMockIo({ sockets: [socket, otherSocket] });
     setupNicknameHandler(io, socket);
 
     const callback = vi.fn();
@@ -115,7 +82,7 @@ describe("setupNicknameHandler", () => {
 
   it("자기 자신의 닉네임과 같은 값으로 변경할 수 있다", () => {
     socket.data.nickname = "홍길동";
-    io = createMockIo([socket]);
+    io = createMockIo({ sockets: [socket] });
     setupNicknameHandler(io, socket);
 
     const callback = vi.fn();

@@ -1,52 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { Server, Socket } from "socket.io";
-import type {
-  ClientToServerEvents,
-  ServerToClientEvents,
-  InterServerEvents,
-  SocketData,
-  FeatureRequest,
-} from "@game-hub/shared-types";
+import type { FeatureRequest } from "@game-hub/shared-types";
 import { setupRequestHandler } from "./request-handler.js";
-
-type GameServer = Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
-type GameSocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
-
-function createMockSocket(id: string, nickname: string, authenticated = true) {
-  const handlers = new Map<string, (...args: unknown[]) => void>();
-  return {
-    id,
-    data: {
-      playerId: id,
-      nickname,
-      roomId: null as string | null,
-      authenticated,
-      authenticatedAt: Date.now(),
-    },
-    on: vi.fn((event: string, handler: (...args: unknown[]) => void) => {
-      handlers.set(event, handler);
-    }),
-    emit: vi.fn(),
-    _trigger: (event: string, ...args: unknown[]) => {
-      handlers.get(event)?.(...args);
-    },
-  } as unknown as GameSocket & {
-    _trigger: (event: string, ...args: unknown[]) => void;
-  };
-}
-
-function createMockIo(): GameServer {
-  return {
-    emit: vi.fn(),
-  } as unknown as GameServer;
-}
+import { createMockSocket, createMockIo, type GameServer, type GameSocket } from "./socket-test-helpers.js";
 
 describe("setupRequestHandler", () => {
   let socket: ReturnType<typeof createMockSocket>;
   let io: ReturnType<typeof createMockIo>;
 
   beforeEach(() => {
-    socket = createMockSocket("socket-1", "admin");
+    socket = createMockSocket("socket-1", "admin", { authenticatedAt: Date.now() });
     io = createMockIo();
   });
 
@@ -111,7 +73,7 @@ describe("setupRequestHandler", () => {
     });
 
     it("미인증 사용자는 거부한다", () => {
-      const unauthSocket = createMockSocket("socket-2", "Player2", false);
+      const unauthSocket = createMockSocket("socket-2", "Player2", { authenticated: false });
       setupRequestHandler(io as unknown as GameServer, unauthSocket as unknown as GameSocket);
       const callback = vi.fn();
       unauthSocket._trigger("request:create", { title: "테스트", description: "설명" }, callback);

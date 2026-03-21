@@ -1,59 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { Server, Socket } from "socket.io";
-import type {
-  ClientToServerEvents,
-  ServerToClientEvents,
-  InterServerEvents,
-  SocketData,
-} from "@game-hub/shared-types";
 import { setupLobbyHandler } from "./lobby-handler.js";
 import { GameManager } from "../games/game-manager.js";
-
-type GameServer = Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
-type GameSocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
-
-function createMockSocket(id: string, nickname: string) {
-  const handlers = new Map<string, (...args: unknown[]) => void>();
-  const toEmit = vi.fn();
-  return {
-    id,
-    data: { playerId: id, nickname, roomId: null as string | null, authenticated: true },
-    on: vi.fn((event: string, handler: (...args: unknown[]) => void) => {
-      handlers.set(event, handler);
-    }),
-    join: vi.fn(),
-    leave: vi.fn(),
-    emit: vi.fn(),
-    to: vi.fn(() => ({ emit: toEmit })),
-    _trigger: (event: string, ...args: unknown[]) => {
-      handlers.get(event)?.(...args);
-    },
-    _toEmit: toEmit,
-  } as unknown as GameSocket & {
-    _trigger: (event: string, ...args: unknown[]) => void;
-    _toEmit: ReturnType<typeof vi.fn>;
-  };
-}
-
-function createMockIo(): GameServer {
-  const toEmit = vi.fn();
-  return {
-    emit: vi.fn(),
-    to: vi.fn(() => ({ emit: toEmit })),
-    _toEmit: toEmit,
-  } as unknown as GameServer & { _toEmit: ReturnType<typeof vi.fn> };
-}
+import { createMockSocket, createMockIo, type GameServer, type GameSocket } from "./socket-test-helpers.js";
 
 describe("setupLobbyHandler — game:player-left", () => {
   let socket1: ReturnType<typeof createMockSocket>;
   let socket2: ReturnType<typeof createMockSocket>;
   let io: ReturnType<typeof createMockIo>;
+
   let gameManager: GameManager;
 
   beforeEach(() => {
     socket1 = createMockSocket("socket-1", "Player1");
     socket2 = createMockSocket("socket-2", "Player2");
-    io = createMockIo();
+    io = createMockIo({ withTo: true });
     gameManager = new GameManager();
   });
 

@@ -8,17 +8,13 @@
 
 ## 파일 위치 및 네이밍
 
-소스 파일과 같은 디렉토리에 `__tests__/` 폴더를 만들거나, 소스 파일 옆에 `.test.ts(x)` 파일을 둔다.
+소스 파일 옆에 `.test.ts(x)` 파일을 둔다.
 
 ```
 games/
 ├── gomoku-engine.ts
-├── gomoku-engine.test.ts        # 옵션 A: 같은 폴더
-└── __tests__/
-    └── gomoku-engine.test.ts    # 옵션 B: __tests__ 폴더
+├── gomoku-engine.test.ts        # 같은 폴더
 ```
-
-두 패턴 중 하나를 패키지 내에서 일관되게 사용한다.
 
 ## 네이밍 컨벤션
 
@@ -85,21 +81,24 @@ describe("GomokuEngine", () => {
 
 ### Socket 핸들러 테스트
 
-Socket.IO 이벤트 핸들러는 소켓을 모킹하여 테스트한다:
+`socket/socket-test-helpers.ts`의 공통 헬퍼를 사용한다:
 
 ```typescript
-const mockSocket = {
-  id: "socket-1",
-  join: vi.fn(),
-  emit: vi.fn(),
-  to: vi.fn(() => ({ emit: vi.fn() })),
-  on: vi.fn(),
-} as unknown as Socket;
+import { createMockSocket, createMockIo, type GameServer, type GameSocket } from "./socket-test-helpers.js";
 
-const mockIo = {
-  to: vi.fn(() => ({ emit: vi.fn() })),
-} as unknown as Server;
+// 기본 (authenticated, emit/to/join/leave 포함)
+const socket = createMockSocket("socket-1", "Player1");
+
+// 옵션 커스터마이즈
+const socket2 = createMockSocket("socket-2", "Player2", { authenticated: false });
+
+// IO 모킹
+const io = createMockIo({ withTo: true });                // to().emit() 필요 시
+const io2 = createMockIo({ sockets: [socket, socket2] }); // io.sockets.sockets 필요 시
 ```
+
+- `socket._trigger(event, ...args)` — 등록된 핸들러 직접 호출
+- `socket._toEmit` / `io._toEmit` — `to().emit()` 호출 캡처
 
 ## 프론트엔드 테스트
 

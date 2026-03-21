@@ -31,10 +31,13 @@ game-hub/
 │   ├── engine-interface.ts  # GameEngine 인터페이스
 │   ├── game-manager.ts      # GameType → GameEngine 매핑 + RoomStore write-through
 │   ├── gomoku-engine.ts
+│   ├── gomoku-timer.ts      # 오목 턴 타이머
 │   ├── holdem-engine.ts
 │   ├── minesweeper-engine.ts
 │   ├── tetris-engine.ts
-│   └── liar-drawing-engine.ts
+│   ├── tetris-ticker.ts     # 테트리스 서버 틱 타이머
+│   ├── liar-drawing-engine.ts
+│   └── liar-drawing-timer.ts # 라이어 드로잉 페이즈 타이머
 └── socket/
     ├── lobby-handler.ts     # lobby:* + chat:* 이벤트 (ChatStore 사용)
     ├── game-handler.ts      # game:* 이벤트

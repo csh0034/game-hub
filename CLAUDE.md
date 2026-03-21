@@ -51,6 +51,7 @@ pnpm --filter web lint                 # 웹 린트
 - **관리자 설정**: 환경변수 `ADMIN_NICKNAMES` (서버) — 쉼표 구분, 기본값 `"admin"`. 닉네임 인증 시 서버가 `isAdmin` 응답
 - **GitHub 링크**: 환경변수 `GITHUB_REPO_URL` — 기본값 `https://github.com/csh0034/game-hub`
 - **완료 처리**: 관리자가 커밋 해시 입력 → GitHub 커밋 페이지 링크 자동 생성
+- **삭제**: 관리자가 요청사항 삭제 가능 (확인 다이얼로그 후 삭제)
 
 ## 규칙 파일 안내
 

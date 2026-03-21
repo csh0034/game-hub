@@ -77,9 +77,17 @@ interface RoomViewProps {
 export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, onToggleReady, roomMessages, onSendRoomMessage }: RoomViewProps) {
   const { gameState, gameResult, playerLeftInfo, startGame, requestRematch, setPlayerLeftInfo } = useGame(socket);
   const [chatOpen, setChatOpen] = useState(true);
+  const [lastSeenMessageCount, setLastSeenMessageCount] = useState(roomMessages.length);
   const config = GAME_CONFIGS[room.gameType];
   const isHost = socket?.id === room.hostId;
   const isPlaying = room.status === "playing" || !!gameState;
+
+  // 채팅 열린 상태에서 메시지 수 동기화
+  if (chatOpen && lastSeenMessageCount !== roomMessages.length) {
+    setLastSeenMessageCount(roomMessages.length);
+  }
+
+  const hasUnread = !chatOpen && roomMessages.length > lastSeenMessageCount;
 
   const handlePlayerLeftDismiss = useCallback(() => {
     setPlayerLeftInfo(null);
@@ -89,6 +97,13 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
     setPlayerLeftInfo(null);
     onLeaveImmediate();
   }, [setPlayerLeftInfo, onLeaveImmediate]);
+
+  const handleChatToggle = useCallback(() => {
+    setChatOpen((prev) => {
+      if (!prev) setLastSeenMessageCount(roomMessages.length);
+      return !prev;
+    });
+  }, [roomMessages.length]);
 
   if (isPlaying && gameState) {
     return (
@@ -149,11 +164,14 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
 
         <div className="mt-4">
           <button
-            onClick={() => setChatOpen((prev) => !prev)}
+            onClick={handleChatToggle}
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-2"
           >
             <MessageCircle className="w-4 h-4" />
             채팅
+            {hasUnread && !chatOpen && (
+              <span className="w-2 h-2 bg-red-500 rounded-full" />
+            )}
             {chatOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
           </button>
           {chatOpen && (
@@ -163,6 +181,7 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
                 onSendMessage={onSendRoomMessage}
                 placeholder="게임 채팅..."
                 myNickname={nickname}
+                showNewMessageButton
               />
             </div>
           )}
@@ -299,6 +318,7 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
           onSendMessage={onSendRoomMessage}
           placeholder="방 채팅..."
           myNickname={nickname}
+          showNewMessageButton
         />
       </div>
     </div>

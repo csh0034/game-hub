@@ -248,7 +248,7 @@ export default function LobbyPage() {
     <div className="min-h-screen flex flex-col">
       <Navbar isConnected={isConnected} playerCount={playerCount} onlinePlayers={onlinePlayers} nickname={nickname} onGoHome={handleGoHome} onLogout={handleLogout} />
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-6">
-        <div className="lg:grid lg:grid-cols-[1fr_320px] lg:gap-6">
+        <div className={`lg:grid lg:gap-6 ${activeTab === "lobby" ? "lg:grid-cols-[1fr_320px]" : ""}`}>
           <div className="space-y-8">
             {/* 탭 네비게이션 */}
             <div className="flex items-center gap-1 border-b border-border">
@@ -310,14 +310,16 @@ export default function LobbyPage() {
             )}
           </div>
 
-          <aside className="mt-8 lg:mt-0 h-[500px]">
-            <ChatPanel
-              messages={lobbyMessages}
-              onSendMessage={sendLobbyMessage}
-              placeholder="로비 채팅..."
-              myNickname={nickname ?? undefined}
-            />
-          </aside>
+          {activeTab === "lobby" && (
+            <aside className="mt-8 lg:mt-0 h-[500px]">
+              <ChatPanel
+                messages={lobbyMessages}
+                onSendMessage={sendLobbyMessage}
+                placeholder="로비 채팅..."
+                myNickname={nickname ?? undefined}
+              />
+            </aside>
+          )}
         </div>
       </main>
     </div>

@@ -297,10 +297,11 @@ export interface LiarDrawingPrivateState {
 }
 
 export interface LiarDrawingMove {
-  type: "draw" | "clear-canvas" | "vote" | "liar-guess" | "phase-ready";
+  type: "draw" | "clear-canvas" | "vote" | "liar-guess" | "phase-ready" | "complete-turn";
   points?: DrawPoint[];
   targetPlayerId?: string;
   guess?: string;
+  skip?: boolean;
 }
 
 export type GameState = GomokuState | HoldemPublicState | MinesweeperPublicState | TetrisPublicState | LiarDrawingPublicState;

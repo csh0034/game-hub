@@ -129,6 +129,8 @@ export class LiarDrawingEngine implements GameEngine {
         return this.processVote(s, playerId, m.targetPlayerId || "");
       case "liar-guess":
         return this.processLiarGuess(s, playerId, m.guess || "");
+      case "complete-turn":
+        return this.processCompleteTurn(s, playerId, m.skip);
       case "phase-ready":
         return this.processPhaseReady(s);
       default:
@@ -162,6 +164,18 @@ export class LiarDrawingEngine implements GameEngine {
         [playerId]: [],
       },
     };
+  }
+
+  private processCompleteTurn(state: LiarDrawingPublicState, playerId: string, skip?: boolean): LiarDrawingPublicState {
+    if (state.phase !== "drawing") return state;
+    const currentDrawerId = state.drawOrder[state.currentDrawerIndex];
+    if (playerId !== currentDrawerId) return state;
+
+    const stateToAdvance = skip
+      ? { ...state, canvases: { ...state.canvases, [playerId]: [] } }
+      : state;
+
+    return this.advanceDrawingTurn(stateToAdvance);
   }
 
   advanceDrawingTurn(state: LiarDrawingPublicState): LiarDrawingPublicState {

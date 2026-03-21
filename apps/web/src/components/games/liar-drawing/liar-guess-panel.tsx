@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { LiarDrawingPublicState } from "@game-hub/shared-types";
+import { ConfirmDialog } from "@/components/common/confirm-dialog";
 
 interface LiarGuessPanelProps {
   state: LiarDrawingPublicState;
@@ -12,6 +13,7 @@ interface LiarGuessPanelProps {
 export function LiarGuessPanel({ state, myId, onGuess }: LiarGuessPanelProps) {
   const [guess, setGuess] = useState("");
   const [remainingTime, setRemainingTime] = useState(30);
+  const [showConfirm, setShowConfirm] = useState(false);
   const isLiar = state.liarId === myId;
 
   useEffect(() => {
@@ -25,8 +27,13 @@ export function LiarGuessPanel({ state, myId, onGuess }: LiarGuessPanelProps) {
 
   const handleSubmit = () => {
     if (guess.trim() && isLiar) {
-      onGuess(guess.trim());
+      setShowConfirm(true);
     }
+  };
+
+  const handleConfirmGuess = () => {
+    onGuess(guess.trim());
+    setShowConfirm(false);
   };
 
   if (isLiar) {
@@ -58,6 +65,15 @@ export function LiarGuessPanel({ state, myId, onGuess }: LiarGuessPanelProps) {
             제출
           </button>
         </div>
+        <ConfirmDialog
+          open={showConfirm}
+          title="정답 제출"
+          message={`'${guess.trim()}'(을)를 정답으로 제출하시겠습니까?`}
+          confirmText="제출"
+          cancelText="취소"
+          onConfirm={handleConfirmGuess}
+          onCancel={() => setShowConfirm(false)}
+        />
       </div>
     );
   }

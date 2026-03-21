@@ -322,6 +322,73 @@ describe("LiarDrawingEngine", () => {
     });
   });
 
+  describe("processMove - complete-turn", () => {
+    it("현재 그리는 사람이 턴을 완료하면 다음 턴으로 넘어간다", () => {
+      const state = engine.initState(mockPlayers) as LiarDrawingPublicState;
+      const drawingState = engine.startDrawingPhase(state);
+      const currentDrawer = drawingState.drawOrder[0];
+
+      const result = engine.processMove(drawingState, currentDrawer, { type: "complete-turn" }) as LiarDrawingPublicState;
+      expect(result.currentDrawerIndex).toBe(1);
+      expect(result.phase).toBe("drawing");
+    });
+
+    it("현재 그리는 사람이 아닌 플레이어는 턴을 완료할 수 없다", () => {
+      const state = engine.initState(mockPlayers) as LiarDrawingPublicState;
+      const drawingState = engine.startDrawingPhase(state);
+      const currentDrawer = drawingState.drawOrder[0];
+      const otherPlayer = mockPlayers.find((p) => p.id !== currentDrawer)!;
+
+      const result = engine.processMove(drawingState, otherPlayer.id, { type: "complete-turn" }) as LiarDrawingPublicState;
+      expect(result.currentDrawerIndex).toBe(0);
+    });
+
+    it("skip=true이면 캔버스를 지우고 턴을 넘긴다", () => {
+      const state = engine.initState(mockPlayers) as LiarDrawingPublicState;
+      const drawingState = engine.startDrawingPhase(state);
+      const currentDrawer = drawingState.drawOrder[0];
+
+      const points = [{ x: 10, y: 10, tool: "pen" as const, color: "black" as const, thickness: 5 as const, isStart: true }];
+      const drawnState = engine.processMove(drawingState, currentDrawer, { type: "draw", points }) as LiarDrawingPublicState;
+      expect(drawnState.canvases[currentDrawer]).toHaveLength(1);
+
+      const result = engine.processMove(drawnState, currentDrawer, { type: "complete-turn", skip: true }) as LiarDrawingPublicState;
+      expect(result.canvases[currentDrawer]).toHaveLength(0);
+      expect(result.currentDrawerIndex).toBe(1);
+    });
+
+    it("skip=false이면 캔버스를 유지하고 턴을 넘긴다", () => {
+      const state = engine.initState(mockPlayers) as LiarDrawingPublicState;
+      const drawingState = engine.startDrawingPhase(state);
+      const currentDrawer = drawingState.drawOrder[0];
+
+      const points = [{ x: 10, y: 10, tool: "pen" as const, color: "black" as const, thickness: 5 as const, isStart: true }];
+      const drawnState = engine.processMove(drawingState, currentDrawer, { type: "draw", points }) as LiarDrawingPublicState;
+
+      const result = engine.processMove(drawnState, currentDrawer, { type: "complete-turn", skip: false }) as LiarDrawingPublicState;
+      expect(result.canvases[currentDrawer]).toHaveLength(1);
+      expect(result.currentDrawerIndex).toBe(1);
+    });
+
+    it("마지막 플레이어가 완료하면 투표 페이즈로 전환된다", () => {
+      const state = engine.initState(mockPlayers) as LiarDrawingPublicState;
+      const drawingState = engine.startDrawingPhase(state);
+
+      let current = drawingState;
+      for (let i = 0; i < mockPlayers.length; i++) {
+        const drawer = current.drawOrder[current.currentDrawerIndex];
+        current = engine.processMove(current, drawer, { type: "complete-turn" }) as LiarDrawingPublicState;
+      }
+      expect(current.phase).toBe("voting");
+    });
+
+    it("drawing 페이즈가 아니면 상태가 변경되지 않는다", () => {
+      const state = engine.initState(mockPlayers) as LiarDrawingPublicState;
+      const result = engine.processMove(state, state.drawOrder[0], { type: "complete-turn" }) as LiarDrawingPublicState;
+      expect(result.phase).toBe("role-reveal");
+    });
+  });
+
   describe("phase-ready", () => {
     it("round-result에서 마지막 라운드면 final-result로 전환한다", () => {
       const state = engine.initState(mockPlayers) as LiarDrawingPublicState;

@@ -431,6 +431,17 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
       // Handle liar-drawing phase transitions
       if (room?.gameType === "liar-drawing") {
         const liarState = result.state as LiarDrawingPublicState;
+        const liarMoveType = (move as { type: string; skip?: boolean }).type;
+
+        if (liarMoveType === "complete-turn") {
+          clearLiarDrawingTimer(roomId);
+          if ((move as { skip?: boolean }).skip) {
+            io.to(roomId).emit("game:clear-canvas", { playerId: socket.id! });
+          }
+          if (liarState.phase === "drawing") {
+            startLiarDrawingTurnTimer(roomId);
+          }
+        }
 
         if (liarState.phase === "liar-guess") {
           // Start 30s timer for liar to guess

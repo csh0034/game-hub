@@ -93,6 +93,7 @@ function DrawingTurn({ state, socket, isMyTurn, currentDrawerId }: DrawingTurnPr
   const [color, setColor] = useState<PenColor>("black");
   const [thickness, setThickness] = useState<PenThickness>(5);
   const [livePoints, setLivePoints] = useState<DrawPoint[]>([]);
+  const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const myCanvasPoints = state.canvases[currentDrawerId] || [];
 
   // Listen for real-time draw points and clear-canvas events
@@ -139,6 +140,16 @@ function DrawingTurn({ state, socket, isMyTurn, currentDrawerId }: DrawingTurnPr
     setLivePoints([]);
   }, [isMyTurn, socket]);
 
+  const handleCompleteTurn = useCallback(
+    (skip: boolean) => {
+      if (!isMyTurn) return;
+      socket.emit("game:move", { type: "complete-turn", skip });
+      if (skip) setLivePoints([]);
+      setShowCompleteDialog(false);
+    },
+    [isMyTurn, socket],
+  );
+
   const displayPoints = [...myCanvasPoints, ...livePoints];
 
   return (
@@ -152,15 +163,59 @@ function DrawingTurn({ state, socket, isMyTurn, currentDrawerId }: DrawingTurnPr
         onDraw={handleDraw}
       />
       {isMyTurn && (
-        <DrawingToolbar
-          tool={tool}
-          color={color}
-          thickness={thickness}
-          onToolChange={setTool}
-          onColorChange={setColor}
-          onThicknessChange={setThickness}
-          onClearCanvas={handleClearCanvas}
-        />
+        <div className="flex flex-col gap-2">
+          <DrawingToolbar
+            tool={tool}
+            color={color}
+            thickness={thickness}
+            onToolChange={setTool}
+            onColorChange={setColor}
+            onThicknessChange={setThickness}
+            onClearCanvas={handleClearCanvas}
+          />
+          <button
+            onClick={() => setShowCompleteDialog(true)}
+            className="px-3 py-1.5 rounded text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+          >
+            그리기 완료
+          </button>
+        </div>
+      )}
+
+      {showCompleteDialog && (
+        <>
+          <div className="fixed inset-0 bg-black/60 z-50" onClick={() => setShowCompleteDialog(false)} />
+          <div className="fixed inset-0 z-50 flex items-start justify-center pt-[30vh] p-4">
+            <div className="bg-card border border-border rounded-xl p-6 w-full max-w-sm shadow-2xl">
+              <h2 className="text-lg font-bold mb-2">그리기를 마치시겠습니까?</h2>
+              <p className="text-sm text-muted-foreground mb-6">
+                완료: 그림을 유지하고 턴을 넘깁니다.
+                <br />
+                스킵: 그림을 지우고 턴을 넘깁니다.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setShowCompleteDialog(false)}
+                  className="px-4 py-2 rounded-lg text-sm font-medium border border-border hover:bg-secondary transition-colors"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={() => handleCompleteTurn(true)}
+                  className="px-4 py-2 rounded-lg text-sm font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
+                >
+                  스킵
+                </button>
+                <button
+                  onClick={() => handleCompleteTurn(false)}
+                  className="px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                >
+                  완료
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

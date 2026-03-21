@@ -119,7 +119,7 @@ const MiniPiecePreview = memo(function MiniPiecePreview({ type, size = "normal" 
             return (
               <div
                 key={`${r}-${c}`}
-                className={`${cellClass} rounded-sm ${isFilled ? TETROMINO_COLORS[type] : "bg-transparent"}`}
+                className={`${cellClass} ${isFilled ? `${TETROMINO_COLORS[type]} border ${TETROMINO_BORDER_COLORS[type]}` : "bg-transparent"}`}
               />
             );
           }),

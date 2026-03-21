@@ -5,6 +5,7 @@ import { useGameStore } from "@/stores/game-store";
 import { useSocket } from "@/hooks/use-socket";
 import { useLobby } from "@/hooks/use-lobby";
 import { useChat } from "@/hooks/use-chat";
+import { useRequests } from "@/hooks/use-requests";
 import { Navbar } from "@/components/layout/navbar";
 import { NicknameForm } from "@/components/lobby/nickname-form";
 import { GameCardGrid } from "@/components/lobby/game-card-grid";
@@ -13,6 +14,7 @@ import { CreateRoomDialog } from "@/components/lobby/create-room-dialog";
 import { RoomView } from "@/components/lobby/room-view";
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
+import { RequestBoard } from "@/components/request-board/request-board";
 
 const NICKNAME_KEY = "game-hub-nickname";
 
@@ -54,6 +56,9 @@ export default function LobbyPage() {
     useLobby(socket);
   const { lobbyMessages, roomMessages, sendLobbyMessage, sendRoomMessage, clearRoomMessages, requestLobbyHistory, requestRoomHistory } =
     useChat(socket);
+  const { requests, createRequest, resolveRequest } = useRequests(socket);
+  const [activeTab, setActiveTab] = useState<"lobby" | "requests">("lobby");
+  const [isAdmin, setIsAdmin] = useState(false);
   const isNavigatingBack = useRef(false);
   const [confirmState, setConfirmState] = useState<{
     open: boolean;
@@ -74,7 +79,9 @@ export default function LobbyPage() {
     socket.emit("player:set-nickname", nickname, (result) => {
       if (!result.success) {
         store.remove();
+        setIsAdmin(false);
       } else {
+        setIsAdmin(result.isAdmin ?? false);
         requestLobbyHistory();
       }
     });
@@ -141,6 +148,7 @@ export default function LobbyPage() {
     }
     socket?.emit("player:logout");
     store.remove();
+    setIsAdmin(false);
   }, [currentRoom, leaveRoom, socket, isGameInProgress, showConfirm]);
 
   // Handle browser back button
@@ -242,23 +250,63 @@ export default function LobbyPage() {
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-6">
         <div className="lg:grid lg:grid-cols-[1fr_320px] lg:gap-6">
           <div className="space-y-8">
-            <section>
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h1 className="text-3xl font-bold">빠른 시작</h1>
-                  <p className="text-muted-foreground mt-1">
-                    게임을 클릭하면 기본 설정으로 바로 방이 만들어집니다
-                  </p>
-                </div>
-                <CreateRoomDialog onCreateRoom={wrappedCreateRoom} />
-              </div>
-              <GameCardGrid onCreateRoom={wrappedCreateRoom} />
-            </section>
+            {/* 탭 네비게이션 */}
+            <div className="flex items-center gap-1 border-b border-border">
+              <button
+                onClick={() => setActiveTab("lobby")}
+                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === "lobby"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                게임 로비
+              </button>
+              <button
+                onClick={() => setActiveTab("requests")}
+                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === "requests"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                요청사항
+                {requests.filter((r) => r.status === "open").length > 0 && (
+                  <span className="ml-1.5 px-1.5 py-0.5 text-xs rounded-full bg-primary/15 text-primary">
+                    {requests.filter((r) => r.status === "open").length}
+                  </span>
+                )}
+              </button>
+            </div>
 
-            <section>
-              <h2 className="text-2xl font-bold mb-4">열린 방 목록</h2>
-              <RoomList rooms={rooms} onJoinRoom={wrappedJoinRoom} />
-            </section>
+            {activeTab === "lobby" ? (
+              <>
+                <section>
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h1 className="text-3xl font-bold">빠른 시작</h1>
+                      <p className="text-muted-foreground mt-1">
+                        게임을 클릭하면 기본 설정으로 바로 방이 만들어집니다
+                      </p>
+                    </div>
+                    <CreateRoomDialog onCreateRoom={wrappedCreateRoom} />
+                  </div>
+                  <GameCardGrid onCreateRoom={wrappedCreateRoom} />
+                </section>
+
+                <section>
+                  <h2 className="text-2xl font-bold mb-4">열린 방 목록</h2>
+                  <RoomList rooms={rooms} onJoinRoom={wrappedJoinRoom} />
+                </section>
+              </>
+            ) : (
+              <RequestBoard
+                requests={requests}
+                onCreateRequest={createRequest}
+                onResolveRequest={resolveRequest}
+                isAdmin={isAdmin}
+              />
+            )}
           </div>
 
           <aside className="mt-8 lg:mt-0 h-[500px]">

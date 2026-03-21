@@ -1,6 +1,7 @@
 import type { Room, CreateRoomPayload, JoinRoomPayload } from "./lobby-types";
 import type { GameState, GameMove, GameResult, HoldemPrivateState, LiarDrawingPrivateState, Card, DrawPoint, TetrisPlayerUpdate } from "./game-types";
 import type { Player } from "./player-types";
+import type { FeatureRequest, CreateRequestPayload, ResolveRequestPayload } from "./request-types";
 
 export interface ChatMessage {
   playerId: string;
@@ -27,7 +28,7 @@ export interface ClientToServerEvents {
   // Player
   "player:set-nickname": (
     nickname: string,
-    callback: (result: { success: boolean; error?: string }) => void,
+    callback: (result: { success: boolean; error?: string; isAdmin?: boolean }) => void,
   ) => void;
   "player:logout": () => void;
 
@@ -35,6 +36,11 @@ export interface ClientToServerEvents {
   "chat:lobby-message": (message: string) => void;
   "chat:room-message": (message: string) => void;
   "chat:request-history": (target: "lobby" | "room", callback: (messages: ChatMessage[]) => void) => void;
+
+  // Request Board
+  "request:create": (payload: CreateRequestPayload, callback: (request: FeatureRequest | null, error?: string) => void) => void;
+  "request:get-all": (callback: (requests: FeatureRequest[]) => void) => void;
+  "request:resolve": (payload: ResolveRequestPayload, callback: (result: { success: boolean; error?: string }) => void) => void;
 }
 
 // Server → Client
@@ -69,6 +75,10 @@ export interface ServerToClientEvents {
   // Chat
   "chat:lobby-message": (data: ChatMessage) => void;
   "chat:room-message": (data: ChatMessage) => void;
+
+  // Request Board
+  "request:created": (request: FeatureRequest) => void;
+  "request:resolved": (request: FeatureRequest) => void;
 
   // System
   "system:player-count": (data: { count: number; players: { nickname: string; connectedAt: number }[] }) => void;

@@ -23,6 +23,7 @@ game-hub/
 │   ├── chat-store.ts        # 채팅 저장소 (인터페이스 + Redis 구현)
 │   ├── room-store.ts        # 방 저장소 (인터페이스 + Redis 구현)
 │   ├── session-store.ts     # 세션 저장소 (인터페이스 + Redis 구현)
+│   ├── request-store.ts     # 요청사항 저장소 (인터페이스 + Redis 구현)
 │   ├── in-memory-chat-store.ts    # 채팅 저장소 인메모리 구현
 │   ├── in-memory-session-store.ts # 세션 저장소 인메모리 구현
 │   └── index.ts             # 팩토리 + 재수출
@@ -38,6 +39,7 @@ game-hub/
     ├── lobby-handler.ts     # lobby:* + chat:* 이벤트 (ChatStore 사용)
     ├── game-handler.ts      # game:* 이벤트
     ├── nickname-handler.ts  # player:* 이벤트 (SessionStore 사용, 재접속 지원)
+    ├── request-handler.ts   # request:* 이벤트 (요청사항 CRUD, 관리자 완료 처리)
     └── broadcast-player-count.ts  # 접속자 수 브로드캐스트
 ```
 
@@ -50,6 +52,7 @@ game-hub/
 - **채팅**: `chat:lobby` (LIST), `chat:room:{roomId}` (LIST) — 각 최근 50개
 - **방**: `room:{roomId}` (STRING/JSON), `rooms` (SET) — 서버 시작 시 복구
 - **세션**: `session:{socketId}` (STRING/JSON, TTL 24h), `nickname:{nickname}` (STRING) — 재접속 지원
+- **요청사항**: `request:{id}` (STRING/JSON), `requests` (SET) — 기능 요청 게시판, 커밋 해시로 완료 처리
 
 ## 프론트엔드 (apps/web/src)
 
@@ -59,14 +62,15 @@ game-hub/
 │   ├── layout/navbar.tsx
 │   ├── lobby/               # 로비 UI (방 목록, 생성, 입장)
 │   ├── chat/chat-panel.tsx  # 채팅 UI (로비/방 공용)
+│   ├── request-board/       # 요청사항 게시판 UI (목록, 작성, 완료 처리)
 │   └── games/               # 게임별 UI
 │       ├── gomoku/
 │       ├── texas-holdem/
 │       ├── minesweeper/
 │       ├── tetris/
 │       └── liar-drawing/
-├── hooks/                   # useSocket, useLobby, useGame, useChat
-├── stores/                  # Zustand (lobby-store, game-store, chat-store)
+├── hooks/                   # useSocket, useLobby, useGame, useChat, useRequests
+├── stores/                  # Zustand (lobby-store, game-store, chat-store, request-store)
 └── lib/
     ├── socket.ts            # Socket.IO 클라이언트
     ├── game-registry.tsx    # GameType → lazy component 매핑
@@ -75,11 +79,11 @@ game-hub/
 
 ## 공유 타입 (packages/shared-types/src)
 
-`game-types.ts`, `lobby-types.ts`, `player-types.ts`, `socket-events.ts`를 `index.ts`에서 재수출. `@game-hub/shared-types`로 import.
+`game-types.ts`, `lobby-types.ts`, `player-types.ts`, `request-types.ts`, `socket-events.ts`를 `index.ts`에서 재수출. `@game-hub/shared-types`로 import.
 
 ## 소켓 이벤트 네이밍
 
-`lobby:*` (방 CRUD), `game:*` (게임 진행), `player:*` (닉네임/인증), `chat:*` (로비 채팅, 방 채팅, 이력 요청), `system:*` (시스템)
+`lobby:*` (방 CRUD), `game:*` (게임 진행), `player:*` (닉네임/인증), `chat:*` (로비 채팅, 방 채팅, 이력 요청), `request:*` (요청사항 CRUD), `system:*` (시스템)
 
 서버는 로비/방별 최근 50개 채팅 메시지를 Redis에 보관한다. 클라이언트는 로비/방 입장 시 `chat:request-history` 이벤트로 이력을 요청한다.
 

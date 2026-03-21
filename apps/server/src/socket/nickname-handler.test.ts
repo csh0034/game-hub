@@ -49,7 +49,7 @@ describe("setupNicknameHandler", () => {
     const callback = vi.fn();
     socket._trigger("player:set-nickname", "홍길동", callback);
 
-    expect(callback).toHaveBeenCalledWith({ success: true });
+    expect(callback).toHaveBeenCalledWith({ success: true, isAdmin: false });
     expect(socket.data.nickname).toBe("홍길동");
     expect(socket.data.authenticated).toBe(true);
     expect(io.emit).toHaveBeenCalledWith("system:player-count", {
@@ -62,7 +62,7 @@ describe("setupNicknameHandler", () => {
     const callback = vi.fn();
     socket._trigger("player:set-nickname", "  홍길동  ", callback);
 
-    expect(callback).toHaveBeenCalledWith({ success: true });
+    expect(callback).toHaveBeenCalledWith({ success: true, isAdmin: false });
     expect(socket.data.nickname).toBe("홍길동");
   });
 
@@ -121,7 +121,7 @@ describe("setupNicknameHandler", () => {
     const callback = vi.fn();
     socket._trigger("player:set-nickname", "홍길동", callback);
 
-    expect(callback).toHaveBeenCalledWith({ success: true });
+    expect(callback).toHaveBeenCalledWith({ success: true, isAdmin: false });
   });
 
   it("로그아웃 시 authenticated를 false로 설정하고 카운트를 갱신한다", () => {

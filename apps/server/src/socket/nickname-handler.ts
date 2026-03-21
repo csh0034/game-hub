@@ -8,6 +8,7 @@ import type {
 import { broadcastAuthenticatedCount } from "./broadcast-player-count.js";
 import type { SessionStore } from "../storage/index.js";
 import type { GameManager } from "../games/game-manager.js";
+import { isAdmin } from "../admin.js";
 
 type GameServer = Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 type GameSocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
@@ -77,7 +78,7 @@ export function setupNicknameHandler(
     }
 
     broadcastAuthenticatedCount(io);
-    callback({ success: true });
+    callback({ success: true, isAdmin: isAdmin(trimmed) });
   });
 
   socket.on("player:logout", async () => {

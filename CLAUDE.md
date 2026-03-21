@@ -44,6 +44,14 @@ pnpm --filter web lint                 # 웹 린트
 | 지뢰찾기 (Minesweeper) | `docs/games/minesweeper.md` | 1인, 초급(9×9)/중급(16×16)/고급(16×30) 난이도. 모든 안전한 칸을 열면 승리. 첫 클릭 안전 보장 |
 | 텍사스 홀덤 (Texas Hold'em) | `docs/games/texas-holdem.md` | 2~8인, 홀카드 2장 + 커뮤니티 5장으로 최고 5장 조합 승부. 시작칩 1000, SB/BB 10/20 |
 
+## 요청사항 게시판
+
+로비 내 탭으로 접근하는 기능 요청 게시판. 모든 접속자가 요청을 등록하고, 관리자가 커밋 해시 입력으로 완료 처리한다.
+
+- **관리자 설정**: 환경변수 `ADMIN_NICKNAMES` (서버) — 쉼표 구분, 기본값 `"admin"`. 닉네임 인증 시 서버가 `isAdmin` 응답
+- **GitHub 링크**: 환경변수 `GITHUB_REPO_URL` — 기본값 `https://github.com/csh0034/game-hub`
+- **완료 처리**: 관리자가 커밋 해시 입력 → GitHub 커밋 페이지 링크 자동 생성
+
 ## 규칙 파일 안내
 
 | 파일 | 내용 |

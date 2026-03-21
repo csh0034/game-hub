@@ -96,6 +96,8 @@ docker run -p 3000:3000 -p 3001:3001 \
 | `REDIS_URL` | Redis 연결 주소 | `redis://localhost:6389` |
 | `CORS_ORIGIN` | 허용 도메인 | `http://localhost:3000` |
 | `PORT` | 서버 포트 | `3001` |
+| `ADMIN_NICKNAMES` | 관리자 닉네임 (쉼표 구분) | `admin` |
+| `GITHUB_REPO_URL` | GitHub 레포 URL (커밋 링크용) | `https://github.com/csh0034/game-hub` |
 
 - 헬스체크: `GET http://localhost:3001/health`
 
@@ -107,6 +109,7 @@ docker run -p 3000:3000 -p 3001:3001 \
 - **타입 안전** — 프론트/백엔드 간 공유 TypeScript 타입
 - **확장 가능한 게임 엔진** — `GameEngine` 인터페이스 기반으로 새 게임 추가 용이
 - **게임 컴포넌트 지연 로딩** — 선택한 게임만 로드
+- **요청사항 게시판** — 기능 요청 등록 및 커밋 해시로 완료 처리, GitHub 커밋 링크 자동 생성
 - **프로덕션 보안** — Docker non-root 사용자, HEALTHCHECK 설정
 
 ## 게임 추가 방법

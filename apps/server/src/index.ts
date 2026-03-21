@@ -12,11 +12,12 @@ import {
 import { setupLobbyHandler } from "./socket/lobby-handler.js";
 import { setupGameHandler } from "./socket/game-handler.js";
 import { setupNicknameHandler } from "./socket/nickname-handler.js";
+import { setupRequestHandler } from "./socket/request-handler.js";
 import { broadcastAuthenticatedCount } from "./socket/broadcast-player-count.js";
 import { GameManager } from "./games/game-manager.js";
 import { parseCorsOrigin } from "./cors.js";
 import { connectRedis, closeRedis, createStorage, createInMemoryStorage } from "./storage/index.js";
-import type { ChatStore, SessionStore } from "./storage/index.js";
+import type { ChatStore, SessionStore, RequestStore } from "./storage/index.js";
 
 const PORT = parseInt(process.env.PORT || "3001", 10);
 
@@ -43,6 +44,7 @@ async function bootstrap() {
   // Initialize Redis storage
   let chatStore: ChatStore | undefined;
   let sessionStore: SessionStore | undefined;
+  let requestStore: RequestStore | undefined;
   let gameManager: GameManager;
 
   try {
@@ -50,6 +52,7 @@ async function bootstrap() {
     const storage = createStorage(redis);
     chatStore = storage.chatStore;
     sessionStore = storage.sessionStore;
+    requestStore = storage.requestStore;
     gameManager = new GameManager(storage.roomStore);
     await gameManager.loadRoomsFromStore();
     console.log("[bootstrap] Redis connected, persistence enabled");
@@ -77,6 +80,7 @@ async function bootstrap() {
     setupNicknameHandler(io, socket, sessionStore, gameManager);
     setupLobbyHandler(io, socket, gameManager, chatStore);
     setupGameHandler(io, socket, gameManager);
+    setupRequestHandler(io, socket, requestStore);
 
     socket.on("disconnect", async () => {
       console.log(`[disconnect] ${socket.id}`);

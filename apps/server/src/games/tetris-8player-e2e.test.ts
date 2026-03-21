@@ -19,6 +19,8 @@ import { setupLobbyHandler } from "../socket/lobby-handler.js";
 import { setupGameHandler } from "../socket/game-handler.js";
 import { setupNicknameHandler } from "../socket/nickname-handler.js";
 import { broadcastAuthenticatedCount } from "../socket/broadcast-player-count.js";
+import { InMemorySessionStore } from "../storage/in-memory/in-memory-session-store.js";
+import { InMemoryChatStore } from "../storage/in-memory/in-memory-chat-store.js";
 
 const NUM_PLAYERS = 8;
 const TEST_TIMEOUT = 30_000;
@@ -85,6 +87,8 @@ describe("Tetris 8-player E2E", () => {
     });
 
     const gameManager = new GameManager();
+    const sessionStore = new InMemorySessionStore();
+    const chatStore = new InMemoryChatStore();
 
     ioServer.on("connection", (socket) => {
       socket.data.playerId = socket.id;
@@ -92,8 +96,8 @@ describe("Tetris 8-player E2E", () => {
       socket.data.roomId = null;
       socket.data.authenticated = false;
 
-      setupNicknameHandler(ioServer, socket);
-      setupLobbyHandler(ioServer, socket, gameManager);
+      setupNicknameHandler(ioServer, socket, sessionStore, gameManager);
+      setupLobbyHandler(ioServer, socket, gameManager, chatStore);
       setupGameHandler(ioServer, socket, gameManager);
 
       socket.on("disconnect", () => {

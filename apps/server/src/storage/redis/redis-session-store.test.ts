@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { RedisSessionStore } from "./session-store.js";
+import { RedisSessionStore } from "./redis-session-store.js";
 import type { SocketData } from "@game-hub/shared-types";
 
 function createMockRedis() {

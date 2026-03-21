@@ -1,12 +1,6 @@
 import type Redis from "ioredis";
 import type { Room } from "@game-hub/shared-types";
-
-export interface RoomStore {
-  saveRoom(room: Room): Promise<void>;
-  getRoom(roomId: string): Promise<Room | null>;
-  getAllRooms(): Promise<Room[]>;
-  deleteRoom(roomId: string): Promise<void>;
-}
+import type { RoomStore } from "../interfaces/room-store.js";
 
 export class RedisRoomStore implements RoomStore {
   constructor(private redis: Redis) {}

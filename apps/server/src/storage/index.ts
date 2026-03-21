@@ -1,27 +1,25 @@
 import type Redis from "ioredis";
-import type { ChatStore } from "./chat-store.js";
-import type { RoomStore } from "./room-store.js";
-import type { SessionStore } from "./session-store.js";
-import type { RequestStore } from "./request-store.js";
-import { RedisChatStore } from "./chat-store.js";
-import { RedisRoomStore } from "./room-store.js";
-import { RedisSessionStore } from "./session-store.js";
-import { RedisRequestStore } from "./request-store.js";
-import { InMemoryChatStore } from "./in-memory-chat-store.js";
-import { InMemorySessionStore } from "./in-memory-session-store.js";
+import type { ChatStore } from "./interfaces/chat-store.js";
+import type { RoomStore } from "./interfaces/room-store.js";
+import type { SessionStore } from "./interfaces/session-store.js";
+import type { RequestStore } from "./interfaces/request-store.js";
+import { RedisChatStore, RedisRoomStore, RedisSessionStore, RedisRequestStore } from "./redis/index.js";
+import { InMemoryChatStore, InMemoryRoomStore, InMemorySessionStore, InMemoryRequestStore } from "./in-memory/index.js";
 
-export type { ChatStore } from "./chat-store.js";
-export type { RoomStore } from "./room-store.js";
-export type { SessionStore } from "./session-store.js";
-export type { RequestStore } from "./request-store.js";
+export type { ChatStore } from "./interfaces/index.js";
+export type { RoomStore } from "./interfaces/index.js";
+export type { SessionStore } from "./interfaces/index.js";
+export type { RequestStore } from "./interfaces/index.js";
 export { getRedisClient, connectRedis, closeRedis } from "./redis-client.js";
 
-export function createStorage(redis: Redis): {
+export interface Storage {
   chatStore: ChatStore;
   roomStore: RoomStore;
   sessionStore: SessionStore;
   requestStore: RequestStore;
-} {
+}
+
+export function createStorage(redis: Redis): Storage {
   return {
     chatStore: new RedisChatStore(redis),
     roomStore: new RedisRoomStore(redis),
@@ -30,12 +28,11 @@ export function createStorage(redis: Redis): {
   };
 }
 
-export function createInMemoryStorage(): {
-  chatStore: ChatStore;
-  sessionStore: SessionStore;
-} {
+export function createInMemoryStorage(): Storage {
   return {
     chatStore: new InMemoryChatStore(),
+    roomStore: new InMemoryRoomStore(),
     sessionStore: new InMemorySessionStore(),
+    requestStore: new InMemoryRequestStore(),
   };
 }

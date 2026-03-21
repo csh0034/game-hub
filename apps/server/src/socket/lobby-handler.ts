@@ -17,7 +17,7 @@ import { clearTetrisTicker } from "../games/tetris-ticker.js";
 type IOServer = Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 type IOSocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 
-export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: GameManager, chatStore?: ChatStore) {
+export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: GameManager, chatStore: ChatStore) {
   function emitPlayerLeftIfPlaying(roomId: string) {
     const room = gameManager.getRoom(roomId);
     if (room && room.status === "playing") {
@@ -44,7 +44,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
       io.to(prevRoomId).emit("lobby:room-updated", prevRoom);
       io.emit("lobby:room-updated", prevRoom);
     } else {
-      chatStore?.deleteRoomHistory(prevRoomId);
+      chatStore.deleteRoomHistory(prevRoomId);
       io.emit("lobby:room-removed", prevRoomId);
     }
   }
@@ -108,7 +108,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
       io.to(roomId).emit("lobby:room-updated", room);
       io.emit("lobby:room-updated", room);
     } else {
-      chatStore?.deleteRoomHistory(roomId);
+      chatStore.deleteRoomHistory(roomId);
       io.emit("lobby:room-removed", roomId);
     }
     socket.join("lobby");
@@ -133,7 +133,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
       message: message.slice(0, 500),
       timestamp: Date.now(),
     };
-    chatStore?.pushLobbyMessage(chatMsg);
+    chatStore.pushLobbyMessage(chatMsg);
     io.to("lobby").emit("chat:lobby-message", chatMsg);
   });
 
@@ -147,13 +147,12 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
       message: message.slice(0, 500),
       timestamp: Date.now(),
     };
-    chatStore?.pushRoomMessage(roomId, chatMsg);
+    chatStore.pushRoomMessage(roomId, chatMsg);
     io.to(roomId).emit("chat:room-message", chatMsg);
   });
 
   socket.on("chat:request-history", async (target, callback) => {
     if (!socket.data.authenticated) return callback([]);
-    if (!chatStore) return callback([]);
     if (target === "lobby") {
       callback(await chatStore.getLobbyHistory());
     } else {

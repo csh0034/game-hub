@@ -1,5 +1,5 @@
 import type { ChatMessage } from "@game-hub/shared-types";
-import type { ChatStore } from "./chat-store.js";
+import type { ChatStore } from "../interfaces/chat-store.js";
 
 const MAX_HISTORY = 50;
 

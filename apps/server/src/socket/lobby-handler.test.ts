@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { setupLobbyHandler } from "./lobby-handler.js";
 import { GameManager } from "../games/game-manager.js";
 import { createMockSocket, createMockIo, type GameServer, type GameSocket } from "./socket-test-helpers.js";
+import { InMemoryChatStore } from "../storage/in-memory/in-memory-chat-store.js";
 
 describe("setupLobbyHandler — game:player-left", () => {
   let socket1: ReturnType<typeof createMockSocket>;
@@ -9,17 +10,19 @@ describe("setupLobbyHandler — game:player-left", () => {
   let io: ReturnType<typeof createMockIo>;
 
   let gameManager: GameManager;
+  let chatStore: InMemoryChatStore;
 
   beforeEach(() => {
     socket1 = createMockSocket("socket-1", "Player1");
     socket2 = createMockSocket("socket-2", "Player2");
     io = createMockIo({ withTo: true });
     gameManager = new GameManager();
+    chatStore = new InMemoryChatStore();
   });
 
   function setupAndCreateRoom() {
-    setupLobbyHandler(io as unknown as GameServer, socket1 as unknown as GameSocket, gameManager);
-    setupLobbyHandler(io as unknown as GameServer, socket2 as unknown as GameSocket, gameManager);
+    setupLobbyHandler(io as unknown as GameServer, socket1 as unknown as GameSocket, gameManager, chatStore);
+    setupLobbyHandler(io as unknown as GameServer, socket2 as unknown as GameSocket, gameManager, chatStore);
 
     // Player1 creates a room
     const createCallback = vi.fn();
@@ -77,10 +80,10 @@ describe("setupLobbyHandler — game:player-left", () => {
 
   it("willEnd가 false인 경우 — 남은 인원이 minPlayers 이상", () => {
     // Use tetris which has minPlayers: 1
-    setupLobbyHandler(io as unknown as GameServer, socket1 as unknown as GameSocket, gameManager);
-    setupLobbyHandler(io as unknown as GameServer, socket2 as unknown as GameSocket, gameManager);
+    setupLobbyHandler(io as unknown as GameServer, socket1 as unknown as GameSocket, gameManager, chatStore);
+    setupLobbyHandler(io as unknown as GameServer, socket2 as unknown as GameSocket, gameManager, chatStore);
     const socket3 = createMockSocket("socket-3", "Player3");
-    setupLobbyHandler(io as unknown as GameServer, socket3 as unknown as GameSocket, gameManager);
+    setupLobbyHandler(io as unknown as GameServer, socket3 as unknown as GameSocket, gameManager, chatStore);
 
     // Create tetris room with 3 players
     const createCallback = vi.fn();

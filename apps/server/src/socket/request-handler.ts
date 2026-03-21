@@ -15,24 +15,14 @@ type IOSocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEv
 
 const GITHUB_REPO_URL = process.env.GITHUB_REPO_URL || "https://github.com/csh0034/game-hub";
 
-// 인메모리 폴백 (Redis 미사용 시)
-const inMemoryRequests = new Map<string, FeatureRequest>();
-
 export function setupRequestHandler(
   io: IOServer,
   socket: IOSocket,
-  requestStore?: RequestStore,
+  requestStore: RequestStore,
 ) {
   socket.on("request:get-all", async (callback) => {
-    if (requestStore) {
-      const requests = await requestStore.getAllRequests();
-      callback(requests);
-    } else {
-      const requests = Array.from(inMemoryRequests.values()).sort(
-        (a, b) => b.createdAt - a.createdAt,
-      );
-      callback(requests);
-    }
+    const requests = await requestStore.getAllRequests();
+    callback(requests);
   });
 
   socket.on("request:create", async (payload, callback) => {
@@ -66,11 +56,7 @@ export function setupRequestHandler(
       commitUrl: null,
     };
 
-    if (requestStore) {
-      await requestStore.createRequest(request);
-    } else {
-      inMemoryRequests.set(request.id, request);
-    }
+    await requestStore.createRequest(request);
 
     io.emit("request:created", request);
     callback(request);
@@ -93,12 +79,7 @@ export function setupRequestHandler(
       return;
     }
 
-    let request: FeatureRequest | null = null;
-    if (requestStore) {
-      request = await requestStore.getRequest(requestId);
-    } else {
-      request = inMemoryRequests.get(requestId) ?? null;
-    }
+    const request = await requestStore.getRequest(requestId);
 
     if (!request) {
       callback({ success: false, error: "요청사항을 찾을 수 없습니다" });
@@ -114,11 +95,7 @@ export function setupRequestHandler(
       commitUrl: GITHUB_REPO_URL ? `${GITHUB_REPO_URL}/commit/${hash}` : null,
     };
 
-    if (requestStore) {
-      await requestStore.updateRequest(resolved);
-    } else {
-      inMemoryRequests.set(resolved.id, resolved);
-    }
+    await requestStore.updateRequest(resolved);
 
     io.emit("request:resolved", resolved);
     callback({ success: true });
@@ -135,23 +112,14 @@ export function setupRequestHandler(
       return;
     }
 
-    let request: FeatureRequest | null = null;
-    if (requestStore) {
-      request = await requestStore.getRequest(requestId);
-    } else {
-      request = inMemoryRequests.get(requestId) ?? null;
-    }
+    const request = await requestStore.getRequest(requestId);
 
     if (!request) {
       callback({ success: false, error: "요청사항을 찾을 수 없습니다" });
       return;
     }
 
-    if (requestStore) {
-      await requestStore.deleteRequest(requestId);
-    } else {
-      inMemoryRequests.delete(requestId);
-    }
+    await requestStore.deleteRequest(requestId);
 
     io.emit("request:deleted", requestId);
     callback({ success: true });

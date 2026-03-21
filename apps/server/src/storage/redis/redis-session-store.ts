@@ -1,17 +1,8 @@
 import type Redis from "ioredis";
 import type { SocketData } from "@game-hub/shared-types";
+import type { SessionStore } from "../interfaces/session-store.js";
 
 const SESSION_TTL = 86400; // 24 hours
-
-export interface SessionStore {
-  saveSession(socketId: string, data: SocketData): Promise<void>;
-  getSession(socketId: string): Promise<SocketData | null>;
-  deleteSession(socketId: string): Promise<void>;
-  isNicknameTaken(nickname: string, excludeSocketId: string): Promise<boolean>;
-  reserveNickname(nickname: string, socketId: string): Promise<void>;
-  releaseNickname(nickname: string): Promise<void>;
-  findSessionByNickname(nickname: string): Promise<{ socketId: string; data: SocketData } | null>;
-}
 
 export class RedisSessionStore implements SessionStore {
   constructor(private redis: Redis) {}

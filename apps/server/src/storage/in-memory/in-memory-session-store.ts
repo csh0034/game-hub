@@ -1,5 +1,5 @@
 import type { SocketData } from "@game-hub/shared-types";
-import type { SessionStore } from "./session-store.js";
+import type { SessionStore } from "../interfaces/session-store.js";
 
 export class InMemorySessionStore implements SessionStore {
   private sessions = new Map<string, SocketData>();

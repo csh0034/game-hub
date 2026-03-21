@@ -20,13 +20,25 @@ game-hub/
 ├── cors.ts                  # CORS origin 파싱
 ├── storage/
 │   ├── redis-client.ts      # Redis 연결 싱글톤
-│   ├── chat-store.ts        # 채팅 저장소 (인터페이스 + Redis 구현)
-│   ├── room-store.ts        # 방 저장소 (인터페이스 + Redis 구현)
-│   ├── session-store.ts     # 세션 저장소 (인터페이스 + Redis 구현)
-│   ├── request-store.ts     # 요청사항 저장소 (인터페이스 + Redis 구현)
-│   ├── in-memory-chat-store.ts    # 채팅 저장소 인메모리 구현
-│   ├── in-memory-session-store.ts # 세션 저장소 인메모리 구현
-│   └── index.ts             # 팩토리 + 재수출
+│   ├── interfaces/          # 저장소 인터페이스
+│   │   ├── chat-store.ts    # ChatStore
+│   │   ├── room-store.ts    # RoomStore
+│   │   ├── session-store.ts # SessionStore
+│   │   ├── request-store.ts # RequestStore
+│   │   └── index.ts         # type re-export
+│   ├── redis/               # Redis 구현
+│   │   ├── redis-chat-store.ts
+│   │   ├── redis-room-store.ts
+│   │   ├── redis-session-store.ts
+│   │   ├── redis-request-store.ts
+│   │   └── index.ts
+│   ├── in-memory/           # 인메모리 구현 (Redis 장애 시 폴백)
+│   │   ├── in-memory-chat-store.ts
+│   │   ├── in-memory-room-store.ts
+│   │   ├── in-memory-session-store.ts
+│   │   ├── in-memory-request-store.ts
+│   │   └── index.ts
+│   └── index.ts             # Storage 타입 + 팩토리 (createStorage, createInMemoryStorage)
 ├── games/
 │   ├── engine-interface.ts  # GameEngine 인터페이스
 │   ├── game-manager.ts      # GameType → GameEngine 매핑 + RoomStore write-through
@@ -50,7 +62,7 @@ game-hub/
 
 ### Redis 영속화
 
-채팅 이력, 방 목록, 플레이어 세션을 Redis에 저장한다. 인메모리 Map이 source of truth이고 Redis는 write-through 백업이다. Redis 장애 시에도 `InMemoryChatStore`/`InMemorySessionStore`로 전환하여 채팅 히스토리·세션 관리가 정상 동작한다 (graceful degradation).
+채팅 이력, 방 목록, 플레이어 세션, 요청사항을 Redis에 저장한다. 인메모리 Map이 source of truth이고 Redis는 write-through 백업이다. Redis 장애 시 4개 store 모두 인메모리 구현으로 전환하여 전체 기능이 정상 동작한다 (graceful degradation). `Storage` 인터페이스를 통해 `createStorage(redis)`와 `createInMemoryStorage()`가 동일한 타입을 반환한다.
 
 - **채팅**: `chat:lobby` (LIST), `chat:room:{roomId}` (LIST) — 각 최근 50개
 - **방**: `room:{roomId}` (STRING/JSON), `rooms` (SET) — 서버 시작 시 복구

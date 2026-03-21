@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { RedisRoomStore } from "./room-store.js";
+import { RedisRoomStore } from "./redis-room-store.js";
 import type { Room } from "@game-hub/shared-types";
 
 function createMockPipeline() {

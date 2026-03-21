@@ -17,8 +17,7 @@ import { setupRequestHandler } from "./socket/request-handler.js";
 import { broadcastAuthenticatedCount } from "./socket/broadcast-player-count.js";
 import { GameManager } from "./games/game-manager.js";
 import { parseCorsOrigin } from "./cors.js";
-import { connectRedis, closeRedis, createStorage, createInMemoryStorage } from "./storage/index.js";
-import type { ChatStore, SessionStore, RequestStore } from "./storage/index.js";
+import { connectRedis, closeRedis, createStorage, createInMemoryStorage, type Storage } from "./storage/index.js";
 
 function getCommitHash(): string {
   if (process.env.COMMIT_HASH) return process.env.COMMIT_HASH;
@@ -52,29 +51,24 @@ async function bootstrap() {
     },
   });
 
-  // Initialize Redis storage
-  let chatStore: ChatStore | undefined;
-  let sessionStore: SessionStore | undefined;
-  let requestStore: RequestStore | undefined;
+  // Initialize storage
+  let storage: Storage;
   let gameManager: GameManager;
 
   try {
     const redis = await connectRedis();
-    const storage = createStorage(redis);
-    chatStore = storage.chatStore;
-    sessionStore = storage.sessionStore;
-    requestStore = storage.requestStore;
+    storage = createStorage(redis);
     gameManager = new GameManager(storage.roomStore);
     await gameManager.loadRoomsFromStore();
     console.log("[bootstrap] Redis connected, persistence enabled");
   } catch {
     console.warn("[bootstrap] Redis unavailable, running in memory-only mode");
     await closeRedis();
-    const memStorage = createInMemoryStorage();
-    chatStore = memStorage.chatStore;
-    sessionStore = memStorage.sessionStore;
-    gameManager = new GameManager();
+    storage = createInMemoryStorage();
+    gameManager = new GameManager(storage.roomStore);
   }
+
+  const { chatStore, sessionStore, requestStore } = storage;
 
   app.get("/health", (_req, res) => {
     res.json({ status: "ok", rooms: gameManager.getRoomCount() });
@@ -115,15 +109,13 @@ async function bootstrap() {
           io.emit("lobby:room-updated", room);
         } else {
           // Room was deleted (empty)
-          chatStore?.deleteRoomHistory(roomId);
+          chatStore.deleteRoomHistory(roomId);
           io.emit("lobby:room-removed", roomId);
         }
       }
       if (socket.data.authenticated) {
-        if (sessionStore) {
-          await sessionStore.releaseNickname(socket.data.nickname);
-          await sessionStore.deleteSession(socket.id);
-        }
+        await sessionStore.releaseNickname(socket.data.nickname);
+        await sessionStore.deleteSession(socket.id);
         broadcastAuthenticatedCount(io);
       }
     });

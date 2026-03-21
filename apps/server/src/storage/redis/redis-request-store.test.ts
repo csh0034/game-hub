@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { RedisRequestStore } from "./request-store.js";
+import { RedisRequestStore } from "./redis-request-store.js";
 import type { FeatureRequest } from "@game-hub/shared-types";
 
 function createMockRedis() {

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { RedisChatStore } from "./chat-store.js";
+import { RedisChatStore } from "./redis-chat-store.js";
 import type { ChatMessage } from "@game-hub/shared-types";
 
 function createMockRedis() {

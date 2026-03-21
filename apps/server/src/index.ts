@@ -1,5 +1,6 @@
 import express from "express";
 import { createServer } from "http";
+import { execSync } from "child_process";
 import { Server } from "socket.io";
 import cors from "cors";
 import {
@@ -19,7 +20,17 @@ import { parseCorsOrigin } from "./cors.js";
 import { connectRedis, closeRedis, createStorage, createInMemoryStorage } from "./storage/index.js";
 import type { ChatStore, SessionStore, RequestStore } from "./storage/index.js";
 
+function getCommitHash(): string {
+  if (process.env.COMMIT_HASH) return process.env.COMMIT_HASH;
+  try {
+    return execSync("git rev-parse --short HEAD", { encoding: "utf-8" }).trim();
+  } catch {
+    return "unknown";
+  }
+}
+
 const PORT = parseInt(process.env.PORT || "3001", 10);
+const COMMIT_HASH = getCommitHash();
 
 async function bootstrap() {
   const corsOrigin = parseCorsOrigin(process.env.CORS_ORIGIN);
@@ -76,6 +87,8 @@ async function bootstrap() {
     socket.data.roomId = null;
     socket.data.authenticated = false;
     socket.data.authenticatedAt = null;
+
+    socket.emit("system:version", { commitHash: COMMIT_HASH });
 
     setupNicknameHandler(io, socket, sessionStore, gameManager);
     setupLobbyHandler(io, socket, gameManager, chatStore);

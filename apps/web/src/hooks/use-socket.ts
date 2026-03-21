@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useRef, useSyncExternalStore } from "react";
+import { toast } from "sonner";
 import { getSocket, type GameSocket } from "@/lib/socket";
 
 let globalSocket: GameSocket | null = null;
@@ -25,6 +26,7 @@ export function useSocket() {
   const [isConnected, setIsConnected] = useState(false);
   const [playerCount, setPlayerCount] = useState(0);
   const [onlinePlayers, setOnlinePlayers] = useState<{ nickname: string; connectedAt: number }[]>([]);
+  const versionToastShown = useRef(false);
   useEffect(() => {
     const s = getSocket();
     globalSocket = s;
@@ -36,6 +38,23 @@ export function useSocket() {
       setOnlinePlayers(players);
     });
 
+    s.on("system:version", ({ commitHash }) => {
+      const clientHash = process.env.NEXT_PUBLIC_COMMIT_HASH;
+      if (clientHash && commitHash !== "unknown" && clientHash !== commitHash) {
+        if (!versionToastShown.current) {
+          versionToastShown.current = true;
+          toast("새 버전이 배포되었습니다", {
+            description: `${clientHash} → ${commitHash}`,
+            duration: Infinity,
+            action: {
+              label: "새로고침",
+              onClick: () => window.location.reload(),
+            },
+          });
+        }
+      }
+    });
+
     if (!s.connected) {
       s.connect();
     }
@@ -44,6 +63,7 @@ export function useSocket() {
       s.off("connect");
       s.off("disconnect");
       s.off("system:player-count");
+      s.off("system:version");
     };
   }, []);
 

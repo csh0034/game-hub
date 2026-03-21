@@ -20,6 +20,7 @@ WORKDIR /app
 
 ARG COMMIT_HASH=unknown
 ENV NEXT_PUBLIC_COMMIT_HASH=$COMMIT_HASH
+ENV COMMIT_HASH=$COMMIT_HASH
 
 COPY . .
 RUN pnpm build
@@ -31,7 +32,9 @@ FROM node:20-alpine AS runner
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 WORKDIR /app
 
+ARG COMMIT_HASH=unknown
 ENV NODE_ENV=production
+ENV COMMIT_HASH=$COMMIT_HASH
 
 # 보안: non-root 사용자 생성
 RUN addgroup --system --gid 1001 nodejs && \

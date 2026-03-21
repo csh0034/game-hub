@@ -84,6 +84,7 @@ export interface ServerToClientEvents {
 
   // System
   "system:player-count": (data: { count: number; players: { nickname: string; connectedAt: number }[] }) => void;
+  "system:version": (data: { commitHash: string }) => void;
 }
 
 export interface InterServerEvents {

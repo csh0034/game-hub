@@ -291,7 +291,7 @@ describe("Tetris 8-player E2E", () => {
     // Set up error listeners on all clients
     const errors: string[] = [];
     for (const client of clients) {
-      client.on("game:error" as never, (msg: string) => errors.push(msg));
+      client.on("game:error" as never, (msg: string) => { errors.push(msg); });
     }
 
     // Each client collects at least 1 update for itself

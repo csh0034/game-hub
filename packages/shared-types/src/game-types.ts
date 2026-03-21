@@ -232,6 +232,11 @@ export interface TetrisMove {
   type: TetrisMoveType;
 }
 
+export interface TetrisPlayerUpdate {
+  playerId: string;
+  board: TetrisPlayerBoard;
+}
+
 export interface ComingSoonGame {
   name: string;
   description: string;

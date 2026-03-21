@@ -1,5 +1,5 @@
 import type { Room, CreateRoomPayload, JoinRoomPayload } from "./lobby-types";
-import type { GameState, GameMove, GameResult, HoldemPrivateState, LiarDrawingPrivateState, Card, DrawPoint } from "./game-types";
+import type { GameState, GameMove, GameResult, HoldemPrivateState, LiarDrawingPrivateState, Card, DrawPoint, TetrisPlayerUpdate } from "./game-types";
 import type { Player } from "./player-types";
 
 export interface ChatMessage {
@@ -56,6 +56,7 @@ export interface ServerToClientEvents {
   "game:private-state": (state: HoldemPrivateState | LiarDrawingPrivateState) => void;
   "game:draw-points": (data: { playerId: string; points: DrawPoint[] }) => void;
   "game:clear-canvas": (data: { playerId: string }) => void;
+  "game:tetris-player-updated": (data: TetrisPlayerUpdate) => void;
   "game:player-left": (data: { playerId: string; nickname: string; willEnd: boolean }) => void;
   "game:rematch-requested": (playerId: string) => void;
   "game:round-ended": (data: {

@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo, useRef, memo, useCallback } from "react";
 import { useGame } from "@/hooks/use-game";
 import { useSocket } from "@/hooks/use-socket";
+import { useGameStore } from "@/stores/game-store";
+import { useShallow } from "zustand/react/shallow";
 import type {
   TetrisPublicState,
   TetrisMove,
@@ -84,7 +86,8 @@ function getPieceCells(piece: TetrisActivePiece): [number, number][] {
   ]);
 }
 
-function MiniPiecePreview({ type, size = "normal" }: { type: TetrominoType | null; size?: "normal" | "small" }) {
+// Phase 1-1: React.memo for MiniPiecePreview (primitive props → shallow compare sufficient)
+const MiniPiecePreview = memo(function MiniPiecePreview({ type, size = "normal" }: { type: TetrominoType | null; size?: "normal" | "small" }) {
   const boxClass = size === "small" ? "w-10 h-10" : "w-16 h-16";
   const cellPx = size === "small" ? 8 : 12;
   const cellClass = size === "small" ? "w-2 h-2" : "w-3 h-3";
@@ -124,9 +127,10 @@ function MiniPiecePreview({ type, size = "normal" }: { type: TetrominoType | nul
       </div>
     </div>
   );
-}
+});
 
-function PlayerBoard({
+// Phase 1-2: React.memo for PlayerBoard with custom comparator
+const PlayerBoard = memo(function PlayerBoard({
   board,
   cellSize,
   compact,
@@ -139,30 +143,34 @@ function PlayerBoard({
 }) {
   const previewSize = compact ? "small" as const : "normal" as const;
 
-  // Build display grid with active piece and ghost
-  const displayGrid: { type: TetrominoType | null; isGhost: boolean; isActive: boolean }[][] =
-    board.board.map((row) => row.map((cell) => ({ type: cell, isGhost: false, isActive: false })));
+  // Phase 1-3: useMemo for displayGrid
+  const displayGrid = useMemo(() => {
+    const grid: { type: TetrominoType | null; isGhost: boolean; isActive: boolean }[][] =
+      board.board.map((row) => row.map((cell) => ({ type: cell, isGhost: false, isActive: false })));
 
-  if (board.activePiece) {
-    // Ghost piece (내 보드에서만 표시)
-    if (!compact) {
-      const ghostPiece: TetrisActivePiece = { ...board.activePiece, row: board.ghostRow };
-      const ghostCells = getPieceCells(ghostPiece);
-      for (const [r, c] of ghostCells) {
-        if (r >= 0 && r < 20 && c >= 0 && c < 10 && !displayGrid[r][c].type) {
-          displayGrid[r][c] = { type: board.activePiece.type, isGhost: true, isActive: false };
+    if (board.activePiece) {
+      // Ghost piece (only for own board)
+      if (!compact) {
+        const ghostPiece: TetrisActivePiece = { ...board.activePiece, row: board.ghostRow };
+        const ghostCells = getPieceCells(ghostPiece);
+        for (const [r, c] of ghostCells) {
+          if (r >= 0 && r < 20 && c >= 0 && c < 10 && !grid[r][c].type) {
+            grid[r][c] = { type: board.activePiece.type, isGhost: true, isActive: false };
+          }
+        }
+      }
+
+      // Active piece
+      const activeCells = getPieceCells(board.activePiece);
+      for (const [r, c] of activeCells) {
+        if (r >= 0 && r < 20 && c >= 0 && c < 10) {
+          grid[r][c] = { type: board.activePiece.type, isGhost: false, isActive: true };
         }
       }
     }
 
-    // Active piece
-    const activeCells = getPieceCells(board.activePiece);
-    for (const [r, c] of activeCells) {
-      if (r >= 0 && r < 20 && c >= 0 && c < 10) {
-        displayGrid[r][c] = { type: board.activePiece.type, isGhost: false, isActive: true };
-      }
-    }
-  }
+    return grid;
+  }, [board.board, board.activePiece, board.ghostRow, compact]);
 
   const textSm = compact ? "text-[10px]" : "text-xs";
   const textLg = compact ? "text-sm" : "text-lg";
@@ -246,7 +254,26 @@ function PlayerBoard({
       </div>
     </div>
   );
-}
+}, (prev, next) => {
+  // Custom comparator for PlayerBoard
+  if (prev.cellSize !== next.cellSize) return false;
+  if (prev.compact !== next.compact) return false;
+  if (prev.nickname !== next.nickname) return false;
+
+  const pb = prev.board;
+  const nb = next.board;
+  if (pb.score !== nb.score) return false;
+  if (pb.level !== nb.level) return false;
+  if (pb.linesCleared !== nb.linesCleared) return false;
+  if (pb.status !== nb.status) return false;
+  if (pb.holdPiece !== nb.holdPiece) return false;
+  if (pb.pendingGarbage !== nb.pendingGarbage) return false;
+  if (pb.board !== nb.board) return false;
+  if (pb.activePiece !== nb.activePiece) return false;
+  if (!prev.compact && pb.ghostRow !== nb.ghostRow) return false;
+  if (pb.nextPieces !== nb.nextPieces) return false;
+  return true;
+});
 
 function getOpponentCellSize(count: number): number {
   if (count <= 1) return 16;
@@ -256,22 +283,68 @@ function getOpponentCellSize(count: number): number {
   return 8;
 }
 
+// Phase 3-3: Throttle intervals for move types (ms)
+const THROTTLE_INTERVALS: Partial<Record<TetrisMove["type"], number>> = {
+  "move-left": 50,
+  "move-right": 50,
+  "rotate-cw": 50,
+  "rotate-ccw": 50,
+};
+
 export default function TetrisBoard({ roomId }: GameComponentProps) {
   const { socket } = useSocket();
-  const { gameState, gameResult, makeMove } = useGame(socket);
+  // useGame is still needed for socket event listening
+  const { gameResult, makeMove } = useGame(socket);
 
-  const state = gameState as TetrisPublicState | null;
   const myId = socket?.id;
-  const myBoard = state && myId ? state.players[myId] : null;
-  const opponentEntries = state && myId
-    ? Object.entries(state.players).filter(([id]) => id !== myId)
-    : [];
+
+  // Phase 2: Zustand selectors for fine-grained subscriptions
+  const myBoard = useGameStore((s) => {
+    const state = s.gameState as TetrisPublicState | null;
+    return state && myId ? state.players[myId] ?? null : null;
+  });
+
+  const opponentPlayers = useGameStore(useShallow((s) => {
+    const state = s.gameState as TetrisPublicState | null;
+    if (!state || !myId) return null;
+    const result: Record<string, TetrisPlayerBoard> = {};
+    for (const [id, board] of Object.entries(state.players)) {
+      if (id !== myId) result[id] = board;
+    }
+    return result;
+  }));
+
+  const mode = useGameStore((s) => {
+    const state = s.gameState as TetrisPublicState | null;
+    return state?.mode ?? null;
+  });
+
+  // Phase 1-5: useMemo for opponentEntries
+  const opponentEntries = useMemo(() => {
+    if (!opponentPlayers) return [];
+    return Object.entries(opponentPlayers);
+  }, [opponentPlayers]);
 
   const opponentCellSize = getOpponentCellSize(opponentEntries.length);
 
-  // Keyboard input
+  // Phase 3-3: Input throttling ref
+  const lastEmitTimeRef = useRef<Map<string, number>>(new Map());
+
+  const throttledMakeMove = useCallback((move: TetrisMove) => {
+    const throttleMs = THROTTLE_INTERVALS[move.type];
+    if (throttleMs) {
+      const now = Date.now();
+      const lastTime = lastEmitTimeRef.current.get(move.type) ?? 0;
+      if (now - lastTime < throttleMs) return;
+      lastEmitTimeRef.current.set(move.type, now);
+    }
+    makeMove(move);
+  }, [makeMove]);
+
+  // Phase 1-4: Keyboard handler with minimal deps
+  const myStatus = myBoard?.status ?? null;
   useEffect(() => {
-    if (!myBoard || myBoard.status !== "playing" || gameResult) return;
+    if (myStatus !== "playing" || gameResult) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       let moveType: TetrisMove["type"] | null = null;
@@ -309,15 +382,15 @@ export default function TetrisBoard({ roomId }: GameComponentProps) {
 
       e.preventDefault();
       if (moveType) {
-        makeMove({ type: moveType });
+        throttledMakeMove({ type: moveType });
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [myBoard, gameResult, makeMove]);
+  }, [myStatus, gameResult, throttledMakeMove]);
 
-  if (!state || !myBoard) {
+  if (!myBoard) {
     return (
       <div className="flex items-center justify-center h-64 text-muted-foreground">
         게임 로딩 중...
@@ -325,7 +398,7 @@ export default function TetrisBoard({ roomId }: GameComponentProps) {
     );
   }
 
-  const isSolo = state.mode === "solo";
+  const isSolo = mode === "solo";
 
   return (
     <div className="flex flex-col items-center gap-4 p-4">
@@ -358,10 +431,10 @@ export default function TetrisBoard({ roomId }: GameComponentProps) {
 
       {/* Controls hint */}
       <div className="text-xs text-muted-foreground text-center space-x-3">
-        <span>← → 이동</span>
-        <span>↑/X 회전</span>
+        <span>&larr; &rarr; 이동</span>
+        <span>&uarr;/X 회전</span>
         <span>Z 역회전</span>
-        <span>↓ 소프트드롭</span>
+        <span>&darr; 소프트드롭</span>
         <span>Space 하드드롭</span>
         <span>C/Shift 홀드</span>
       </div>

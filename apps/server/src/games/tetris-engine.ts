@@ -118,6 +118,7 @@ export class TetrisEngine implements GameEngine {
   private mode: TetrisMode = "solo";
   private baseInterval: number;
   private startLevel: number;
+  private dirtyPlayers: Set<string> = new Set();
 
   constructor(difficulty: TetrisDifficulty = "normal") {
     this.difficulty = difficulty;
@@ -190,6 +191,8 @@ export class TetrisEngine implements GameEngine {
         this.tick(ps);
         break;
     }
+
+    this.dirtyPlayers.add(playerId);
 
     return this.toPublicState();
   }
@@ -360,6 +363,7 @@ export class TetrisEngine implements GameEngine {
           const opponent = this.playerStates.get(id);
           if (opponent && opponent.status === "playing") {
             opponent.pendingGarbage += garbageLines;
+            this.dirtyPlayers.add(id);
           }
         }
       }
@@ -460,9 +464,10 @@ export class TetrisEngine implements GameEngine {
   }
 
   tickAll(): TetrisPublicState {
-    for (const ps of this.playerStates.values()) {
+    for (const [id, ps] of this.playerStates.entries()) {
       if (ps.status === "playing" && ps.activePiece) {
         this.tick(ps);
+        this.dirtyPlayers.add(id);
       }
     }
     return this.toPublicState();
@@ -472,21 +477,7 @@ export class TetrisEngine implements GameEngine {
     const players: Record<string, TetrisPlayerBoard> = {};
 
     for (const [id, ps] of this.playerStates.entries()) {
-      const ghostRow = ps.activePiece ? this.calculateGhostRow(ps.board, ps.activePiece) : 0;
-
-      players[id] = {
-        board: ps.board.map((row) => [...row]),
-        activePiece: ps.activePiece ? { ...ps.activePiece } : null,
-        ghostRow,
-        holdPiece: ps.holdPiece,
-        canHold: ps.canHold,
-        nextPieces: [...ps.nextPieces],
-        score: ps.score,
-        level: ps.level,
-        linesCleared: ps.linesCleared,
-        status: ps.status,
-        pendingGarbage: ps.pendingGarbage,
-      };
+      players[id] = this.playerToPublicBoard(ps);
     }
 
     return {
@@ -494,6 +485,37 @@ export class TetrisEngine implements GameEngine {
       difficulty: this.difficulty,
       mode: this.mode,
       dropInterval: this.calculateDropInterval(),
+    };
+  }
+
+  toPublicStateForPlayer(playerId: string): TetrisPlayerBoard | null {
+    const ps = this.playerStates.get(playerId);
+    if (!ps) return null;
+    return this.playerToPublicBoard(ps);
+  }
+
+  getDirtyPlayers(): Set<string> {
+    return new Set(this.dirtyPlayers);
+  }
+
+  clearDirty(): void {
+    this.dirtyPlayers.clear();
+  }
+
+  private playerToPublicBoard(ps: PlayerInternalState): TetrisPlayerBoard {
+    const ghostRow = ps.activePiece ? this.calculateGhostRow(ps.board, ps.activePiece) : 0;
+    return {
+      board: ps.board.map((row) => [...row]),
+      activePiece: ps.activePiece ? { ...ps.activePiece } : null,
+      ghostRow,
+      holdPiece: ps.holdPiece,
+      canHold: ps.canHold,
+      nextPieces: [...ps.nextPieces],
+      score: ps.score,
+      level: ps.level,
+      linesCleared: ps.linesCleared,
+      status: ps.status,
+      pendingGarbage: ps.pendingGarbage,
     };
   }
 }

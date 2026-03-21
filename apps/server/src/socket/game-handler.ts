@@ -7,6 +7,7 @@ import type {
   GomokuState,
   TetrisMove,
   TetrisPublicState,
+  TetrisPlayerBoard,
   HoldemPublicState,
   LiarDrawingPublicState,
   DrawPoint,
@@ -18,8 +19,34 @@ import { startLiarDrawingTimer, clearLiarDrawingTimer } from "../games/liar-draw
 
 const holdemRoundTimers: Map<string, NodeJS.Timeout> = new Map();
 
+// Tetris: per-room dirty buffers for opponent board throttling (200ms)
+const tetrisDirtyBuffers: Map<string, Map<string, TetrisPlayerBoard>> = new Map();
+const tetrisFlushTimers: Map<string, NodeJS.Timeout> = new Map();
+
 type IOServer = Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 type IOSocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
+
+function ensureTetrisFlushTimer(io: IOServer, roomId: string) {
+  if (tetrisFlushTimers.has(roomId)) return;
+  const timer = setInterval(() => {
+    const buffer = tetrisDirtyBuffers.get(roomId);
+    if (!buffer || buffer.size === 0) return;
+    for (const [playerId, board] of buffer) {
+      io.to(roomId).emit("game:tetris-player-updated", { playerId, board });
+    }
+    buffer.clear();
+  }, 200);
+  tetrisFlushTimers.set(roomId, timer);
+}
+
+function cleanupTetrisFlush(roomId: string) {
+  const timer = tetrisFlushTimers.get(roomId);
+  if (timer) {
+    clearInterval(timer);
+    tetrisFlushTimers.delete(roomId);
+  }
+  tetrisDirtyBuffers.delete(roomId);
+}
 
 export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: GameManager) {
   function startGomokuTurnTimer(roomId: string) {
@@ -51,17 +78,29 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
       const room = gameManager.getRoom(roomId);
       if (!room || room.status !== "playing") {
         clearTetrisTicker(roomId);
+        cleanupTetrisFlush(roomId);
         return;
       }
 
+      tetrisEngine.clearDirty();
       const newState = tetrisEngine.tickAll();
       gameManager.setGameState(roomId, newState);
 
       const result = tetrisEngine.checkWin(newState);
-      io.to(roomId).emit("game:state-updated", newState);
+
+      // Send per-player updates for dirty players
+      const dirtyIds = tetrisEngine.getDirtyPlayers();
+      for (const playerId of dirtyIds) {
+        const board = tetrisEngine.toPublicStateForPlayer(playerId);
+        if (board) {
+          io.to(roomId).emit("game:tetris-player-updated", { playerId, board });
+        }
+      }
+      tetrisEngine.clearDirty();
 
       if (result) {
         clearTetrisTicker(roomId);
+        cleanupTetrisFlush(roomId);
         room.status = "finished";
         io.to(roomId).emit("game:ended", result);
         io.emit("lobby:room-updated", room);
@@ -71,6 +110,7 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
       }
     };
 
+    ensureTetrisFlushTimer(io, roomId);
     startTetrisTicker(roomId, currentInterval, onTick);
   }
 
@@ -271,13 +311,52 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
       return;
     }
 
+    const tetrisEngine = room?.gameType === "tetris" ? gameManager.getTetrisEngine(roomId) : null;
+    if (tetrisEngine) {
+      tetrisEngine.clearDirty();
+    }
+
     const result = gameManager.processMove(roomId, socket.id!, move);
     if (!result) {
       socket.emit("game:error", "잘못된 수입니다.");
       return;
     }
 
-    io.to(roomId).emit("game:state-updated", result.state);
+    // Tetris: send per-player updates instead of full state
+    if (room?.gameType === "tetris" && tetrisEngine) {
+      const dirtyIds = tetrisEngine.getDirtyPlayers();
+      for (const dirtyPlayerId of dirtyIds) {
+        const board = tetrisEngine.toPublicStateForPlayer(dirtyPlayerId);
+        if (!board) continue;
+
+        if (dirtyPlayerId === socket.id) {
+          // Send own board update immediately to the mover
+          socket.emit("game:tetris-player-updated", { playerId: dirtyPlayerId, board });
+          // Buffer for other players (throttled)
+          let buffer = tetrisDirtyBuffers.get(roomId);
+          if (!buffer) {
+            buffer = new Map();
+            tetrisDirtyBuffers.set(roomId, buffer);
+          }
+          buffer.set(dirtyPlayerId, board);
+        } else {
+          // Garbage recipient — send immediately to that player, buffer for others
+          const targetSocket = io.sockets.sockets.get(dirtyPlayerId);
+          if (targetSocket) {
+            targetSocket.emit("game:tetris-player-updated", { playerId: dirtyPlayerId, board });
+          }
+          let buffer = tetrisDirtyBuffers.get(roomId);
+          if (!buffer) {
+            buffer = new Map();
+            tetrisDirtyBuffers.set(roomId, buffer);
+          }
+          buffer.set(dirtyPlayerId, board);
+        }
+      }
+      tetrisEngine.clearDirty();
+    } else {
+      io.to(roomId).emit("game:state-updated", result.state);
+    }
 
     // Notify all clients when canvas is cleared
     if (room?.gameType === "liar-drawing" && (move as { type: string }).type === "clear-canvas") {
@@ -287,6 +366,7 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
     if (result.result) {
       clearGomokuTimer(roomId);
       clearTetrisTicker(roomId);
+      cleanupTetrisFlush(roomId);
 
       if (room?.gameType === "texas-holdem") {
         const holdemEngine = gameManager.getHoldemEngine(roomId);
@@ -384,6 +464,7 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
 
     clearGomokuTimer(roomId);
     clearTetrisTicker(roomId);
+    cleanupTetrisFlush(roomId);
     clearLiarDrawingTimer(roomId);
     const holdemTimer = holdemRoundTimers.get(roomId);
     if (holdemTimer) {

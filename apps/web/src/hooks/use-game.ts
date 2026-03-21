@@ -4,7 +4,7 @@ import { useEffect, useCallback } from "react";
 import { useGameStore } from "@/stores/game-store";
 import type { RoundResult } from "@/stores/game-store";
 import type { GameSocket } from "@/lib/socket";
-import type { GameMove, GameState, GameResult, HoldemPrivateState, LiarDrawingPrivateState } from "@game-hub/shared-types";
+import type { GameMove, GameState, GameResult, HoldemPrivateState, LiarDrawingPrivateState, TetrisPlayerUpdate, TetrisPublicState } from "@game-hub/shared-types";
 
 export function useGame(socket: GameSocket | null) {
   const {
@@ -47,6 +47,14 @@ export function useGame(socket: GameSocket | null) {
     const onRoundEnded = (data: RoundResult) => {
       setRoundResult(data);
     };
+    const onTetrisPlayerUpdated = (data: TetrisPlayerUpdate) => {
+      const current = useGameStore.getState().gameState as TetrisPublicState | null;
+      if (!current || !("players" in current)) return;
+      setGameState({
+        ...current,
+        players: { ...current.players, [data.playerId]: data.board },
+      });
+    };
 
     socket.on("game:started", onStarted);
     socket.on("game:state-updated", onStateUpdated);
@@ -55,6 +63,7 @@ export function useGame(socket: GameSocket | null) {
     socket.on("game:error", onError);
     socket.on("game:player-left", onPlayerLeft);
     socket.on("game:round-ended", onRoundEnded);
+    socket.on("game:tetris-player-updated", onTetrisPlayerUpdated);
 
     return () => {
       socket.off("game:started", onStarted);
@@ -64,6 +73,7 @@ export function useGame(socket: GameSocket | null) {
       socket.off("game:error", onError);
       socket.off("game:player-left", onPlayerLeft);
       socket.off("game:round-ended", onRoundEnded);
+      socket.off("game:tetris-player-updated", onTetrisPlayerUpdated);
     };
   }, [socket, setGameState, setGameResult, setPrivateState, setPlayerLeftInfo, setRoundResult]);
 

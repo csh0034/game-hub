@@ -18,6 +18,7 @@ game-hub/
 ```
 ├── index.ts                 # 서버 진입점 (async bootstrap)
 ├── cors.ts                  # CORS origin 파싱
+├── admin.ts                 # 관리자 닉네임 설정
 ├── storage/
 │   ├── redis-client.ts      # Redis 연결 싱글톤
 │   ├── interfaces/          # 저장소 인터페이스
@@ -62,7 +63,7 @@ game-hub/
 
 ### Redis 영속화
 
-채팅 이력, 방 목록, 플레이어 세션, 요청사항을 Redis에 저장한다. 인메모리 Map이 source of truth이고 Redis는 write-through 백업이다. Redis 장애 시 4개 store 모두 인메모리 구현으로 전환하여 전체 기능이 정상 동작한다 (graceful degradation). `Storage` 인터페이스를 통해 `createStorage(redis)`와 `createInMemoryStorage()`가 동일한 타입을 반환한다.
+채팅 이력, 방 목록, 플레이어 세션, 요청사항을 Redis에 저장한다. 방 목록은 GameManager의 인메모리 Map이 source of truth이고 Redis는 write-through 백업이다. 채팅, 세션, 요청사항은 Redis가 primary store이다. Redis 장애 시 4개 store 모두 인메모리 구현으로 전환하여 전체 기능이 정상 동작한다 (graceful degradation). `Storage` 인터페이스를 통해 `createStorage(redis)`와 `createInMemoryStorage()`가 동일한 타입을 반환한다.
 
 - **채팅**: `chat:lobby` (LIST), `chat:room:{roomId}` (LIST) — 각 최근 50개
 - **방**: `room:{roomId}` (STRING/JSON), `rooms` (SET) — 서버 시작 시 복구
@@ -74,6 +75,7 @@ game-hub/
 ```
 ├── app/                     # App Router 페이지
 ├── components/
+│   ├── common/confirm-dialog.tsx  # 공통 확인 다이얼로그
 │   ├── layout/navbar.tsx
 │   ├── lobby/               # 로비 UI (방 목록, 생성, 입장)
 │   ├── chat/chat-panel.tsx  # 채팅 UI (로비/방 공용)
@@ -89,6 +91,7 @@ game-hub/
 └── lib/
     ├── socket.ts            # Socket.IO 클라이언트
     ├── game-registry.tsx    # GameType → lazy component 매핑
+    ├── hand-evaluator.ts    # 텍사스 홀덤 핸드 평가
     └── utils.ts
 ```
 

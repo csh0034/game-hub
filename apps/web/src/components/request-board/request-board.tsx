@@ -5,6 +5,7 @@ import type { FeatureRequest, CreateRequestPayload } from "@game-hub/shared-type
 import { Send } from "lucide-react";
 import { RequestItem } from "./request-item";
 import { ResolveDialog } from "./resolve-dialog";
+import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import { toast } from "sonner";
 
 interface RequestBoardProps {
@@ -26,16 +27,16 @@ export function RequestBoard({
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resolveTarget, setResolveTarget] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
-  const handleDelete = useCallback(
-    async (requestId: string) => {
-      const result = await onDeleteRequest(requestId);
-      if (!result.success) {
-        toast.error(result.error ?? "삭제에 실패했습니다");
-      }
-    },
-    [onDeleteRequest],
-  );
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!deleteTarget) return;
+    const result = await onDeleteRequest(deleteTarget);
+    setDeleteTarget(null);
+    if (!result.success) {
+      toast.error(result.error ?? "삭제에 실패했습니다");
+    }
+  }, [deleteTarget, onDeleteRequest]);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -123,7 +124,7 @@ export function RequestBoard({
                 request={request}
                 isAdmin={isAdmin}
                 onResolve={setResolveTarget}
-                onDelete={handleDelete}
+                onDelete={setDeleteTarget}
               />
             ))}
           </div>
@@ -143,7 +144,7 @@ export function RequestBoard({
                 request={request}
                 isAdmin={isAdmin}
                 onResolve={setResolveTarget}
-                onDelete={handleDelete}
+                onDelete={setDeleteTarget}
               />
             ))}
           </div>
@@ -163,6 +164,17 @@ export function RequestBoard({
         open={resolveTarget !== null}
         onConfirm={handleResolve}
         onCancel={() => setResolveTarget(null)}
+      />
+
+      {/* 삭제 확인 다이얼로그 */}
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="요청사항 삭제"
+        message="이 요청사항을 삭제하시겠습니까? 삭제 후 복구할 수 없습니다."
+        confirmText="삭제"
+        cancelText="취소"
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setDeleteTarget(null)}
       />
     </div>
   );

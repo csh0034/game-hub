@@ -245,7 +245,15 @@ export interface ComingSoonGame {
   icon: string;
 }
 
-export const COMING_SOON_GAMES: ComingSoonGame[] = [];
+export const COMING_SOON_GAMES: ComingSoonGame[] = [
+  {
+    name: "캐치마인드",
+    description: "출제자가 그린 그림을 보고 정답을 맞추는 드로잉 퀴즈 게임",
+    minPlayers: 3,
+    maxPlayers: 8,
+    icon: "🖼️",
+  },
+];
 
 // Liar Drawing types
 export type LiarDrawingPhase = "role-reveal" | "drawing" | "voting" | "liar-guess" | "round-result" | "final-result";

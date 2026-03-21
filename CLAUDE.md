@@ -7,6 +7,7 @@
 - **모노레포**: Turborepo + pnpm
 - **프론트엔드**: Next.js 15 (App Router) + React 19 + Tailwind CSS 4
 - **백엔드**: Node.js + Express + Socket.IO
+- **데이터 저장**: Redis (ioredis)
 - **상태관리**: Zustand
 - **테스트**: Vitest + React Testing Library
 - **린터**: ESLint 9 (flat config)
@@ -16,6 +17,7 @@
 
 ```bash
 pnpm install                           # 의존성 설치
+docker compose up redis -d             # Redis 시작 (포트 6389)
 pnpm dev                               # 프론트(3000) + 백엔드(3001) 동시 실행
 pnpm build                             # 전체 빌드
 pnpm lint                              # 전체 린트

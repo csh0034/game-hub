@@ -1,4 +1,4 @@
-import type { Room, CreateRoomPayload, RoomStatus } from "@game-hub/shared-types";
+import type { Room, CreateRoomPayload } from "@game-hub/shared-types";
 import type { Player, GameType, GameState, GameMove, GameResult } from "@game-hub/shared-types";
 import { GomokuEngine } from "./gomoku-engine.js";
 import { HoldemEngine } from "./holdem-engine.js";
@@ -6,6 +6,7 @@ import { MinesweeperEngine } from "./minesweeper-engine.js";
 import { TetrisEngine } from "./tetris-engine.js";
 import { LiarDrawingEngine } from "./liar-drawing-engine.js";
 import type { GameEngine } from "./engine-interface.js";
+import type { RoomStore } from "../storage/index.js";
 
 export class GameManager {
   private rooms: Map<string, Room> = new Map();
@@ -13,13 +14,28 @@ export class GameManager {
   private engines: Map<GameType, GameEngine> = new Map();
   // Per-room stateful engine instances (holdem, minesweeper, tetris)
   private roomEngines: Map<string, GameEngine> = new Map();
+  private roomStore: RoomStore | null;
 
-  constructor() {
+  constructor(roomStore?: RoomStore) {
+    this.roomStore = roomStore ?? null;
     this.engines.set("gomoku", new GomokuEngine());
     this.engines.set("texas-holdem", new HoldemEngine());
     this.engines.set("minesweeper", new MinesweeperEngine());
     this.engines.set("tetris", new TetrisEngine());
     this.engines.set("liar-drawing", new LiarDrawingEngine());
+  }
+
+  async loadRoomsFromStore(): Promise<void> {
+    if (!this.roomStore) return;
+    const rooms = await this.roomStore.getAllRooms();
+    for (const room of rooms) {
+      room.status = "waiting";
+      room.players = [];
+      this.rooms.set(room.id, room);
+      // Sync back the cleaned-up room
+      this.persistRoom(room);
+    }
+    console.log(`[game-manager] restored ${rooms.length} rooms from Redis`);
   }
 
   createRoom(payload: CreateRoomPayload, host: Player): Room {
@@ -37,6 +53,7 @@ export class GameManager {
       gameOptions: payload.gameOptions,
     };
     this.rooms.set(id, room);
+    this.persistRoom(room);
     return room;
   }
 
@@ -47,6 +64,7 @@ export class GameManager {
     if (room.players.length >= room.maxPlayers) return null;
     if (room.players.some((p) => p.id === player.id)) return null;
     room.players.push(player);
+    this.persistRoom(room);
     return room;
   }
 
@@ -57,6 +75,7 @@ export class GameManager {
     if (room.players.length === 0) {
       this.rooms.delete(roomId);
       this.cleanupRoomState(roomId);
+      this.roomStore?.deleteRoom(roomId).catch(() => {});
       return null;
     }
     if (room.hostId === playerId) {
@@ -72,6 +91,7 @@ export class GameManager {
         this.cleanupRoomState(roomId);
       }
     }
+    this.persistRoom(room);
     return room;
   }
 
@@ -82,6 +102,7 @@ export class GameManager {
     if (player) {
       player.isReady = !player.isReady;
     }
+    this.persistRoom(room);
     return room;
   }
 
@@ -101,6 +122,7 @@ export class GameManager {
       this.roomEngines.set(roomId, holdemEngine);
       const state = holdemEngine.initState(room.players);
       this.gameStates.set(roomId, state);
+      this.persistRoom(room);
       return state;
     }
 
@@ -110,6 +132,7 @@ export class GameManager {
       this.roomEngines.set(roomId, minesweeperEngine);
       const state = minesweeperEngine.initState(room.players);
       this.gameStates.set(roomId, state);
+      this.persistRoom(room);
       return state;
     }
 
@@ -119,6 +142,7 @@ export class GameManager {
       this.roomEngines.set(roomId, tetrisEngine);
       const state = tetrisEngine.initState(room.players);
       this.gameStates.set(roomId, state);
+      this.persistRoom(room);
       return state;
     }
 
@@ -129,11 +153,13 @@ export class GameManager {
       this.roomEngines.set(roomId, liarEngine);
       const state = liarEngine.initState(room.players);
       this.gameStates.set(roomId, state);
+      this.persistRoom(room);
       return state;
     }
 
     const state = engine.initState(room.players);
     this.gameStates.set(roomId, state);
+    this.persistRoom(room);
     return state;
   }
 
@@ -150,6 +176,7 @@ export class GameManager {
     const result = engine.checkWin(newState);
     if (result && room.gameType !== "texas-holdem" && room.gameType !== "liar-drawing") {
       room.status = "finished";
+      this.persistRoom(room);
     }
     return { state: newState, result };
   }
@@ -160,6 +187,18 @@ export class GameManager {
     room.status = "waiting";
     room.players.forEach((p) => (p.isReady = false));
     this.cleanupRoomState(roomId);
+    this.persistRoom(room);
+    return room;
+  }
+
+  replacePlayerId(roomId: string, oldId: string, newId: string): Room | null {
+    const room = this.rooms.get(roomId);
+    if (!room) return null;
+    const player = room.players.find((p) => p.id === oldId);
+    if (!player) return null;
+    player.id = newId;
+    if (room.hostId === oldId) room.hostId = newId;
+    this.persistRoom(room);
     return room;
   }
 
@@ -206,6 +245,10 @@ export class GameManager {
   private cleanupRoomState(roomId: string): void {
     this.gameStates.delete(roomId);
     this.roomEngines.delete(roomId);
+  }
+
+  private persistRoom(room: Room): void {
+    this.roomStore?.saveRoom(room).catch(() => {});
   }
 
   private generateId(): string {

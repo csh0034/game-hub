@@ -5,12 +5,37 @@ import type {
   ServerToClientEvents,
   InterServerEvents,
   SocketData,
+  ChatMessage,
 } from "@game-hub/shared-types";
-import { setupLobbyHandler, deleteRoomHistory } from "./lobby-handler.js";
+import { setupLobbyHandler } from "./lobby-handler.js";
 import { GameManager } from "../games/game-manager.js";
+import type { ChatStore } from "../storage/index.js";
 
 type GameServer = Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 type GameSocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
+
+function createMockChatStore(): ChatStore {
+  const lobbyMessages: ChatMessage[] = [];
+  const roomMessages = new Map<string, ChatMessage[]>();
+
+  return {
+    pushLobbyMessage: vi.fn(async (msg: ChatMessage) => {
+      lobbyMessages.push(msg);
+      if (lobbyMessages.length > 50) lobbyMessages.shift();
+    }),
+    getLobbyHistory: vi.fn(async () => [...lobbyMessages]),
+    pushRoomMessage: vi.fn(async (roomId: string, msg: ChatMessage) => {
+      if (!roomMessages.has(roomId)) roomMessages.set(roomId, []);
+      const msgs = roomMessages.get(roomId)!;
+      msgs.push(msg);
+      if (msgs.length > 50) msgs.shift();
+    }),
+    getRoomHistory: vi.fn(async (roomId: string) => [...(roomMessages.get(roomId) ?? [])]),
+    deleteRoomHistory: vi.fn(async (roomId: string) => {
+      roomMessages.delete(roomId);
+    }),
+  };
+}
 
 function createMockSocket(id: string, nickname: string) {
   const handlers = new Map<string, (...args: unknown[]) => void>();
@@ -48,12 +73,14 @@ describe("chat:lobby-message", () => {
   let socket: ReturnType<typeof createMockSocket>;
   let io: ReturnType<typeof createMockIo>;
   let gameManager: GameManager;
+  let chatStore: ChatStore;
 
   beforeEach(() => {
     socket = createMockSocket("socket-1", "Player1");
     io = createMockIo();
     gameManager = new GameManager();
-    setupLobbyHandler(io as unknown as GameServer, socket as unknown as GameSocket, gameManager);
+    chatStore = createMockChatStore();
+    setupLobbyHandler(io as unknown as GameServer, socket as unknown as GameSocket, gameManager, chatStore);
   });
 
   it("인증된 유저가 roomId 없을 때 lobby room에 브로드캐스트한다", () => {
@@ -111,12 +138,14 @@ describe("chat:room-message", () => {
   let socket: ReturnType<typeof createMockSocket>;
   let io: ReturnType<typeof createMockIo>;
   let gameManager: GameManager;
+  let chatStore: ChatStore;
 
   beforeEach(() => {
     socket = createMockSocket("socket-1", "Player1");
     io = createMockIo();
     gameManager = new GameManager();
-    setupLobbyHandler(io as unknown as GameServer, socket as unknown as GameSocket, gameManager);
+    chatStore = createMockChatStore();
+    setupLobbyHandler(io as unknown as GameServer, socket as unknown as GameSocket, gameManager, chatStore);
   });
 
   it("roomId가 있으면 해당 room에 메시지를 전송한다", () => {
@@ -162,16 +191,17 @@ describe("chat:request-history", () => {
   let socket: ReturnType<typeof createMockSocket>;
   let io: ReturnType<typeof createMockIo>;
   let gameManager: GameManager;
+  let chatStore: ChatStore;
 
   beforeEach(() => {
-    // 이전 테스트에서 쌓인 이력 정리를 위해 새 소켓/io 생성
     socket = createMockSocket("socket-1", "Player1");
     io = createMockIo();
     gameManager = new GameManager();
-    setupLobbyHandler(io as unknown as GameServer, socket as unknown as GameSocket, gameManager);
+    chatStore = createMockChatStore();
+    setupLobbyHandler(io as unknown as GameServer, socket as unknown as GameSocket, gameManager, chatStore);
   });
 
-  it("로비 메시지 이력을 반환한다", () => {
+  it("로비 메시지 이력을 반환한다", async () => {
     socket.data.authenticated = true;
     socket.data.roomId = null;
 
@@ -182,15 +212,18 @@ describe("chat:request-history", () => {
     const callback = vi.fn();
     socket._trigger("chat:request-history", "lobby", callback);
 
-    expect(callback).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        expect.objectContaining({ message: "첫 번째" }),
-        expect.objectContaining({ message: "두 번째" }),
-      ]),
-    );
+    // Wait for async callback
+    await vi.waitFor(() => {
+      expect(callback).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({ message: "첫 번째" }),
+          expect.objectContaining({ message: "두 번째" }),
+        ]),
+      );
+    });
   });
 
-  it("방 메시지 이력을 반환한다", () => {
+  it("방 메시지 이력을 반환한다", async () => {
     socket.data.roomId = "room-test";
 
     socket._trigger("chat:room-message", "방 메시지");
@@ -198,14 +231,13 @@ describe("chat:request-history", () => {
     const callback = vi.fn();
     socket._trigger("chat:request-history", "room", callback);
 
-    expect(callback).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        expect.objectContaining({ message: "방 메시지" }),
-      ]),
-    );
-
-    // cleanup
-    deleteRoomHistory("room-test");
+    await vi.waitFor(() => {
+      expect(callback).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({ message: "방 메시지" }),
+        ]),
+      );
+    });
   });
 
   it("인증되지 않은 유저는 빈 배열을 받는다", () => {
@@ -217,13 +249,15 @@ describe("chat:request-history", () => {
     expect(callback).toHaveBeenCalledWith([]);
   });
 
-  it("roomId 없이 방 이력 요청 시 빈 배열을 받는다", () => {
+  it("roomId 없이 방 이력 요청 시 빈 배열을 받는다", async () => {
     socket.data.authenticated = true;
     socket.data.roomId = null;
 
     const callback = vi.fn();
     socket._trigger("chat:request-history", "room", callback);
 
-    expect(callback).toHaveBeenCalledWith([]);
+    await vi.waitFor(() => {
+      expect(callback).toHaveBeenCalledWith([]);
+    });
   });
 });

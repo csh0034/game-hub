@@ -77,6 +77,7 @@ describe("setupRequestHandler", () => {
         createRequest: vi.fn(),
         getRequest: vi.fn(),
         updateRequest: vi.fn(),
+        deleteRequest: vi.fn(),
       };
 
       setupRequestHandler(io as unknown as GameServer, socket as unknown as GameSocket, mockStore);

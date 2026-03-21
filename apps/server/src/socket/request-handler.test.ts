@@ -400,6 +400,93 @@ describe("setupRequestHandler", () => {
     });
   });
 
+  describe("request:change-label", () => {
+    it("관리자가 라벨을 변경한다", async () => {
+      setupRequestHandler(io as unknown as GameServer, socket as unknown as GameSocket, requestStore);
+
+      const createCallback = vi.fn();
+      socket._trigger("request:create", { title: "기능 요청", description: "설명", label: "feature" }, createCallback);
+      await vi.waitFor(() => expect(createCallback).toHaveBeenCalled());
+      const created = createCallback.mock.calls[0][0] as FeatureRequest;
+
+      const changeLabelCallback = vi.fn();
+      socket._trigger("request:change-label", { requestId: created.id, label: "bug" }, changeLabelCallback);
+
+      await vi.waitFor(() => {
+        expect(changeLabelCallback).toHaveBeenCalledWith({ success: true });
+      });
+      expect((io as unknown as { emit: ReturnType<typeof vi.fn> }).emit).toHaveBeenCalledWith(
+        "request:label-changed",
+        expect.objectContaining({
+          id: created.id,
+          label: "bug",
+        }),
+      );
+    });
+
+    it("모든 상태에서 라벨 변경이 가능하다", async () => {
+      setupRequestHandler(io as unknown as GameServer, socket as unknown as GameSocket, requestStore);
+
+      // 요청 생성 후 resolved 상태로 변경
+      const createCallback = vi.fn();
+      socket._trigger("request:create", { title: "완료된 요청", description: "설명", label: "feature" }, createCallback);
+      await vi.waitFor(() => expect(createCallback).toHaveBeenCalled());
+      const created = createCallback.mock.calls[0][0] as FeatureRequest;
+
+      const resolveCallback = vi.fn();
+      socket._trigger("request:resolve", { requestId: created.id, commitHash: "abc1234" }, resolveCallback);
+      await vi.waitFor(() => expect(resolveCallback).toHaveBeenCalledWith({ success: true }));
+
+      // resolved 상태에서 라벨 변경
+      const changeLabelCallback = vi.fn();
+      socket._trigger("request:change-label", { requestId: created.id, label: "improvement" }, changeLabelCallback);
+
+      await vi.waitFor(() => {
+        expect(changeLabelCallback).toHaveBeenCalledWith({ success: true });
+      });
+      expect((io as unknown as { emit: ReturnType<typeof vi.fn> }).emit).toHaveBeenCalledWith(
+        "request:label-changed",
+        expect.objectContaining({
+          id: created.id,
+          label: "improvement",
+          status: "resolved",
+        }),
+      );
+    });
+
+    it("비관리자는 거부한다", () => {
+      const normalSocket = createMockSocket("socket-2", "NormalUser");
+      setupRequestHandler(io as unknown as GameServer, normalSocket as unknown as GameSocket, requestStore);
+      const callback = vi.fn();
+      normalSocket._trigger("request:change-label", { requestId: "req-1", label: "bug" }, callback);
+      expect(callback).toHaveBeenCalledWith({ success: false, error: "권한이 없습니다" });
+    });
+
+    it("미인증 사용자는 거부한다", () => {
+      const unauthSocket = createMockSocket("socket-2", "Player2", { authenticated: false });
+      setupRequestHandler(io as unknown as GameServer, unauthSocket as unknown as GameSocket, requestStore);
+      const callback = vi.fn();
+      unauthSocket._trigger("request:change-label", { requestId: "req-1", label: "bug" }, callback);
+      expect(callback).toHaveBeenCalledWith({ success: false, error: "인증이 필요합니다" });
+    });
+
+    it("유효하지 않은 라벨은 거부한다", () => {
+      setupRequestHandler(io as unknown as GameServer, socket as unknown as GameSocket, requestStore);
+      const callback = vi.fn();
+      socket._trigger("request:change-label", { requestId: "req-1", label: "invalid" }, callback);
+      expect(callback).toHaveBeenCalledWith({ success: false, error: "유효하지 않은 라벨입니다" });
+    });
+
+    it("없는 요청 ID는 에러를 반환한다", async () => {
+      setupRequestHandler(io as unknown as GameServer, socket as unknown as GameSocket, requestStore);
+      const callback = vi.fn();
+      socket._trigger("request:change-label", { requestId: "nonexistent", label: "bug" }, callback);
+      await vi.waitFor(() => {
+        expect(callback).toHaveBeenCalledWith({ success: false, error: "요청사항을 찾을 수 없습니다" });
+      });
+    });
+  });
+
   describe("request:delete", () => {
     it("관리자가 요청을 삭제한다", async () => {
       setupRequestHandler(io as unknown as GameServer, socket as unknown as GameSocket, requestStore);

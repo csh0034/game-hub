@@ -49,7 +49,7 @@ pnpm --filter web lint                 # 웹 린트
 
 로비 내 탭으로 접근하는 기능 요청 게시판. 모든 접속자가 요청을 등록하고, 관리자가 상태를 관리한다.
 
-- **라벨**: `feature`(기능 요청, 기본값), `bug`(버그), `improvement`(개선), `new-game`(게임 추가) — 등록 시 필수 선택
+- **라벨**: `feature`(기능 요청, 기본값), `bug`(버그), `improvement`(개선), `new-game`(게임 추가) — 등록 시 필수 선택, 관리자가 모든 상태에서 변경 가능
 - **상태**: `open`(요청) → `in-progress`(진행중) → `resolved`(완료) 또는 `rejected`(거부)
   - open → in-progress: 관리자 수락 (선택적 답변)
   - open/in-progress → resolved: 관리자 완료 처리 (커밋 해시 필수, 선택적 답변)

@@ -194,6 +194,42 @@ export function setupRequestHandler(
     callback({ success: true });
   });
 
+  socket.on("request:change-label", async (payload, callback) => {
+    if (!socket.data.authenticated) {
+      callback({ success: false, error: "인증이 필요합니다" });
+      return;
+    }
+
+    if (!isAdmin(socket.data.nickname)) {
+      callback({ success: false, error: "권한이 없습니다" });
+      return;
+    }
+
+    const { requestId, label } = payload;
+
+    if (!REQUEST_LABELS.includes(label)) {
+      callback({ success: false, error: "유효하지 않은 라벨입니다" });
+      return;
+    }
+
+    const request = await requestStore.getRequest(requestId);
+
+    if (!request) {
+      callback({ success: false, error: "요청사항을 찾을 수 없습니다" });
+      return;
+    }
+
+    const updated: FeatureRequest = {
+      ...request,
+      label,
+    };
+
+    await requestStore.updateRequest(updated);
+
+    io.emit("request:label-changed", updated);
+    callback({ success: true });
+  });
+
   socket.on("request:delete", async (requestId, callback) => {
     if (!socket.data.authenticated) {
       callback({ success: false, error: "인증이 필요합니다" });

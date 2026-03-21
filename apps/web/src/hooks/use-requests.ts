@@ -1,7 +1,7 @@
 import { useEffect, useCallback } from "react";
 import type { GameSocket } from "@/lib/socket";
 import { useRequestStore } from "@/stores/request-store";
-import type { CreateRequestPayload } from "@game-hub/shared-types";
+import type { CreateRequestPayload, RequestLabel } from "@game-hub/shared-types";
 
 export function useRequests(socket: GameSocket | null) {
   const { requests, setRequests, addRequest, updateRequest, removeRequest } =
@@ -15,6 +15,7 @@ export function useRequests(socket: GameSocket | null) {
     socket.on("request:accepted", updateRequest);
     socket.on("request:rejected", updateRequest);
     socket.on("request:resolved", updateRequest);
+    socket.on("request:label-changed", updateRequest);
     socket.on("request:deleted", removeRequest);
 
     return () => {
@@ -22,6 +23,7 @@ export function useRequests(socket: GameSocket | null) {
       socket.off("request:accepted", updateRequest);
       socket.off("request:rejected", updateRequest);
       socket.off("request:resolved", updateRequest);
+      socket.off("request:label-changed", updateRequest);
       socket.off("request:deleted", removeRequest);
     };
   }, [socket, setRequests, addRequest, updateRequest, removeRequest]);
@@ -84,6 +86,19 @@ export function useRequests(socket: GameSocket | null) {
     [socket],
   );
 
+  const changeLabelRequest = useCallback(
+    (requestId: string, label: RequestLabel): Promise<{ success: boolean; error?: string }> => {
+      return new Promise((resolve) => {
+        if (!socket) {
+          resolve({ success: false, error: "소켓 연결이 없습니다" });
+          return;
+        }
+        socket.emit("request:change-label", { requestId, label }, resolve);
+      });
+    },
+    [socket],
+  );
+
   const deleteRequest = useCallback(
     (requestId: string): Promise<{ success: boolean; error?: string }> => {
       return new Promise((resolve) => {
@@ -97,5 +112,5 @@ export function useRequests(socket: GameSocket | null) {
     [socket],
   );
 
-  return { requests, createRequest, acceptRequest, rejectRequest, resolveRequest, deleteRequest };
+  return { requests, createRequest, acceptRequest, rejectRequest, resolveRequest, changeLabelRequest, deleteRequest };
 }

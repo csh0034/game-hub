@@ -23,6 +23,7 @@ interface RequestBoardProps {
   onAcceptRequest: (requestId: string, adminResponse?: string) => Promise<{ success: boolean; error?: string }>;
   onRejectRequest: (requestId: string, adminResponse: string) => Promise<{ success: boolean; error?: string }>;
   onResolveRequest: (requestId: string, commitHash: string, adminResponse?: string) => Promise<{ success: boolean; error?: string }>;
+  onChangeLabelRequest: (requestId: string, label: RequestLabel) => Promise<{ success: boolean; error?: string }>;
   onDeleteRequest: (requestId: string) => Promise<{ success: boolean; error?: string }>;
   isAdmin: boolean;
 }
@@ -33,6 +34,7 @@ export function RequestBoard({
   onAcceptRequest,
   onRejectRequest,
   onResolveRequest,
+  onChangeLabelRequest,
   onDeleteRequest,
   isAdmin,
 }: RequestBoardProps) {
@@ -44,6 +46,16 @@ export function RequestBoard({
   const [rejectTarget, setRejectTarget] = useState<string | null>(null);
   const [resolveTarget, setResolveTarget] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+
+  const handleChangeLabel = useCallback(
+    async (requestId: string, label: RequestLabel) => {
+      const result = await onChangeLabelRequest(requestId, label);
+      if (!result.success) {
+        toast.error(result.error ?? "라벨 변경에 실패했습니다");
+      }
+    },
+    [onChangeLabelRequest],
+  );
 
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget) return;
@@ -188,6 +200,7 @@ export function RequestBoard({
                 onAccept={setAcceptTarget}
                 onReject={setRejectTarget}
                 onResolve={setResolveTarget}
+                onChangeLabel={handleChangeLabel}
                 onDelete={setDeleteTarget}
               />
             ))}
@@ -210,6 +223,7 @@ export function RequestBoard({
                 onAccept={setAcceptTarget}
                 onReject={setRejectTarget}
                 onResolve={setResolveTarget}
+                onChangeLabel={handleChangeLabel}
                 onDelete={setDeleteTarget}
               />
             ))}
@@ -232,6 +246,7 @@ export function RequestBoard({
                 onAccept={setAcceptTarget}
                 onReject={setRejectTarget}
                 onResolve={setResolveTarget}
+                onChangeLabel={handleChangeLabel}
                 onDelete={setDeleteTarget}
               />
             ))}
@@ -254,6 +269,7 @@ export function RequestBoard({
                 onAccept={setAcceptTarget}
                 onReject={setRejectTarget}
                 onResolve={setResolveTarget}
+                onChangeLabel={handleChangeLabel}
                 onDelete={setDeleteTarget}
               />
             ))}

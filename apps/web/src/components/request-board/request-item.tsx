@@ -1,6 +1,8 @@
 "use client";
 
+import { useState, useRef, useEffect } from "react";
 import type { FeatureRequest, RequestLabel } from "@game-hub/shared-types";
+import { REQUEST_LABELS } from "@game-hub/shared-types";
 import { Check, ExternalLink, Clock, Trash2, X, Play, MessageSquare } from "lucide-react";
 
 const labelConfig: Record<RequestLabel, { name: string; className: string }> = {
@@ -16,6 +18,7 @@ interface RequestItemProps {
   onAccept: (requestId: string) => void;
   onReject: (requestId: string) => void;
   onResolve: (requestId: string) => void;
+  onChangeLabel: (requestId: string, label: RequestLabel) => void;
   onDelete: (requestId: string) => void;
 }
 
@@ -42,10 +45,23 @@ const statusConfig = {
   },
 };
 
-export function RequestItem({ request, isAdmin, onAccept, onReject, onResolve, onDelete }: RequestItemProps) {
+export function RequestItem({ request, isAdmin, onAccept, onReject, onResolve, onChangeLabel, onDelete }: RequestItemProps) {
   const config = statusConfig[request.status];
   const isOpen = request.status === "open";
   const isInProgress = request.status === "in-progress";
+  const [showLabelMenu, setShowLabelMenu] = useState(false);
+  const labelMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showLabelMenu) return;
+    const handleClick = (e: MouseEvent) => {
+      if (labelMenuRef.current && !labelMenuRef.current.contains(e.target as Node)) {
+        setShowLabelMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [showLabelMenu]);
 
   return (
     <div className={`border rounded-lg px-4 py-3 transition-colors ${config.border}`}>
@@ -54,9 +70,32 @@ export function RequestItem({ request, isAdmin, onAccept, onReject, onResolve, o
           <div className="flex items-center gap-2">
             {config.icon}
             {request.label && labelConfig[request.label] && (
-              <span className={`px-1.5 py-0.5 text-[10px] font-medium rounded-full flex-shrink-0 ${labelConfig[request.label].className}`}>
-                {labelConfig[request.label].name}
-              </span>
+              <div className="relative flex-shrink-0" ref={labelMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => isAdmin && setShowLabelMenu(!showLabelMenu)}
+                  className={`px-1.5 py-0.5 text-[10px] font-medium rounded-full ${labelConfig[request.label].className} ${isAdmin ? "cursor-pointer hover:opacity-80" : "cursor-default"}`}
+                >
+                  {labelConfig[request.label].name}
+                </button>
+                {showLabelMenu && (
+                  <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-lg shadow-lg py-1 z-10 min-w-[100px]">
+                    {REQUEST_LABELS.filter((l) => l !== request.label).map((l) => (
+                      <button
+                        key={l}
+                        type="button"
+                        onClick={() => {
+                          onChangeLabel(request.id, l);
+                          setShowLabelMenu(false);
+                        }}
+                        className={`w-full px-3 py-1.5 text-xs text-left hover:bg-secondary/50 transition-colors ${labelConfig[l].className.split(" ").filter((c) => c.startsWith("text-")).join(" ")}`}
+                      >
+                        {labelConfig[l].name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
             <h3 className={`font-medium truncate ${config.titleClass}`}>
               {request.title}

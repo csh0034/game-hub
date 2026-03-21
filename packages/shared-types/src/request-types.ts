@@ -41,3 +41,8 @@ export interface ResolveRequestPayload {
   commitHash: string;
   adminResponse?: string;
 }
+
+export interface ChangeLabelPayload {
+  requestId: string;
+  label: RequestLabel;
+}

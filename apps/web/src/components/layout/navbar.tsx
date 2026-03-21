@@ -2,16 +2,27 @@
 
 import { Gamepad2, LogOut, Users, Wifi, WifiOff } from "lucide-react";
 
+interface OnlinePlayer {
+  nickname: string;
+  connectedAt: number;
+}
+
 interface NavbarProps {
   isConnected: boolean;
   playerCount: number;
-  onlineNicknames?: string[];
+  onlinePlayers?: OnlinePlayer[];
   nickname: string;
   onGoHome?: () => void;
   onLogout?: () => void;
 }
 
-export function Navbar({ isConnected, playerCount, onlineNicknames = [], nickname, onGoHome, onLogout }: NavbarProps) {
+function formatTime(timestamp: number): string {
+  const d = new Date(timestamp);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+export function Navbar({ isConnected, playerCount, onlinePlayers = [], nickname, onGoHome, onLogout }: NavbarProps) {
   return (
     <nav className="border-b border-border bg-card/80 backdrop-blur-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -38,12 +49,15 @@ export function Navbar({ isConnected, playerCount, onlineNicknames = [], nicknam
                 <Users className="w-4 h-4" />
                 <span>{playerCount} 온라인</span>
               </div>
-              {onlineNicknames.length > 0 && (
-                <div className="absolute top-full right-0 mt-2 w-48 bg-card border border-border rounded-lg shadow-lg py-2 px-3 hidden group-hover:block z-50">
+              {onlinePlayers.length > 0 && (
+                <div className="absolute top-full right-0 mt-2 w-72 bg-card border border-border rounded-lg shadow-lg py-2 px-3 hidden group-hover:block z-50">
                   <p className="text-xs font-medium text-muted-foreground mb-1.5">접속 중인 플레이어</p>
                   <ul className="space-y-0.5">
-                    {onlineNicknames.map((name) => (
-                      <li key={name} className="text-sm text-foreground truncate">{name}</li>
+                    {onlinePlayers.map((player) => (
+                      <li key={player.nickname} className="text-sm text-foreground flex items-center justify-between gap-2">
+                        <span className="truncate">{player.nickname}</span>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">{formatTime(player.connectedAt)}</span>
+                      </li>
                     ))}
                   </ul>
                 </div>

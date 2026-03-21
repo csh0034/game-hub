@@ -49,6 +49,7 @@ io.on("connection", (socket) => {
   socket.data.nickname = `Player_${socket.id.slice(0, 4)}`;
   socket.data.roomId = null;
   socket.data.authenticated = false;
+  socket.data.authenticatedAt = null;
 
   setupNicknameHandler(io, socket);
   setupLobbyHandler(io, socket, gameManager);

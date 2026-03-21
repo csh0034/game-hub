@@ -49,7 +49,7 @@ function nicknameStore() {
 const store = nicknameStore();
 
 export default function LobbyPage() {
-  const { socket, isConnected, playerCount, onlineNicknames } = useSocket();
+  const { socket, isConnected, playerCount, onlinePlayers } = useSocket();
   const { rooms, currentRoom, createRoom, joinRoom, leaveRoom, toggleReady } =
     useLobby(socket);
   const { lobbyMessages, roomMessages, sendLobbyMessage, sendRoomMessage, clearRoomMessages, requestLobbyHistory, requestRoomHistory } =
@@ -218,7 +218,7 @@ export default function LobbyPage() {
   if (currentRoom) {
     return (
       <div className="min-h-screen flex flex-col">
-        <Navbar isConnected={isConnected} playerCount={playerCount} onlineNicknames={onlineNicknames} nickname={nickname} onGoHome={handleGoHome} onLogout={handleLogout} />
+        <Navbar isConnected={isConnected} playerCount={playerCount} onlinePlayers={onlinePlayers} nickname={nickname} onGoHome={handleGoHome} onLogout={handleLogout} />
         <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-6">
           <RoomView
             room={currentRoom}
@@ -238,7 +238,7 @@ export default function LobbyPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar isConnected={isConnected} playerCount={playerCount} onlineNicknames={onlineNicknames} nickname={nickname} onGoHome={handleGoHome} onLogout={handleLogout} />
+      <Navbar isConnected={isConnected} playerCount={playerCount} onlinePlayers={onlinePlayers} nickname={nickname} onGoHome={handleGoHome} onLogout={handleLogout} />
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-6">
         <div className="lg:grid lg:grid-cols-[1fr_320px] lg:gap-6">
           <div className="space-y-8">

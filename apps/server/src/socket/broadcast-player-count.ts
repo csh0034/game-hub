@@ -10,14 +10,17 @@ type GameServer = Server<ClientToServerEvents, ServerToClientEvents, InterServer
 
 export function broadcastAuthenticatedCount(io: GameServer) {
   let count = 0;
-  const nicknames: string[] = [];
+  const players: { nickname: string; connectedAt: number }[] = [];
   for (const [, s] of io.sockets.sockets) {
     if (s.data.authenticated) {
       count++;
       if (s.data.nickname) {
-        nicknames.push(s.data.nickname);
+        players.push({
+          nickname: s.data.nickname,
+          connectedAt: s.data.authenticatedAt ?? Date.now(),
+        });
       }
     }
   }
-  io.emit("system:player-count", { count, nicknames });
+  io.emit("system:player-count", { count, players });
 }

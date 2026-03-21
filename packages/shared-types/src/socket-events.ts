@@ -71,7 +71,7 @@ export interface ServerToClientEvents {
   "chat:room-message": (data: ChatMessage) => void;
 
   // System
-  "system:player-count": (data: { count: number; nicknames: string[] }) => void;
+  "system:player-count": (data: { count: number; players: { nickname: string; connectedAt: number }[] }) => void;
 }
 
 export interface InterServerEvents {
@@ -83,4 +83,5 @@ export interface SocketData {
   nickname: string;
   roomId: string | null;
   authenticated: boolean;
+  authenticatedAt: number | null;
 }

@@ -28,6 +28,7 @@ export function setupNicknameHandler(io: GameServer, socket: GameSocket) {
 
     socket.data.nickname = trimmed;
     socket.data.authenticated = true;
+    socket.data.authenticatedAt = Date.now();
     if (!socket.data.roomId) {
       socket.join("lobby");
     }
@@ -37,6 +38,7 @@ export function setupNicknameHandler(io: GameServer, socket: GameSocket) {
 
   socket.on("player:logout", () => {
     socket.data.authenticated = false;
+    socket.data.authenticatedAt = null;
     socket.leave("lobby");
     broadcastAuthenticatedCount(io);
   });

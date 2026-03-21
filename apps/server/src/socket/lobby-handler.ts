@@ -171,19 +171,13 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
       return callback({ success: false, error: "채팅 저장소를 사용할 수 없습니다." });
     }
 
-    let deleted = false;
-    if (target === "lobby") {
-      deleted = await chatStore.deleteLobbyMessage(messageId);
-      if (deleted) {
-        io.to("lobby").emit("chat:message-deleted", { target: "lobby", messageId });
-      }
-    } else {
-      const roomId = socket.data.roomId;
-      if (!roomId) return callback({ success: false, error: "방에 참가하고 있지 않습니다." });
-      deleted = await chatStore.deleteRoomMessage(roomId, messageId);
-      if (deleted) {
-        io.to(roomId).emit("chat:message-deleted", { target: "room", messageId });
-      }
+    if (target !== "lobby") {
+      return callback({ success: false, error: "로비 채팅만 삭제할 수 있습니다." });
+    }
+
+    const deleted = await chatStore.deleteLobbyMessage(messageId);
+    if (deleted) {
+      io.to("lobby").emit("chat:message-deleted", { target: "lobby", messageId });
     }
 
     callback({ success: deleted, error: deleted ? undefined : "메시지를 찾을 수 없습니다." });

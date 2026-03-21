@@ -309,19 +309,11 @@ describe("chat:delete-message", () => {
     });
   });
 
-  it("admin이 방 메시지를 삭제한다", async () => {
-    socket.data.roomId = "room-1";
-
-    socket._trigger("chat:room-message", "삭제할 방 메시지");
-
-    const sentMsg = (io._toEmit as ReturnType<typeof vi.fn>).mock.calls[0]?.[1] as ChatMessage;
-
+  it("방 메시지 삭제 요청 시 에러를 반환한다", () => {
     const callback = vi.fn();
-    socket._trigger("chat:delete-message", "room", sentMsg.id, callback);
+    socket._trigger("chat:delete-message", "room", "some-id", callback);
 
-    await vi.waitFor(() => {
-      expect(callback).toHaveBeenCalledWith({ success: true, error: undefined });
-    });
+    expect(callback).toHaveBeenCalledWith({ success: false, error: "로비 채팅만 삭제할 수 있습니다." });
   });
 
   it("admin이 아닌 유저는 삭제할 수 없다", () => {

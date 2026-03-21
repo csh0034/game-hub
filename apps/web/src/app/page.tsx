@@ -239,8 +239,6 @@ export default function LobbyPage() {
             onToggleReady={toggleReady}
             roomMessages={roomMessages}
             onSendRoomMessage={sendRoomMessage}
-            isAdmin={isAdmin}
-            onDeleteMessage={(messageId) => deleteMessage("room", messageId)}
           />
         </main>
         {confirmDialog}

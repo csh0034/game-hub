@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import type { ChatMessage } from "@game-hub/shared-types";
 import { Send, ChevronDown, Trash2 } from "lucide-react";
+import { ConfirmDialog } from "@/components/common/confirm-dialog";
 
 interface ChatPanelProps {
   messages: ChatMessage[];
@@ -37,6 +38,7 @@ export function ChatPanel({
   onDeleteMessage,
 }: ChatPanelProps) {
   const [input, setInput] = useState("");
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [lastSeenCount, setLastSeenCount] = useState(messages.length);
   const [isNearBottom, setIsNearBottom] = useState(true);
   const [isChatVisible, setIsChatVisible] = useState(true);
@@ -147,7 +149,7 @@ export function ChatPanel({
                 </span>
                 {isAdmin && onDeleteMessage && msg.id && (
                   <button
-                    onClick={() => onDeleteMessage(msg.id)}
+                    onClick={() => setDeleteTargetId(msg.id)}
                     className="ml-1 opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 transition-opacity"
                     title="메시지 삭제"
                   >
@@ -190,6 +192,23 @@ export function ChatPanel({
           <Send className="w-4 h-4" />
         </button>
       </form>
+
+      {onDeleteMessage && (
+        <ConfirmDialog
+          open={deleteTargetId !== null}
+          title="메시지 삭제"
+          message="이 메시지를 삭제하시겠습니까?"
+          confirmText="삭제"
+          cancelText="취소"
+          onConfirm={() => {
+            if (deleteTargetId) {
+              onDeleteMessage(deleteTargetId);
+            }
+            setDeleteTargetId(null);
+          }}
+          onCancel={() => setDeleteTargetId(null)}
+        />
+      )}
     </div>
   );
 }

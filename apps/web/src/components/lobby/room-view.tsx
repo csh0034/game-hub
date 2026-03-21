@@ -72,11 +72,9 @@ interface RoomViewProps {
   onToggleReady: () => void;
   roomMessages: ChatMessage[];
   onSendRoomMessage: (message: string) => void;
-  isAdmin?: boolean;
-  onDeleteMessage?: (messageId: string) => void;
 }
 
-export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, onToggleReady, roomMessages, onSendRoomMessage, isAdmin, onDeleteMessage }: RoomViewProps) {
+export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, onToggleReady, roomMessages, onSendRoomMessage }: RoomViewProps) {
   const { gameState, gameResult, playerLeftInfo, startGame, requestRematch, setPlayerLeftInfo } = useGame(socket);
   const [chatOpen, setChatOpen] = useState(true);
   const [lastSeenMessageCount, setLastSeenMessageCount] = useState(roomMessages.length);
@@ -185,8 +183,6 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
                 placeholder="게임 채팅..."
                 myNickname={nickname}
                 showNewMessageButton
-                isAdmin={isAdmin}
-                onDeleteMessage={onDeleteMessage}
               />
             </div>
           )}
@@ -329,8 +325,6 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
           placeholder="방 채팅..."
           myNickname={nickname}
           showNewMessageButton
-          isAdmin={isAdmin}
-          onDeleteMessage={onDeleteMessage}
         />
       </div>
     </div>

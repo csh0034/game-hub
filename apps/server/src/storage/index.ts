@@ -5,6 +5,8 @@ import type { SessionStore } from "./session-store.js";
 import { RedisChatStore } from "./chat-store.js";
 import { RedisRoomStore } from "./room-store.js";
 import { RedisSessionStore } from "./session-store.js";
+import { InMemoryChatStore } from "./in-memory-chat-store.js";
+import { InMemorySessionStore } from "./in-memory-session-store.js";
 
 export type { ChatStore } from "./chat-store.js";
 export type { RoomStore } from "./room-store.js";
@@ -20,5 +22,15 @@ export function createStorage(redis: Redis): {
     chatStore: new RedisChatStore(redis),
     roomStore: new RedisRoomStore(redis),
     sessionStore: new RedisSessionStore(redis),
+  };
+}
+
+export function createInMemoryStorage(): {
+  chatStore: ChatStore;
+  sessionStore: SessionStore;
+} {
+  return {
+    chatStore: new InMemoryChatStore(),
+    sessionStore: new InMemorySessionStore(),
   };
 }

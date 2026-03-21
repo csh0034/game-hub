@@ -15,7 +15,7 @@ import { setupNicknameHandler } from "./socket/nickname-handler.js";
 import { broadcastAuthenticatedCount } from "./socket/broadcast-player-count.js";
 import { GameManager } from "./games/game-manager.js";
 import { parseCorsOrigin } from "./cors.js";
-import { connectRedis, closeRedis, createStorage } from "./storage/index.js";
+import { connectRedis, closeRedis, createStorage, createInMemoryStorage } from "./storage/index.js";
 import type { ChatStore, SessionStore } from "./storage/index.js";
 
 const PORT = parseInt(process.env.PORT || "3001", 10);
@@ -56,6 +56,9 @@ async function bootstrap() {
   } catch {
     console.warn("[bootstrap] Redis unavailable, running in memory-only mode");
     await closeRedis();
+    const memStorage = createInMemoryStorage();
+    chatStore = memStorage.chatStore;
+    sessionStore = memStorage.sessionStore;
     gameManager = new GameManager();
   }
 

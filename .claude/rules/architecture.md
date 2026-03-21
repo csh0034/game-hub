@@ -23,6 +23,8 @@ game-hub/
 │   ├── chat-store.ts        # 채팅 저장소 (인터페이스 + Redis 구현)
 │   ├── room-store.ts        # 방 저장소 (인터페이스 + Redis 구현)
 │   ├── session-store.ts     # 세션 저장소 (인터페이스 + Redis 구현)
+│   ├── in-memory-chat-store.ts    # 채팅 저장소 인메모리 구현
+│   ├── in-memory-session-store.ts # 세션 저장소 인메모리 구현
 │   └── index.ts             # 팩토리 + 재수출
 ├── games/
 │   ├── engine-interface.ts  # GameEngine 인터페이스
@@ -43,7 +45,7 @@ game-hub/
 
 ### Redis 영속화
 
-채팅 이력, 방 목록, 플레이어 세션을 Redis에 저장한다. 인메모리 Map이 source of truth이고 Redis는 write-through 백업이다. Redis 장애 시에도 인메모리 모드로 동작한다 (graceful degradation).
+채팅 이력, 방 목록, 플레이어 세션을 Redis에 저장한다. 인메모리 Map이 source of truth이고 Redis는 write-through 백업이다. Redis 장애 시에도 `InMemoryChatStore`/`InMemorySessionStore`로 전환하여 채팅 히스토리·세션 관리가 정상 동작한다 (graceful degradation).
 
 - **채팅**: `chat:lobby` (LIST), `chat:room:{roomId}` (LIST) — 각 최근 50개
 - **방**: `room:{roomId}` (STRING/JSON), `rooms` (SET) — 서버 시작 시 복구

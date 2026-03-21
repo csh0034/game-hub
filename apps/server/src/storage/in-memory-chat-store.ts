@@ -37,4 +37,20 @@ export class InMemoryChatStore implements ChatStore {
   async deleteRoomHistory(roomId: string): Promise<void> {
     this.roomMessages.delete(roomId);
   }
+
+  async deleteLobbyMessage(messageId: string): Promise<boolean> {
+    const idx = this.lobbyMessages.findIndex((m) => m.id === messageId);
+    if (idx === -1) return false;
+    this.lobbyMessages.splice(idx, 1);
+    return true;
+  }
+
+  async deleteRoomMessage(roomId: string, messageId: string): Promise<boolean> {
+    const messages = this.roomMessages.get(roomId);
+    if (!messages) return false;
+    const idx = messages.findIndex((m) => m.id === messageId);
+    if (idx === -1) return false;
+    messages.splice(idx, 1);
+    return true;
+  }
 }

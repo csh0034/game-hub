@@ -9,6 +9,8 @@ export interface ChatStore {
   pushRoomMessage(roomId: string, msg: ChatMessage): Promise<void>;
   getRoomHistory(roomId: string): Promise<ChatMessage[]>;
   deleteRoomHistory(roomId: string): Promise<void>;
+  deleteLobbyMessage(messageId: string): Promise<boolean>;
+  deleteRoomMessage(roomId: string, messageId: string): Promise<boolean>;
 }
 
 export class RedisChatStore implements ChatStore {
@@ -58,6 +60,39 @@ export class RedisChatStore implements ChatStore {
       await this.redis.del(`chat:room:${roomId}`);
     } catch (err) {
       console.error("[chat-store] failed to delete room history:", err);
+    }
+  }
+
+  async deleteLobbyMessage(messageId: string): Promise<boolean> {
+    try {
+      const items = await this.redis.lrange("chat:lobby", 0, -1);
+      const target = items.find((item) => {
+        const msg = JSON.parse(item) as ChatMessage;
+        return msg.id === messageId;
+      });
+      if (!target) return false;
+      await this.redis.lrem("chat:lobby", 1, target);
+      return true;
+    } catch (err) {
+      console.error("[chat-store] failed to delete lobby message:", err);
+      return false;
+    }
+  }
+
+  async deleteRoomMessage(roomId: string, messageId: string): Promise<boolean> {
+    try {
+      const key = `chat:room:${roomId}`;
+      const items = await this.redis.lrange(key, 0, -1);
+      const target = items.find((item) => {
+        const msg = JSON.parse(item) as ChatMessage;
+        return msg.id === messageId;
+      });
+      if (!target) return false;
+      await this.redis.lrem(key, 1, target);
+      return true;
+    } catch (err) {
+      console.error("[chat-store] failed to delete room message:", err);
+      return false;
     }
   }
 }

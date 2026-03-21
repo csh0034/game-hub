@@ -4,6 +4,7 @@ import type { Player } from "./player-types";
 import type { FeatureRequest, CreateRequestPayload, ResolveRequestPayload } from "./request-types";
 
 export interface ChatMessage {
+  id: string;
   playerId: string;
   nickname: string;
   message: string;
@@ -36,6 +37,7 @@ export interface ClientToServerEvents {
   "chat:lobby-message": (message: string) => void;
   "chat:room-message": (message: string) => void;
   "chat:request-history": (target: "lobby" | "room", callback: (messages: ChatMessage[]) => void) => void;
+  "chat:delete-message": (target: "lobby" | "room", messageId: string, callback: (result: { success: boolean; error?: string }) => void) => void;
 
   // Request Board
   "request:create": (payload: CreateRequestPayload, callback: (request: FeatureRequest | null, error?: string) => void) => void;
@@ -76,6 +78,7 @@ export interface ServerToClientEvents {
   // Chat
   "chat:lobby-message": (data: ChatMessage) => void;
   "chat:room-message": (data: ChatMessage) => void;
+  "chat:message-deleted": (data: { target: "lobby" | "room"; messageId: string }) => void;
 
   // Request Board
   "request:created": (request: FeatureRequest) => void;

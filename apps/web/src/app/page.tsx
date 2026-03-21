@@ -54,7 +54,7 @@ export default function LobbyPage() {
   const { socket, isConnected, playerCount, onlinePlayers } = useSocket();
   const { rooms, currentRoom, createRoom, joinRoom, leaveRoom, toggleReady } =
     useLobby(socket);
-  const { lobbyMessages, roomMessages, sendLobbyMessage, sendRoomMessage, clearRoomMessages, requestLobbyHistory, requestRoomHistory } =
+  const { lobbyMessages, roomMessages, sendLobbyMessage, sendRoomMessage, clearRoomMessages, requestLobbyHistory, requestRoomHistory, deleteMessage } =
     useChat(socket);
   const { requests, createRequest, resolveRequest, deleteRequest } = useRequests(socket);
   const [activeTab, setActiveTab] = useState<"lobby" | "requests">("lobby");
@@ -239,6 +239,8 @@ export default function LobbyPage() {
             onToggleReady={toggleReady}
             roomMessages={roomMessages}
             onSendRoomMessage={sendRoomMessage}
+            isAdmin={isAdmin}
+            onDeleteMessage={(messageId) => deleteMessage("room", messageId)}
           />
         </main>
         {confirmDialog}
@@ -319,6 +321,8 @@ export default function LobbyPage() {
                 onSendMessage={sendLobbyMessage}
                 placeholder="로비 채팅..."
                 myNickname={nickname ?? undefined}
+                isAdmin={isAdmin}
+                onDeleteMessage={(messageId) => deleteMessage("lobby", messageId)}
               />
             </aside>
           )}

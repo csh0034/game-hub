@@ -8,10 +8,12 @@ function createMockRedis() {
     ltrim: vi.fn().mockResolvedValue("OK"),
     lrange: vi.fn().mockResolvedValue([]),
     del: vi.fn().mockResolvedValue(1),
+    lrem: vi.fn().mockResolvedValue(1),
   };
 }
 
 const msg: ChatMessage = {
+  id: "msg-1",
   playerId: "p1",
   nickname: "Player1",
   message: "hello",
@@ -70,6 +72,36 @@ describe("RedisChatStore", () => {
     it("방 채팅 이력을 삭제한다", async () => {
       await store.deleteRoomHistory("room-1");
       expect(redis.del).toHaveBeenCalledWith("chat:room:room-1");
+    });
+  });
+
+  describe("deleteLobbyMessage", () => {
+    it("로비 메시지를 ID로 삭제한다", async () => {
+      redis.lrange.mockResolvedValue([JSON.stringify(msg)]);
+      const result = await store.deleteLobbyMessage("msg-1");
+      expect(result).toBe(true);
+      expect(redis.lrem).toHaveBeenCalledWith("chat:lobby", 1, JSON.stringify(msg));
+    });
+
+    it("존재하지 않는 메시지 삭제 시 false를 반환한다", async () => {
+      redis.lrange.mockResolvedValue([JSON.stringify(msg)]);
+      const result = await store.deleteLobbyMessage("nonexistent");
+      expect(result).toBe(false);
+    });
+  });
+
+  describe("deleteRoomMessage", () => {
+    it("방 메시지를 ID로 삭제한다", async () => {
+      redis.lrange.mockResolvedValue([JSON.stringify(msg)]);
+      const result = await store.deleteRoomMessage("room-1", "msg-1");
+      expect(result).toBe(true);
+      expect(redis.lrem).toHaveBeenCalledWith("chat:room:room-1", 1, JSON.stringify(msg));
+    });
+
+    it("존재하지 않는 메시지 삭제 시 false를 반환한다", async () => {
+      redis.lrange.mockResolvedValue([]);
+      const result = await store.deleteRoomMessage("room-1", "nonexistent");
+      expect(result).toBe(false);
     });
   });
 });

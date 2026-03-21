@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import type { ChatMessage } from "@game-hub/shared-types";
-import { Send, ChevronDown } from "lucide-react";
+import { Send, ChevronDown, Trash2 } from "lucide-react";
 
 interface ChatPanelProps {
   messages: ChatMessage[];
@@ -11,6 +11,8 @@ interface ChatPanelProps {
   myNickname?: string;
   onNewMessage?: () => void;
   showNewMessageButton?: boolean;
+  isAdmin?: boolean;
+  onDeleteMessage?: (messageId: string) => void;
 }
 
 function formatTime(timestamp: number): string {
@@ -31,6 +33,8 @@ export function ChatPanel({
   myNickname,
   onNewMessage,
   showNewMessageButton = false,
+  isAdmin = false,
+  onDeleteMessage,
 }: ChatPanelProps) {
   const [input, setInput] = useState("");
   const [lastSeenCount, setLastSeenCount] = useState(messages.length);
@@ -134,13 +138,22 @@ export function ChatPanel({
           {messages.map((msg, idx) => {
             const isMe = msg.nickname === myNickname;
             return (
-              <div key={idx} className={`text-sm ${isMe ? "text-right" : ""}`}>
+              <div key={msg.id ?? idx} className={`group text-sm ${isMe ? "text-right" : ""}`}>
                 <span className="text-muted-foreground text-xs mr-1">
                   {formatTime(msg.timestamp)}
                 </span>
                 <span className={`font-semibold ${isMe ? "text-sky-400" : ""}`}>
                   {msg.nickname}
                 </span>
+                {isAdmin && onDeleteMessage && msg.id && (
+                  <button
+                    onClick={() => onDeleteMessage(msg.id)}
+                    className="ml-1 opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 transition-opacity"
+                    title="메시지 삭제"
+                  >
+                    <Trash2 className="w-3 h-3 inline" />
+                  </button>
+                )}
                 <p className={`${isMe ? "text-sky-400/90" : "text-foreground"} break-words`}>
                   {msg.message}
                 </p>

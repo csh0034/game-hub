@@ -12,6 +12,8 @@ export function useChat(socket: GameSocket | null) {
     setRoomMessages,
     clearRoomMessages,
     clearLobbyMessages,
+    removeLobbyMessage,
+    removeRoomMessage,
   } = useChatStore();
 
   useEffect(() => {
@@ -19,12 +21,21 @@ export function useChat(socket: GameSocket | null) {
 
     socket.on("chat:lobby-message", addLobbyMessage);
     socket.on("chat:room-message", addRoomMessage);
+    const handleMessageDeleted = (data: { target: "lobby" | "room"; messageId: string }) => {
+      if (data.target === "lobby") {
+        removeLobbyMessage(data.messageId);
+      } else {
+        removeRoomMessage(data.messageId);
+      }
+    };
+    socket.on("chat:message-deleted", handleMessageDeleted);
 
     return () => {
       socket.off("chat:lobby-message", addLobbyMessage);
       socket.off("chat:room-message", addRoomMessage);
+      socket.off("chat:message-deleted", handleMessageDeleted);
     };
-  }, [socket, addLobbyMessage, addRoomMessage]);
+  }, [socket, addLobbyMessage, addRoomMessage, removeLobbyMessage, removeRoomMessage]);
 
   const requestLobbyHistory = useCallback(() => {
     if (!socket) return;
@@ -50,6 +61,13 @@ export function useChat(socket: GameSocket | null) {
     [socket],
   );
 
+  const deleteMessage = useCallback(
+    (target: "lobby" | "room", messageId: string) => {
+      socket?.emit("chat:delete-message", target, messageId, () => {});
+    },
+    [socket],
+  );
+
   return {
     lobbyMessages,
     roomMessages,
@@ -59,5 +77,6 @@ export function useChat(socket: GameSocket | null) {
     requestRoomHistory,
     clearRoomMessages,
     clearLobbyMessages,
+    deleteMessage,
   };
 }

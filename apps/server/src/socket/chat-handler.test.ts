@@ -34,6 +34,20 @@ function createMockChatStore(): ChatStore {
     deleteRoomHistory: vi.fn(async (roomId: string) => {
       roomMessages.delete(roomId);
     }),
+    deleteLobbyMessage: vi.fn(async (messageId: string) => {
+      const idx = lobbyMessages.findIndex((m) => m.id === messageId);
+      if (idx === -1) return false;
+      lobbyMessages.splice(idx, 1);
+      return true;
+    }),
+    deleteRoomMessage: vi.fn(async (roomId: string, messageId: string) => {
+      const msgs = roomMessages.get(roomId);
+      if (!msgs) return false;
+      const idx = msgs.findIndex((m) => m.id === messageId);
+      if (idx === -1) return false;
+      msgs.splice(idx, 1);
+      return true;
+    }),
   };
 }
 
@@ -258,6 +272,76 @@ describe("chat:request-history", () => {
 
     await vi.waitFor(() => {
       expect(callback).toHaveBeenCalledWith([]);
+    });
+  });
+});
+
+describe("chat:delete-message", () => {
+  let socket: ReturnType<typeof createMockSocket>;
+  let io: ReturnType<typeof createMockIo>;
+  let gameManager: GameManager;
+  let chatStore: ChatStore;
+
+  beforeEach(() => {
+    socket = createMockSocket("socket-1", "admin");
+    io = createMockIo();
+    gameManager = new GameManager();
+    chatStore = createMockChatStore();
+    setupLobbyHandler(io as unknown as GameServer, socket as unknown as GameSocket, gameManager, chatStore);
+  });
+
+  it("admin이 로비 메시지를 삭제한다", async () => {
+    socket.data.authenticated = true;
+    socket.data.roomId = null;
+
+    // 메시지 전송
+    socket._trigger("chat:lobby-message", "삭제할 메시지");
+
+    // 전송된 메시지의 id를 가져옴
+    const sentMsg = (io._toEmit as ReturnType<typeof vi.fn>).mock.calls[0]?.[1] as ChatMessage;
+    expect(sentMsg.id).toBeDefined();
+
+    const callback = vi.fn();
+    socket._trigger("chat:delete-message", "lobby", sentMsg.id, callback);
+
+    await vi.waitFor(() => {
+      expect(callback).toHaveBeenCalledWith({ success: true, error: undefined });
+    });
+  });
+
+  it("admin이 방 메시지를 삭제한다", async () => {
+    socket.data.roomId = "room-1";
+
+    socket._trigger("chat:room-message", "삭제할 방 메시지");
+
+    const sentMsg = (io._toEmit as ReturnType<typeof vi.fn>).mock.calls[0]?.[1] as ChatMessage;
+
+    const callback = vi.fn();
+    socket._trigger("chat:delete-message", "room", sentMsg.id, callback);
+
+    await vi.waitFor(() => {
+      expect(callback).toHaveBeenCalledWith({ success: true, error: undefined });
+    });
+  });
+
+  it("admin이 아닌 유저는 삭제할 수 없다", () => {
+    const normalSocket = createMockSocket("socket-2", "Player1");
+    setupLobbyHandler(io as unknown as GameServer, normalSocket as unknown as GameSocket, gameManager, chatStore);
+
+    const callback = vi.fn();
+    normalSocket._trigger("chat:delete-message", "lobby", "some-id", callback);
+
+    expect(callback).toHaveBeenCalledWith({ success: false, error: "권한이 없습니다." });
+  });
+
+  it("존재하지 않는 메시지 삭제 시 실패를 반환한다", async () => {
+    socket.data.roomId = null;
+
+    const callback = vi.fn();
+    socket._trigger("chat:delete-message", "lobby", "nonexistent-id", callback);
+
+    await vi.waitFor(() => {
+      expect(callback).toHaveBeenCalledWith({ success: false, error: "메시지를 찾을 수 없습니다." });
     });
   });
 });

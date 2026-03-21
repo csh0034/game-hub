@@ -12,6 +12,8 @@ interface ChatStore {
   setRoomMessages: (msgs: ChatMessage[]) => void;
   clearRoomMessages: () => void;
   clearLobbyMessages: () => void;
+  removeLobbyMessage: (messageId: string) => void;
+  removeRoomMessage: (messageId: string) => void;
 }
 
 export const useChatStore = create<ChatStore>((set) => ({
@@ -29,4 +31,12 @@ export const useChatStore = create<ChatStore>((set) => ({
   setRoomMessages: (msgs) => set({ roomMessages: msgs.slice(-MAX_MESSAGES) }),
   clearRoomMessages: () => set({ roomMessages: [] }),
   clearLobbyMessages: () => set({ lobbyMessages: [] }),
+  removeLobbyMessage: (messageId) =>
+    set((state) => ({
+      lobbyMessages: state.lobbyMessages.filter((m) => m.id !== messageId),
+    })),
+  removeRoomMessage: (messageId) =>
+    set((state) => ({
+      roomMessages: state.roomMessages.filter((m) => m.id !== messageId),
+    })),
 }));

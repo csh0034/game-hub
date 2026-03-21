@@ -80,6 +80,7 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
   const [lastSeenMessageCount, setLastSeenMessageCount] = useState(roomMessages.length);
   const config = GAME_CONFIGS[room.gameType];
   const isHost = socket?.id === room.hostId;
+  const myPlayer = room.players.find((p) => p.id === socket?.id);
   const isPlaying = room.status === "playing" || !!gameState;
 
   // 채팅 열린 상태에서 메시지 수 동기화
@@ -301,9 +302,14 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
         ) : (
           <button
             onClick={onToggleReady}
-            className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground py-3 rounded-lg font-medium transition-colors"
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-colors ${
+              myPlayer?.isReady
+                ? "bg-success hover:bg-success/90 text-white"
+                : "bg-primary hover:bg-primary/90 text-primary-foreground"
+            }`}
           >
-            준비 완료
+            {myPlayer?.isReady && <CheckCircle2 className="w-5 h-5" />}
+            {myPlayer?.isReady ? "준비 취소" : "준비 완료"}
           </button>
         )}
       </div>

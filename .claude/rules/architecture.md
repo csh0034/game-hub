@@ -76,7 +76,9 @@ game-hub/
 
 ```
 ├── app/                     # App Router 페이지
-│   ├── page.tsx             # / — 로비 (GameHub 렌더)
+│   ├── page.tsx             # / → /lobby 리다이렉트
+│   ├── lobby/page.tsx       # /lobby — 로비 (GameHub activeTab="lobby")
+│   ├── request/page.tsx     # /request — 요청사항 (GameHub activeTab="requests")
 │   └── room/[id]/page.tsx   # /room/[id] — 방 직접 입장 (pendingRoomId 설정 후 GameHub 렌더)
 ├── components/
 │   ├── game-hub.tsx         # 메인 앱 로직 (닉네임, 로비, 방, URL 동기화)
@@ -101,11 +103,12 @@ game-hub/
     └── utils.ts
 ```
 
-### 라우팅 & 방 URL 공유
+### 라우팅
 
-- `/` — 로비 페이지, `/room/[id]` — 방 직접 입장 페이지. 두 라우트 모두 `<GameHub />` 컴포넌트를 렌더한다.
-- `/room/[id]` 접속 시 `pendingRoomId`를 lobby-store에 설정 → `player:set-nickname` 인증 완료 후 자동 `joinRoom` 실행.
-- 방 생성/입장 시 `history.pushState`로 URL을 `/room/{roomId}`로 변경, 나갈 때 `/`로 복원.
+- `/` → `/lobby` 리다이렉트. 모든 라우트는 `<GameHub />` 컴포넌트를 렌더하며, `activeTab` prop으로 탭을 결정한다.
+- `/lobby` — 로비 (게임 카드, 방 목록, 채팅). `/request` — 요청사항 게시판. 탭 전환은 Next.js `<Link>`로 라우팅.
+- `/room/[id]` — 방 직접 입장. `pendingRoomId`를 lobby-store에 설정 → `player:set-nickname` 인증 완료 후 자동 `joinRoom` 실행.
+- 방 생성/입장 시 `history.pushState`로 URL을 `/room/{roomId}`로 변경, 나갈 때 `/lobby`로 복원.
 - 방 대기실에서 "링크 복사" 버튼으로 `{origin}/room/{roomId}` URL을 클립보드에 복사.
 
 ## 공유 타입 (packages/shared-types/src)

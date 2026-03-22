@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, useSyncExternalStore } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { useGameStore } from "@/stores/game-store";
 import { useLobbyStore } from "@/stores/lobby-store";
@@ -52,14 +53,17 @@ function nicknameStore() {
 
 const store = nicknameStore();
 
-export default function GameHub() {
+interface GameHubProps {
+  activeTab?: "lobby" | "requests";
+}
+
+export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
   const { socket, isConnected, playerCount, onlinePlayers } = useSocket();
   const { rooms, currentRoom, createRoom, joinRoom, leaveRoom, toggleReady } =
     useLobby(socket);
   const { lobbyMessages, roomMessages, sendLobbyMessage, sendRoomMessage, clearRoomMessages, requestLobbyHistory, requestRoomHistory, deleteMessage } =
     useChat(socket);
   const { requests, createRequest, acceptRequest, rejectRequest, resolveRequest, changeLabelRequest, deleteRequest } = useRequests(socket);
-  const [activeTab, setActiveTab] = useState<"lobby" | "requests">("lobby");
   const [isAdmin, setIsAdmin] = useState(false);
   const [githubRepoUrl, setGithubRepoUrl] = useState<string | undefined>();
   const isNavigatingBack = useRef(false);
@@ -68,8 +72,6 @@ export default function GameHub() {
     onConfirm: () => void;
   }>({ open: false, onConfirm: () => {} });
   const confirmResolveRef = useRef<((value: boolean) => void) | null>(null);
-
-  const pendingRoomId = useLobbyStore((s) => s.pendingRoomId);
 
   const nickname = useSyncExternalStore(
     store.subscribe,
@@ -104,7 +106,7 @@ export default function GameHub() {
         })
         .catch((error: string) => {
           toast.error(error);
-          history.replaceState(null, "", "/");
+          history.replaceState(null, "", "/lobby");
         })
         .finally(() => {
           useLobbyStore.getState().setPendingRoomId(null);
@@ -148,10 +150,10 @@ export default function GameHub() {
     requestLobbyHistory();
     if (isNavigatingBack.current) {
       // popstate에서 호출 — 브라우저가 이미 URL을 변경함, /로 교체만
-      history.replaceState(null, "", "/");
+      history.replaceState(null, "", "/lobby");
     } else {
       // UI 버튼으로 나가기 — URL을 /로 교체
-      history.replaceState(null, "", "/");
+      history.replaceState(null, "", "/lobby");
     }
     isNavigatingBack.current = false;
   }, [currentRoom, leaveRoom, clearRoomMessages, requestLobbyHistory]);
@@ -174,7 +176,7 @@ export default function GameHub() {
     }
     if (currentRoom) {
       leaveRoom();
-      history.replaceState(null, "", "/");
+      history.replaceState(null, "", "/lobby");
     }
     socket?.emit("player:logout");
     store.remove();
@@ -282,8 +284,8 @@ export default function GameHub() {
           <div className="space-y-8">
             {/* 탭 네비게이션 */}
             <div className="flex items-center gap-1 border-b border-border">
-              <button
-                onClick={() => setActiveTab("lobby")}
+              <Link
+                href="/lobby"
                 className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                   activeTab === "lobby"
                     ? "border-primary text-primary"
@@ -291,9 +293,9 @@ export default function GameHub() {
                 }`}
               >
                 로비
-              </button>
-              <button
-                onClick={() => setActiveTab("requests")}
+              </Link>
+              <Link
+                href="/request"
                 className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                   activeTab === "requests"
                     ? "border-primary text-primary"
@@ -306,7 +308,7 @@ export default function GameHub() {
                     {requests.filter((r) => r.status === "open").length}
                   </span>
                 )}
-              </button>
+              </Link>
             </div>
 
             {activeTab === "lobby" ? (

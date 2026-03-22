@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { getSocket, type GameSocket } from "@/lib/socket";
 
 let globalSocket: GameSocket | null = null;
+let cachedPlayerCount = 0;
+let cachedOnlinePlayers: { nickname: string; connectedAt: number }[] = [];
 
 function subscribeSocket(callback: () => void) {
   const socket = getSocket();
@@ -23,9 +25,9 @@ function getSocketSnapshot(): GameSocket | null {
 
 export function useSocket() {
   const socket = useSyncExternalStore(subscribeSocket, getSocketSnapshot, () => null);
-  const [isConnected, setIsConnected] = useState(false);
-  const [playerCount, setPlayerCount] = useState(0);
-  const [onlinePlayers, setOnlinePlayers] = useState<{ nickname: string; connectedAt: number }[]>([]);
+  const [isConnected, setIsConnected] = useState(() => getSocket().connected);
+  const [playerCount, setPlayerCount] = useState(cachedPlayerCount);
+  const [onlinePlayers, setOnlinePlayers] = useState(cachedOnlinePlayers);
   const versionToastShown = useRef(false);
   useEffect(() => {
     const s = getSocket();
@@ -34,6 +36,8 @@ export function useSocket() {
     s.on("connect", () => setIsConnected(true));
     s.on("disconnect", () => setIsConnected(false));
     s.on("system:player-count", ({ count, players }) => {
+      cachedPlayerCount = count;
+      cachedOnlinePlayers = players;
       setPlayerCount(count);
       setOnlinePlayers(players);
     });

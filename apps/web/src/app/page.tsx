@@ -1,5 +1,5 @@
-import GameHub from "@/components/game-hub";
+import { redirect } from "next/navigation";
 
-export default function LobbyPage() {
-  return <GameHub />;
+export default function RootPage() {
+  redirect("/lobby");
 }

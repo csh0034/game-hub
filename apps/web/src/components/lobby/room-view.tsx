@@ -212,8 +212,23 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
         </div>
         <button
           onClick={() => {
-            navigator.clipboard.writeText(window.location.origin + "/room/" + room.id);
-            toast.success("링크가 복사되었습니다");
+            const url = window.location.origin + "/room/" + room.id;
+            if (navigator.clipboard?.writeText) {
+              navigator.clipboard.writeText(url).then(() => {
+                toast.success("링크가 복사되었습니다");
+              });
+            } else {
+              // HTTP 환경 fallback
+              const textarea = document.createElement("textarea");
+              textarea.value = url;
+              textarea.style.position = "fixed";
+              textarea.style.opacity = "0";
+              document.body.appendChild(textarea);
+              textarea.select();
+              document.execCommand("copy");
+              document.body.removeChild(textarea);
+              toast.success("링크가 복사되었습니다");
+            }
           }}
           className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
         >

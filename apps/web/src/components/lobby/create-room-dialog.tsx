@@ -255,15 +255,23 @@ export function CreateRoomDialog({ onCreateRoom }: CreateRoomDialogProps) {
                   </div>
                 </div>
                 <div>
-                  <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={catchMindCharHint}
-                      onChange={(e) => setCatchMindCharHint(e.target.checked)}
-                      className="rounded border-border"
-                    />
-                    글자 수 힌트
-                  </label>
+                  <label className="block text-sm font-medium mb-1.5">글자 수 힌트</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setCatchMindCharHint(false)}
+                      className={`py-2 rounded-lg text-sm font-medium border transition-colors ${!catchMindCharHint ? "border-primary bg-primary/15 text-primary" : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:bg-primary/5"}`}
+                    >
+                      OFF
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCatchMindCharHint(true)}
+                      className={`py-2 rounded-lg text-sm font-medium border transition-colors ${catchMindCharHint ? "border-primary bg-primary/15 text-primary" : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:bg-primary/5"}`}
+                    >
+                      ON
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

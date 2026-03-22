@@ -63,7 +63,7 @@ export default function GomokuBoard({ roomId }: GameComponentProps) {
         </span>
         <span className="text-muted-foreground">·</span>
         <span className={`font-mono font-bold ${remainingTime <= 5 ? "text-red-500" : "text-foreground"}`}>
-          {Math.ceil(remainingTime)}초
+          {Math.round(remainingTime)}초
         </span>
       </div>
 

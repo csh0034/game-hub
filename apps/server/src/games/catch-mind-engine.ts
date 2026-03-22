@@ -187,16 +187,15 @@ export class CatchMindEngine implements GameEngine {
       roundScores[p.id] = 0;
     }
 
-    const someoneGuessed = state.firstGuesserId !== null;
-
+    let someoneGuessed = false;
+    for (const p of state.players) {
+      if (p.id !== state.drawerId && p.hasGuessedCorrectly) {
+        roundScores[p.id] = 1;
+        someoneGuessed = true;
+      }
+    }
     if (someoneGuessed) {
-      // First guesser gets +1
-      roundScores[state.firstGuesserId!] = 1;
-      // Drawer gets +1
       roundScores[state.drawerId] = 1;
-    } else {
-      // Nobody guessed, drawer gets -1
-      roundScores[state.drawerId] = -1;
     }
 
     const newPlayers = state.players.map((p) => ({

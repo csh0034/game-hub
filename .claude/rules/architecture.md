@@ -83,12 +83,12 @@ game-hub/
 │   ├── chat/chat-panel.tsx  # 채팅 UI (로비/방 공용)
 │   ├── request-board/       # 요청사항 게시판 UI (목록, 작성, 수락/거부/완료 처리)
 │   └── games/               # 게임별 UI
-│       ├── liar-drawing/
-│       ├── catch-mind/
-│       ├── tetris/
 │       ├── gomoku/
+│       ├── texas-holdem/
 │       ├── minesweeper/
-│       └── texas-holdem/
+│       ├── tetris/
+│       ├── liar-drawing/
+│       └── catch-mind/
 ├── hooks/                   # useSocket, useLobby, useGame, useChat, useRequests
 ├── stores/                  # Zustand (lobby-store, game-store, chat-store, request-store)
 └── lib/

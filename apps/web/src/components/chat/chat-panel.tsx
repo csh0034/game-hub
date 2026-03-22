@@ -14,6 +14,7 @@ interface ChatPanelProps {
   showNewMessageButton?: boolean;
   isAdmin?: boolean;
   onDeleteMessage?: (messageId: string) => void;
+  disabled?: boolean;
 }
 
 function formatTime(timestamp: number): string {
@@ -36,6 +37,7 @@ export function ChatPanel({
   showNewMessageButton = false,
   isAdmin = false,
   onDeleteMessage,
+  disabled = false,
 }: ChatPanelProps) {
   const [input, setInput] = useState("");
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
@@ -138,7 +140,19 @@ export function ChatPanel({
             </p>
           )}
           {messages.map((msg, idx) => {
+            const isSystem = msg.playerId === "system";
             const isMe = msg.nickname === myNickname;
+
+            if (isSystem) {
+              return (
+                <div key={msg.id ?? idx} className="text-center py-1">
+                  <span className="text-xs text-emerald-400 bg-emerald-400/10 px-2.5 py-1 rounded-full">
+                    {msg.message}
+                  </span>
+                </div>
+              );
+            }
+
             return (
               <div key={msg.id ?? idx} className={`group text-sm ${isMe ? "text-right" : ""}`}>
                 <span className="text-muted-foreground text-xs mr-1">
@@ -182,12 +196,13 @@ export function ChatPanel({
           onChange={(e) => setInput(e.target.value)}
           placeholder={placeholder}
           maxLength={500}
-          className="flex-1 bg-secondary/50 rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
+          disabled={disabled}
+          className="flex-1 bg-secondary/50 rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground disabled:opacity-50 disabled:cursor-not-allowed"
         />
         <button
           type="submit"
-          disabled={!input.trim()}
-          className="bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground text-primary-foreground p-2 rounded-lg transition-colors"
+          disabled={disabled || !input.trim()}
+          className="bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground text-primary-foreground p-2 rounded-lg transition-colors disabled:cursor-not-allowed"
         >
           <Send className="w-4 h-4" />
         </button>

@@ -15,6 +15,8 @@ interface GameCardGridProps {
   onCreateRoom: (payload: CreateRoomPayload) => Promise<Room>;
 }
 
+const NEW_GAMES: GameType[] = ["liar-drawing", "catch-mind"];
+
 function getQuickStartBadges(gameType: GameType): string[] | null {
   switch (gameType) {
     case "tetris":
@@ -95,6 +97,11 @@ export function GameCardGrid({ onCreateRoom }: GameCardGridProps) {
                   {game.disabled && (
                     <span className="text-xs font-semibold bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded-full">
                       {game.disabledReason ?? "점검중"}
+                    </span>
+                  )}
+                  {!game.disabled && NEW_GAMES.includes(game.gameType) && (
+                    <span className="text-xs font-bold bg-emerald-500 text-white px-2 py-0.5 rounded-full animate-pulse">
+                      NEW
                     </span>
                   )}
                 </div>

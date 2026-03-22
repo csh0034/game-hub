@@ -12,14 +12,6 @@ export interface GameConfig {
 }
 
 export const GAME_CONFIGS: Record<GameType, GameConfig> = {
-  gomoku: {
-    gameType: "gomoku",
-    name: "오목",
-    description: "15×15 보드에서 5개를 연속으로 놓으면 승리",
-    minPlayers: 2,
-    maxPlayers: 2,
-    icon: "⚫",
-  },
   "liar-drawing": {
     gameType: "liar-drawing",
     name: "라이어 드로잉",
@@ -28,6 +20,14 @@ export const GAME_CONFIGS: Record<GameType, GameConfig> = {
     maxPlayers: 8,
     icon: "🎨",
   },
+  "catch-mind": {
+    gameType: "catch-mind",
+    name: "캐치마인드",
+    description: "출제자가 그린 그림을 보고 정답을 맞추는 드로잉 퀴즈 게임",
+    minPlayers: 3,
+    maxPlayers: 8,
+    icon: "🖼️",
+  },
   tetris: {
     gameType: "tetris",
     name: "테트리스",
@@ -35,6 +35,14 @@ export const GAME_CONFIGS: Record<GameType, GameConfig> = {
     minPlayers: 1,
     maxPlayers: 8,
     icon: "🧱",
+  },
+  gomoku: {
+    gameType: "gomoku",
+    name: "오목",
+    description: "15×15 보드에서 5개를 연속으로 놓으면 승리",
+    minPlayers: 2,
+    maxPlayers: 2,
+    icon: "⚫",
   },
   minesweeper: {
     gameType: "minesweeper",
@@ -53,14 +61,6 @@ export const GAME_CONFIGS: Record<GameType, GameConfig> = {
     icon: "🃏",
     disabled: true,
     disabledReason: "패치중",
-  },
-  "catch-mind": {
-    gameType: "catch-mind",
-    name: "캐치마인드",
-    description: "출제자가 그린 그림을 보고 정답을 맞추는 드로잉 퀴즈 게임",
-    minPlayers: 3,
-    maxPlayers: 8,
-    icon: "🖼️",
   },
 };
 

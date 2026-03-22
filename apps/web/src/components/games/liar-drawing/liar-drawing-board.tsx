@@ -1,9 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { useGame } from "@/hooks/use-game";
 import { useSocket } from "@/hooks/use-socket";
+import { HelpCircle } from "lucide-react";
 import type { LiarDrawingPublicState, LiarDrawingPrivateState } from "@game-hub/shared-types";
 import type { GameComponentProps } from "@/lib/game-registry";
+import { GameHelpDialog } from "@/components/common/game-help-dialog";
 import { RoleReveal } from "./role-reveal";
 import { DrawingPhase } from "./drawing-phase";
 import { VotingPanel } from "./voting-panel";
@@ -14,6 +17,7 @@ import { Scoreboard } from "./scoreboard";
 export default function LiarDrawingBoard({ roomId }: GameComponentProps) {
   const { socket } = useSocket();
   const { gameState, privateState, makeMove } = useGame(socket);
+  const [showHelp, setShowHelp] = useState(false);
 
   const state = gameState as LiarDrawingPublicState | null;
   const liarPrivateState = privateState as LiarDrawingPrivateState | null;
@@ -62,8 +66,39 @@ export default function LiarDrawingBoard({ roomId }: GameComponentProps) {
 
   return (
     <div className="flex gap-4">
-      <div className="flex-1">{renderPhase()}</div>
+      <div className="flex-1">
+        <div className="flex justify-end mb-2">
+          <button
+            onClick={() => setShowHelp(true)}
+            className="text-muted-foreground hover:text-foreground transition-colors"
+            title="게임 도움말"
+          >
+            <HelpCircle className="w-5 h-5" />
+          </button>
+        </div>
+        {renderPhase()}
+      </div>
       <Scoreboard state={state} myId={myId} />
+
+      <GameHelpDialog open={showHelp} onClose={() => setShowHelp(false)} title="라이어 드로잉">
+        <div>
+          <h3 className="text-foreground font-semibold mb-1">게임 방법</h3>
+          <ul className="list-disc list-inside space-y-1">
+            <li>한 명이 라이어(제시어를 모름), 나머지는 시민(제시어를 앎)</li>
+            <li>돌아가며 주제에 맞는 그림을 그린다</li>
+            <li>그림을 보고 투표로 라이어를 찾아낸다</li>
+            <li>라이어가 적발되면 제시어 맞추기 기회가 주어진다</li>
+          </ul>
+        </div>
+        <div>
+          <h3 className="text-foreground font-semibold mb-1">점수 체계</h3>
+          <ul className="list-disc list-inside space-y-1">
+            <li>라이어 적발 + 제시어 오답: 시민 전원 +1점</li>
+            <li>라이어 적발 + 제시어 정답: 라이어 +3점</li>
+            <li>라이어 미적발: 라이어 +2점</li>
+          </ul>
+        </div>
+      </GameHelpDialog>
     </div>
   );
 }

@@ -1,11 +1,13 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useGame } from "@/hooks/use-game";
 import { useSocket } from "@/hooks/use-socket";
 import { useChatStore } from "@/stores/chat-store";
+import { HelpCircle } from "lucide-react";
 import type { CatchMindPublicState, CatchMindPrivateState } from "@game-hub/shared-types";
 import type { GameComponentProps } from "@/lib/game-registry";
+import { GameHelpDialog } from "@/components/common/game-help-dialog";
 import { RoleReveal } from "./role-reveal";
 import { DrawingPhase } from "./drawing-phase";
 import { RoundResult } from "./round-result";
@@ -20,6 +22,8 @@ export default function CatchMindBoard({ roomId: _roomId }: GameComponentProps) 
   const state = gameState as CatchMindPublicState | null;
   const cmPrivateState = privateState as CatchMindPrivateState | null;
   const myId = socket?.id || "";
+
+  const [showHelp, setShowHelp] = useState(false);
 
   const sendRoomMessage = useCallback(
     (message: string) => {
@@ -69,6 +73,15 @@ export default function CatchMindBoard({ roomId: _roomId }: GameComponentProps) 
   return (
     <div className="flex gap-4">
       <div className="flex-1">
+        <div className="flex justify-end mb-2">
+          <button
+            onClick={() => setShowHelp(true)}
+            className="text-muted-foreground hover:text-foreground transition-colors"
+            title="게임 도움말"
+          >
+            <HelpCircle className="w-5 h-5" />
+          </button>
+        </div>
         {renderPhase()}
         {state.phase === "drawing" && (
           <div className="mt-4 h-[250px]">
@@ -85,6 +98,24 @@ export default function CatchMindBoard({ roomId: _roomId }: GameComponentProps) 
         )}
       </div>
       <Scoreboard state={state} myId={myId} />
+
+      <GameHelpDialog open={showHelp} onClose={() => setShowHelp(false)} title="캐치마인드">
+        <div>
+          <h3 className="text-foreground font-semibold mb-1">게임 방법</h3>
+          <ul className="list-disc list-inside space-y-1">
+            <li>출제자가 제시어를 그림으로 표현한다 (글자/숫자 금지)</li>
+            <li>나머지 플레이어는 채팅으로 정답을 맞춘다</li>
+            <li>모든 플레이어가 한 번씩 출제자가 된다</li>
+          </ul>
+        </div>
+        <div>
+          <h3 className="text-foreground font-semibold mb-1">점수 체계</h3>
+          <ul className="list-disc list-inside space-y-1">
+            <li>정답을 맞춘 플레이어: +1점</li>
+            <li>출제자: 누군가 맞추면 +1점, 아무도 못 맞추면 0점</li>
+          </ul>
+        </div>
+      </GameHelpDialog>
     </div>
   );
 }

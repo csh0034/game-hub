@@ -207,6 +207,9 @@ export interface TetrisPlayerBoard {
   linesCleared: number;
   status: TetrisPlayerStatus;
   pendingGarbage: number;
+  combo: number;
+  backToBack: boolean;
+  lastClearType: string | null;
   version: number;
 }
 

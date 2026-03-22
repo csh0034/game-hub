@@ -21,6 +21,7 @@ const NEXT_PREVIEW_COUNT = 2;
 const LINES_PER_LEVEL = 10;
 const MIN_DROP_INTERVAL = 100;
 const DROP_SPEED_DECREASE = 50;
+const MAX_LOCK_DELAY_RESETS = 5;
 
 const ALL_TETROMINOS: TetrominoType[] = ["I", "O", "T", "S", "Z", "J", "L"];
 
@@ -107,6 +108,12 @@ interface PlayerInternalState {
   linesCleared: number;
   status: "playing" | "gameover";
   pendingGarbage: number;
+  lastMoveWasRotation: boolean;
+  combo: number;
+  backToBack: boolean;
+  groundedLastTick: boolean;
+  lockDelayResets: number;
+  lastClearType: string | null;
   version: number;
 }
 
@@ -149,6 +156,12 @@ export class TetrisEngine implements GameEngine {
         linesCleared: 0,
         status: "playing",
         pendingGarbage: 0,
+        lastMoveWasRotation: false,
+        combo: 0,
+        backToBack: false,
+        groundedLastTick: false,
+        lockDelayResets: 0,
+        lastClearType: null,
         version: 0,
       };
 
@@ -294,6 +307,16 @@ export class TetrisEngine implements GameEngine {
     };
     if (this.isValidPosition(ps.board, moved)) {
       ps.activePiece = moved;
+      ps.lastMoveWasRotation = false;
+      if (dRow > 0) {
+        // 아래로 이동 성공 — 더 이상 바닥이 아니므로 무조건 리셋
+        ps.groundedLastTick = false;
+        ps.lockDelayResets = 0;
+      } else if (ps.groundedLastTick && ps.lockDelayResets < MAX_LOCK_DELAY_RESETS) {
+        // 좌우 이동 — 제한된 횟수만큼 lock delay 리셋
+        ps.lockDelayResets++;
+        ps.groundedLastTick = false;
+      }
       return true;
     }
     return false;
@@ -319,6 +342,11 @@ export class TetrisEngine implements GameEngine {
       };
       if (this.isValidPosition(ps.board, rotated)) {
         ps.activePiece = rotated;
+        ps.lastMoveWasRotation = true;
+        if (ps.groundedLastTick && ps.lockDelayResets < MAX_LOCK_DELAY_RESETS) {
+          ps.lockDelayResets++;
+          ps.groundedLastTick = false;
+        }
         return true;
       }
     }
@@ -332,20 +360,49 @@ export class TetrisEngine implements GameEngine {
       dropDistance++;
     }
     ps.score += dropDistance * 2;
+    if (dropDistance > 0) {
+      ps.lastMoveWasRotation = false;
+    }
     this.lockPiece(ps);
   }
 
   private tick(ps: PlayerInternalState): void {
     if (!ps.activePiece) return;
     if (!this.tryMove(ps, 1, 0)) {
-      this.lockPiece(ps);
+      if (ps.groundedLastTick) {
+        this.lockPiece(ps);
+      } else {
+        ps.groundedLastTick = true;
+      }
     }
+  }
+
+  private isTSpin(ps: PlayerInternalState): boolean {
+    if (!ps.activePiece || ps.activePiece.type !== "T" || !ps.lastMoveWasRotation) return false;
+
+    const centerRow = ps.activePiece.row;
+    const centerCol = ps.activePiece.col;
+    const corners: [number, number][] = [
+      [centerRow - 1, centerCol - 1],
+      [centerRow - 1, centerCol + 1],
+      [centerRow + 1, centerCol - 1],
+      [centerRow + 1, centerCol + 1],
+    ];
+
+    let occupied = 0;
+    for (const [r, c] of corners) {
+      if (r < 0 || r >= BOARD_ROWS || c < 0 || c >= BOARD_COLS || ps.board[r][c] !== null) {
+        occupied++;
+      }
+    }
+    return occupied >= 3;
   }
 
   private lockPiece(ps: PlayerInternalState): void {
     if (!ps.activePiece) return;
 
     const currentPlayerId = this.getCurrentPlayerId(ps);
+    const isTSpin = this.isTSpin(ps);
 
     const cells = TETROMINO_SHAPES[ps.activePiece.type][ps.activePiece.rotation];
     for (const [dr, dc] of cells) {
@@ -357,6 +414,9 @@ export class TetrisEngine implements GameEngine {
     }
 
     ps.activePiece = null;
+    ps.lastMoveWasRotation = false;
+    ps.groundedLastTick = false;
+    ps.lockDelayResets = 0;
 
     // Mark board as changed (lock = board mutation)
     if (currentPlayerId) {
@@ -368,30 +428,80 @@ export class TetrisEngine implements GameEngine {
 
     const cleared = this.clearLines(ps);
 
-    // Send garbage to opponent in versus mode
-    if (cleared >= 2 && this.mode === "versus") {
-      const garbageLines = cleared - 1;
-      for (const id of this.playerIds) {
-        if (id !== currentPlayerId) {
-          const opponent = this.playerStates.get(id);
-          if (opponent && opponent.status === "playing") {
-            opponent.pendingGarbage += garbageLines;
-            opponent.version++;
-            this.dirtyPlayers.add(id);
-            this.boardDirtyPlayers.add(id);
-          }
-        }
-      }
-    }
+    let garbageToSend = 0;
 
     if (cleared > 0) {
-      ps.score += LINE_CLEAR_SCORES[cleared] * ps.level;
+      ps.combo++;
+
+      if (isTSpin) {
+        // T-Spin scoring
+        const tspinScores = [0, 800, 1200, 1600];
+        const tspinGarbage = [0, 2, 4, 6];
+        let score = tspinScores[cleared] * ps.level;
+        garbageToSend = tspinGarbage[cleared];
+        ps.lastClearType = cleared === 1 ? "tspin-single" : cleared === 2 ? "tspin-double" : "tspin-triple";
+
+        if (ps.backToBack) {
+          score = Math.floor(score * 1.5);
+          garbageToSend += 1;
+        }
+        ps.backToBack = true;
+        ps.score += score;
+      } else if (cleared === 4) {
+        // Tetris — difficult clear
+        let score = LINE_CLEAR_SCORES[4] * ps.level;
+        garbageToSend = 3;
+        ps.lastClearType = "tetris";
+
+        if (ps.backToBack) {
+          score = Math.floor(score * 1.5);
+          garbageToSend += 1;
+        }
+        ps.backToBack = true;
+        ps.score += score;
+      } else {
+        // Normal clear (1-3 lines, no T-spin)
+        ps.score += LINE_CLEAR_SCORES[cleared] * ps.level;
+        garbageToSend = cleared >= 2 ? cleared - 1 : 0;
+        ps.lastClearType = cleared === 1 ? "single" : cleared === 2 ? "double" : "triple";
+        ps.backToBack = false;
+      }
+
+      // Combo bonus
+      if (ps.combo > 0) {
+        ps.score += 50 * ps.combo * ps.level;
+      }
+
+      // Combo garbage bonus (combo 4+ sends extra)
+      if (ps.combo >= 4) {
+        garbageToSend += ps.combo - 3;
+      }
+
       ps.linesCleared += cleared;
 
       const newLevel = this.startLevel + Math.floor(ps.linesCleared / LINES_PER_LEVEL);
       if (newLevel > ps.level) {
         ps.level = newLevel;
       }
+
+      // Send garbage in versus mode
+      if (garbageToSend > 0 && this.mode === "versus") {
+        for (const id of this.playerIds) {
+          if (id !== currentPlayerId) {
+            const opponent = this.playerStates.get(id);
+            if (opponent && opponent.status === "playing") {
+              opponent.pendingGarbage += garbageToSend;
+              opponent.version++;
+              this.dirtyPlayers.add(id);
+              this.boardDirtyPlayers.add(id);
+            }
+          }
+        }
+      }
+    } else {
+      // No lines cleared
+      ps.combo = 0;
+      ps.lastClearType = isTSpin ? "tspin-mini" : null;
     }
 
     this.spawnPiece(ps);
@@ -450,6 +560,9 @@ export class TetrisEngine implements GameEngine {
       this.spawnPiece(ps);
     }
     ps.canHold = false;
+    ps.groundedLastTick = false;
+    ps.lockDelayResets = 0;
+    ps.lastMoveWasRotation = false;
   }
 
   private calculateGhostRow(board: (TetrominoType | null)[][], piece: TetrisActivePiece): number {
@@ -555,6 +668,9 @@ export class TetrisEngine implements GameEngine {
       linesCleared: ps.linesCleared,
       status: ps.status,
       pendingGarbage: ps.pendingGarbage,
+      combo: ps.combo,
+      backToBack: ps.backToBack,
+      lastClearType: ps.lastClearType,
       version: ps.version,
     };
   }

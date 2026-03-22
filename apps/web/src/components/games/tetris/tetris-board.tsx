@@ -205,6 +205,20 @@ const PlayerBoard = memo(function PlayerBoard({
               <div className={`${textLg} font-bold font-mono text-red-400`}>{board.pendingGarbage}</div>
             </div>
           )}
+          {board.combo > 1 && (
+            <div>
+              <div className={`${textSm} text-yellow-400`}>COMBO</div>
+              <div className={`${textLg} font-bold font-mono text-yellow-400`}>{board.combo}</div>
+            </div>
+          )}
+          {board.backToBack && (
+            <div className={`${textSm} text-blue-400 font-bold`}>B2B</div>
+          )}
+          {board.lastClearType && (
+            <div className={`${textSm} text-green-400 font-bold uppercase`}>
+              {board.lastClearType.replace(/-/g, " ")}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -21,6 +21,8 @@ function getQuickStartBadges(gameType: GameType): string[] | null {
       return ["Normal"];
     case "liar-drawing":
       return ["60초", "3라운드"];
+    case "catch-mind":
+      return ["60초", "3라운드", "글자 수 힌트 OFF"];
     default:
       return null;
   }
@@ -38,6 +40,9 @@ export function GameCardGrid({ onCreateRoom }: GameCardGridProps) {
     }
     if (gameType === "liar-drawing") {
       payload.gameOptions = { liarDrawingTime: 60, liarDrawingRounds: 3 };
+    }
+    if (gameType === "catch-mind") {
+      payload.gameOptions = { catchMindTime: 60, catchMindRounds: 3, catchMindCharHint: false };
     }
     await onCreateRoom(payload);
   };

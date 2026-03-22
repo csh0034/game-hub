@@ -8,11 +8,14 @@ import {
   type SocketData,
 } from "@game-hub/shared-types";
 import crypto from "node:crypto";
+import type { CatchMindPublicState } from "@game-hub/shared-types";
 import type { GameManager } from "../games/game-manager.js";
 import type { ChatStore } from "../storage/index.js";
 import { isAdmin } from "../admin.js";
 import { clearGomokuTimer } from "../games/gomoku-timer.js";
 import { clearTetrisTicker } from "../games/tetris-ticker.js";
+import { clearCatchMindTimer } from "../games/catch-mind-timer.js";
+import { startCatchMindNextRound } from "./game-handler.js";
 
 type IOServer = Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 type IOSocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
@@ -36,6 +39,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
     emitPlayerLeftIfPlaying(prevRoomId);
     clearGomokuTimer(prevRoomId);
     clearTetrisTicker(prevRoomId);
+    clearCatchMindTimer(prevRoomId);
     socket.leave(prevRoomId);
     socket.data.roomId = null;
     const prevRoom = gameManager.removePlayer(prevRoomId, socket.id!);
@@ -100,6 +104,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
     emitPlayerLeftIfPlaying(roomId);
     clearGomokuTimer(roomId);
     clearTetrisTicker(roomId);
+    clearCatchMindTimer(roomId);
     socket.leave(roomId);
     socket.data.roomId = null;
     const room = gameManager.removePlayer(roomId, socket.id!);
@@ -140,6 +145,58 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
   socket.on("chat:room-message", (message) => {
     const roomId = socket.data.roomId;
     if (!roomId) return;
+
+    // Catch-mind: intercept chat messages during drawing phase
+    const room = gameManager.getRoom(roomId);
+    if (room?.gameType === "catch-mind" && room.status === "playing") {
+      const cmEngine = gameManager.getCatchMindEngine(roomId);
+      const cmState = gameManager.getGameState(roomId) as CatchMindPublicState | null;
+
+      if (cmEngine && cmState && cmState.phase === "drawing") {
+        // Block drawer from chatting
+        if (socket.id === cmState.drawerId) return;
+
+        // Block players who already guessed correctly
+        const player = cmState.players.find((p) => p.id === socket.id);
+        if (player?.hasGuessedCorrectly) return;
+
+        // Check if the message is the correct answer
+        const result = cmEngine.checkGuess(cmState, socket.id!, message.trim());
+        if (result.correct) {
+          gameManager.setGameState(roomId, result.newState);
+          io.to(roomId).emit("game:state-updated", result.newState);
+          io.to(roomId).emit("game:catch-mind-correct", {
+            playerId: socket.id!,
+            nickname: socket.data.nickname,
+          });
+
+          if (result.newState.allGuessedCorrectly) {
+            clearCatchMindTimer(roomId);
+            const endedState = cmEngine.endRound(result.newState);
+            gameManager.setGameState(roomId, endedState);
+            io.to(roomId).emit("game:state-updated", endedState);
+
+            // Schedule next round
+            if (endedState.roundNumber >= endedState.totalRounds) {
+              const finalState = cmEngine.processMove(endedState, room.hostId, { type: "phase-ready" });
+              gameManager.setGameState(roomId, finalState);
+              io.to(roomId).emit("game:state-updated", finalState);
+              const gameResult = cmEngine.checkWin(finalState);
+              if (gameResult) {
+                room.status = "finished";
+                io.to(roomId).emit("game:ended", gameResult);
+                io.emit("lobby:room-updated", room);
+              }
+            } else {
+              startCatchMindNextRound(io, roomId, gameManager);
+            }
+          }
+          return; // Don't broadcast the correct answer as chat
+        }
+        // Incorrect guess — fall through to normal chat
+      }
+    }
+
     const chatMsg: ChatMessage = {
       id: crypto.randomUUID(),
       playerId: socket.id!,

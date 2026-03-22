@@ -10,12 +10,14 @@ import type {
   TetrisPlayerBoard,
   HoldemPublicState,
   LiarDrawingPublicState,
+  CatchMindPublicState,
   DrawPoint,
 } from "@game-hub/shared-types";
 import type { GameManager } from "../games/game-manager.js";
 import { startGomokuTimer, clearGomokuTimer } from "../games/gomoku-timer.js";
 import { startTetrisTicker, updateTetrisTickerInterval, clearTetrisTicker } from "../games/tetris-ticker.js";
 import { startLiarDrawingTimer, clearLiarDrawingTimer } from "../games/liar-drawing-timer.js";
+import { startCatchMindTimer, clearCatchMindTimer } from "../games/catch-mind-timer.js";
 
 const holdemRoundTimers: Map<string, NodeJS.Timeout> = new Map();
 
@@ -46,6 +48,99 @@ function cleanupTetrisFlush(roomId: string) {
     tetrisFlushTimers.delete(roomId);
   }
   tetrisDirtyBuffers.delete(roomId);
+}
+
+export function startCatchMindNextRound(io: IOServer, roomId: string, gameManager: GameManager) {
+  const state = gameManager.getGameState(roomId) as CatchMindPublicState | null;
+  if (!state) return;
+
+  if (state.roundNumber >= state.totalRounds) {
+    advanceCatchMindRound(io, roomId, gameManager);
+    return;
+  }
+
+  startCatchMindTimer(roomId, 10000, () => {
+    advanceCatchMindRound(io, roomId, gameManager);
+  });
+}
+
+function advanceCatchMindRound(io: IOServer, roomId: string, gameManager: GameManager) {
+  const cmEngine = gameManager.getCatchMindEngine(roomId);
+  if (!cmEngine) return;
+
+  const room = gameManager.getRoom(roomId);
+  const state = gameManager.getGameState(roomId) as CatchMindPublicState | null;
+  if (!room || !state || room.status !== "playing") return;
+  if (state.phase !== "round-result") return;
+
+  const result = gameManager.processMove(roomId, room.hostId, { type: "phase-ready" });
+  if (!result) return;
+
+  const newState = result.state as CatchMindPublicState;
+  io.to(roomId).emit("game:state-updated", newState);
+
+  if (newState.phase === "final-result") {
+    const gameResult = cmEngine.checkWin(newState);
+    if (gameResult) {
+      room.status = "finished";
+      io.to(roomId).emit("game:ended", gameResult);
+      io.emit("lobby:room-updated", room);
+    }
+    return;
+  }
+
+  // New round started - send keyword to drawer
+  if (newState.phase === "role-reveal") {
+    const drawerSocket = io.sockets.sockets.get(newState.drawerId);
+    if (drawerSocket) {
+      drawerSocket.emit("game:private-state", { keyword: cmEngine.getKeyword()! });
+    }
+    // Auto-advance to drawing after 3 seconds
+    startCatchMindTimer(roomId, 3000, () => {
+      const currentState = gameManager.getGameState(roomId) as CatchMindPublicState | null;
+      const currentRoom = gameManager.getRoom(roomId);
+      if (!currentState || !currentRoom || currentRoom.status !== "playing") return;
+      if (currentState.phase !== "role-reveal") return;
+
+      const drawingState = cmEngine.startDrawingPhase(currentState);
+      gameManager.setGameState(roomId, drawingState);
+      io.to(roomId).emit("game:state-updated", drawingState);
+      startCatchMindDrawTimer(io, roomId, gameManager);
+    });
+  }
+}
+
+function startCatchMindDrawTimer(io: IOServer, roomId: string, gameManager: GameManager) {
+  const state = gameManager.getGameState(roomId) as CatchMindPublicState | null;
+  if (!state || state.phase !== "drawing") return;
+
+  const durationMs = state.drawTimeSeconds * 1000;
+  startCatchMindTimer(roomId, durationMs, () => {
+    const room = gameManager.getRoom(roomId);
+    const currentState = gameManager.getGameState(roomId) as CatchMindPublicState | null;
+    if (!room || !currentState || room.status !== "playing" || currentState.phase !== "drawing") return;
+
+    const cmEngine = gameManager.getCatchMindEngine(roomId);
+    if (!cmEngine) return;
+
+    const endedState = cmEngine.endRound(currentState);
+    gameManager.setGameState(roomId, endedState);
+    io.to(roomId).emit("game:state-updated", endedState);
+
+    if (endedState.roundNumber >= endedState.totalRounds) {
+      const finalState = cmEngine.processMove(endedState, room.hostId, { type: "phase-ready" });
+      gameManager.setGameState(roomId, finalState);
+      io.to(roomId).emit("game:state-updated", finalState);
+      const gameResult = cmEngine.checkWin(finalState);
+      if (gameResult) {
+        room.status = "finished";
+        io.to(roomId).emit("game:ended", gameResult);
+        io.emit("lobby:room-updated", room);
+      }
+    } else {
+      startCatchMindNextRound(io, roomId, gameManager);
+    }
+  });
 }
 
 export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: GameManager) {
@@ -264,6 +359,30 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
       }
     }
 
+    // For catch-mind, send keyword to drawer and start role-reveal timer
+    if (room.gameType === "catch-mind") {
+      const cmEngine = gameManager.getCatchMindEngine(roomId);
+      if (cmEngine) {
+        const cmState = state as CatchMindPublicState;
+        const drawerSocket = io.sockets.sockets.get(cmState.drawerId);
+        if (drawerSocket) {
+          drawerSocket.emit("game:private-state", { keyword: cmEngine.getKeyword()! });
+        }
+        // Auto-advance from role-reveal to drawing after 3 seconds
+        startCatchMindTimer(roomId, 3000, () => {
+          const currentState = gameManager.getGameState(roomId) as CatchMindPublicState | null;
+          const currentRoom = gameManager.getRoom(roomId);
+          if (!currentState || !currentRoom || currentRoom.status !== "playing") return;
+          if (currentState.phase !== "role-reveal") return;
+
+          const drawingState = cmEngine.startDrawingPhase(currentState);
+          gameManager.setGameState(roomId, drawingState);
+          io.to(roomId).emit("game:state-updated", drawingState);
+          startCatchMindDrawTimer(io, roomId, gameManager);
+        });
+      }
+    }
+
     // For holdem, send private hole cards
     if (room.gameType === "texas-holdem") {
       const holdemEngine = gameManager.getHoldemEngine(roomId);
@@ -283,22 +402,31 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
     const roomId = socket.data.roomId;
     if (!roomId) return;
     const room = gameManager.getRoom(roomId);
-    if (!room || room.gameType !== "liar-drawing") return;
+    if (!room) return;
 
-    const state = gameManager.getGameState(roomId) as LiarDrawingPublicState | null;
-    if (!state || state.phase !== "drawing") return;
+    if (room.gameType === "liar-drawing") {
+      const state = gameManager.getGameState(roomId) as LiarDrawingPublicState | null;
+      if (!state || state.phase !== "drawing") return;
 
-    const currentDrawerId = state.drawOrder[state.currentDrawerIndex];
-    if (socket.id !== currentDrawerId) return;
+      const currentDrawerId = state.drawOrder[state.currentDrawerIndex];
+      if (socket.id !== currentDrawerId) return;
 
-    // Update engine state with points
-    const liarEngine = gameManager.getLiarDrawingEngine(roomId);
-    if (!liarEngine) return;
-    const newState = liarEngine.processMove(state, socket.id!, { type: "draw", points });
-    gameManager.setGameState(roomId, newState);
+      const liarEngine = gameManager.getLiarDrawingEngine(roomId);
+      if (!liarEngine) return;
+      const newState = liarEngine.processMove(state, socket.id!, { type: "draw", points });
+      gameManager.setGameState(roomId, newState);
+      socket.to(roomId).emit("game:draw-points", { playerId: socket.id!, points });
+    } else if (room.gameType === "catch-mind") {
+      const state = gameManager.getGameState(roomId) as CatchMindPublicState | null;
+      if (!state || state.phase !== "drawing") return;
+      if (socket.id !== state.drawerId) return;
 
-    // Broadcast to other players in the room
-    socket.to(roomId).emit("game:draw-points", { playerId: socket.id!, points });
+      const cmEngine = gameManager.getCatchMindEngine(roomId);
+      if (!cmEngine) return;
+      const newState = cmEngine.processMove(state, socket.id!, { type: "draw", points });
+      gameManager.setGameState(roomId, newState);
+      socket.to(roomId).emit("game:draw-points", { playerId: socket.id!, points });
+    }
   });
 
   socket.on("game:move", (move) => {
@@ -380,7 +508,7 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
     }
 
     // Notify all clients when canvas is cleared
-    if (room?.gameType === "liar-drawing" && (move as { type: string }).type === "clear-canvas") {
+    if ((room?.gameType === "liar-drawing" || room?.gameType === "catch-mind") && (move as { type: string }).type === "clear-canvas") {
       io.to(roomId).emit("game:clear-canvas", { playerId: socket.id! });
     }
 
@@ -498,6 +626,7 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
     clearTetrisTicker(roomId);
     cleanupTetrisFlush(roomId);
     clearLiarDrawingTimer(roomId);
+    clearCatchMindTimer(roomId);
     const holdemTimer = holdemRoundTimers.get(roomId);
     if (holdemTimer) {
       clearTimeout(holdemTimer);

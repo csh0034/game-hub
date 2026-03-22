@@ -163,30 +163,32 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
           <GameRenderer gameType={room.gameType} roomId={room.id} />
         </Suspense>
 
-        <div className="mt-4">
-          <button
-            onClick={handleChatToggle}
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-2"
-          >
-            <MessageCircle className="w-4 h-4" />
-            채팅
-            {hasUnread && !chatOpen && (
-              <span className="w-2 h-2 bg-red-500 rounded-full" />
+        {room.gameType !== "catch-mind" && (
+          <div className="mt-4">
+            <button
+              onClick={handleChatToggle}
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-2"
+            >
+              <MessageCircle className="w-4 h-4" />
+              채팅
+              {hasUnread && !chatOpen && (
+                <span className="w-2 h-2 bg-red-500 rounded-full" />
+              )}
+              {chatOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+            </button>
+            {chatOpen && (
+              <div className="h-[300px]">
+                <ChatPanel
+                  messages={roomMessages}
+                  onSendMessage={onSendRoomMessage}
+                  placeholder="게임 채팅..."
+                  myNickname={nickname}
+                  showNewMessageButton
+                />
+              </div>
             )}
-            {chatOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-          </button>
-          {chatOpen && (
-            <div className="h-[300px]">
-              <ChatPanel
-                messages={roomMessages}
-                onSendMessage={onSendRoomMessage}
-                placeholder="게임 채팅..."
-                myNickname={nickname}
-                showNewMessageButton
-              />
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -283,6 +285,26 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
                     <span className="font-medium">{room.gameOptions.liarDrawingRounds}라운드</span>
                   </div>
                 )}
+              </>
+            )}
+            {room.gameType === "catch-mind" && (
+              <>
+                {room.gameOptions.catchMindTime != null && (
+                  <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
+                    <span className="text-muted-foreground">그리기 시간</span>
+                    <span className="font-medium">{room.gameOptions.catchMindTime}초</span>
+                  </div>
+                )}
+                {room.gameOptions.catchMindRounds != null && (
+                  <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
+                    <span className="text-muted-foreground">라운드 수</span>
+                    <span className="font-medium">{room.gameOptions.catchMindRounds}라운드</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
+                  <span className="text-muted-foreground">글자 수 힌트</span>
+                  <span className="font-medium">{room.gameOptions.catchMindCharHint ? "ON" : "OFF"}</span>
+                </div>
               </>
             )}
           </div>

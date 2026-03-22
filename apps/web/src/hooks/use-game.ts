@@ -5,7 +5,7 @@ import { useGameStore } from "@/stores/game-store";
 import type { RoundResult } from "@/stores/game-store";
 import type { GameSocket } from "@/lib/socket";
 import { useTetrisBoardStore } from "@/stores/tetris-board-store";
-import type { GameMove, GameState, GameResult, HoldemPrivateState, LiarDrawingPrivateState, TetrisPlayerUpdate, TetrisPieceUpdate, TetrisPublicState } from "@game-hub/shared-types";
+import type { GameMove, GameState, GameResult, HoldemPrivateState, LiarDrawingPrivateState, CatchMindPrivateState, TetrisPlayerUpdate, TetrisPieceUpdate, TetrisPublicState } from "@game-hub/shared-types";
 
 export function useGame(socket: GameSocket | null) {
   const {
@@ -40,7 +40,7 @@ export function useGame(socket: GameSocket | null) {
     const onEnded = (result: GameResult) => {
       setGameResult(result);
     };
-    const onPrivateState = (state: HoldemPrivateState | LiarDrawingPrivateState) => {
+    const onPrivateState = (state: HoldemPrivateState | LiarDrawingPrivateState | CatchMindPrivateState) => {
       setPrivateState(state);
     };
     const onError = (message: string) => {

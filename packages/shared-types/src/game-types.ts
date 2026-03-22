@@ -1,4 +1,4 @@
-export type GameType = "gomoku" | "texas-holdem" | "minesweeper" | "tetris" | "liar-drawing";
+export type GameType = "gomoku" | "texas-holdem" | "minesweeper" | "tetris" | "liar-drawing" | "catch-mind";
 
 export interface GameConfig {
   gameType: GameType;
@@ -53,6 +53,14 @@ export const GAME_CONFIGS: Record<GameType, GameConfig> = {
     icon: "🃏",
     disabled: true,
     disabledReason: "패치중",
+  },
+  "catch-mind": {
+    gameType: "catch-mind",
+    name: "캐치마인드",
+    description: "출제자가 그린 그림을 보고 정답을 맞추는 드로잉 퀴즈 게임",
+    minPlayers: 3,
+    maxPlayers: 8,
+    icon: "🖼️",
   },
 };
 
@@ -256,15 +264,7 @@ export interface ComingSoonGame {
   icon: string;
 }
 
-export const COMING_SOON_GAMES: ComingSoonGame[] = [
-  {
-    name: "캐치마인드",
-    description: "출제자가 그린 그림을 보고 정답을 맞추는 드로잉 퀴즈 게임",
-    minPlayers: 3,
-    maxPlayers: 8,
-    icon: "🖼️",
-  },
-];
+export const COMING_SOON_GAMES: ComingSoonGame[] = [];
 
 // Liar Drawing types
 export type LiarDrawingPhase = "role-reveal" | "drawing" | "voting" | "liar-guess" | "round-result" | "final-result";
@@ -323,8 +323,44 @@ export interface LiarDrawingMove {
   skip?: boolean;
 }
 
-export type GameState = GomokuState | HoldemPublicState | MinesweeperPublicState | TetrisPublicState | LiarDrawingPublicState;
-export type GameMove = GomokuMove | HoldemMove | MinesweeperMove | TetrisMove | LiarDrawingMove;
+// Catch Mind types
+export type CatchMindPhase = "role-reveal" | "drawing" | "round-result" | "final-result";
+
+export interface CatchMindPlayerState {
+  id: string;
+  nickname: string;
+  score: number;
+  hasGuessedCorrectly: boolean;
+}
+
+export interface CatchMindPublicState {
+  phase: CatchMindPhase;
+  roundNumber: number;
+  totalRounds: number;
+  drawerId: string;
+  drawTimeSeconds: number;
+  turnStartedAt: number | null;
+  players: CatchMindPlayerState[];
+  canvas: DrawPoint[];
+  keyword: string | null;
+  keywordLength: number | null;
+  firstGuesserId: string | null;
+  allGuessedCorrectly: boolean;
+  roundScores: Record<string, number>;
+  showCharHint: boolean;
+}
+
+export interface CatchMindPrivateState {
+  keyword: string;
+}
+
+export interface CatchMindMove {
+  type: "draw" | "clear-canvas" | "phase-ready";
+  points?: DrawPoint[];
+}
+
+export type GameState = GomokuState | HoldemPublicState | MinesweeperPublicState | TetrisPublicState | LiarDrawingPublicState | CatchMindPublicState;
+export type GameMove = GomokuMove | HoldemMove | MinesweeperMove | TetrisMove | LiarDrawingMove | CatchMindMove;
 
 export interface GameResult {
   winnerId: string | null; // null = draw

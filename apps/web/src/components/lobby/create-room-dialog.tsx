@@ -26,6 +26,9 @@ export function CreateRoomDialog({ onCreateRoom }: CreateRoomDialogProps) {
   const [tetrisDifficulty, setTetrisDifficulty] = useState<TetrisDifficulty>("normal");
   const [liarDrawingTime, setLiarDrawingTime] = useState(60);
   const [liarDrawingRounds, setLiarDrawingRounds] = useState(3);
+  const [catchMindTime, setCatchMindTime] = useState(60);
+  const [catchMindRounds, setCatchMindRounds] = useState(3);
+  const [catchMindCharHint, setCatchMindCharHint] = useState(false);
 
   const handleCreate = async () => {
     const roomName = name.trim() || `${GAME_CONFIGS[gameType].name} 방`;
@@ -39,6 +42,9 @@ export function CreateRoomDialog({ onCreateRoom }: CreateRoomDialogProps) {
     if (gameType === "liar-drawing") {
       payload.gameOptions = { liarDrawingTime, liarDrawingRounds };
     }
+    if (gameType === "catch-mind") {
+      payload.gameOptions = { catchMindTime, catchMindRounds, catchMindCharHint };
+    }
     await onCreateRoom(payload);
     setOpen(false);
     setName("");
@@ -46,6 +52,9 @@ export function CreateRoomDialog({ onCreateRoom }: CreateRoomDialogProps) {
     setTetrisDifficulty("normal");
     setLiarDrawingTime(60);
     setLiarDrawingRounds(3);
+    setCatchMindTime(60);
+    setCatchMindRounds(3);
+    setCatchMindCharHint(false);
   };
 
   if (!open) {
@@ -211,6 +220,50 @@ export function CreateRoomDialog({ onCreateRoom }: CreateRoomDialogProps) {
                     />
                     <span className="text-sm font-medium w-12 text-center whitespace-nowrap">{liarDrawingRounds}라운드</span>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {gameType === "catch-mind" && (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">그리기 시간</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="range"
+                      min={1}
+                      max={120}
+                      value={catchMindTime}
+                      onChange={(e) => setCatchMindTime(Number(e.target.value))}
+                      className="flex-1"
+                    />
+                    <span className="text-sm font-medium w-12 text-center">{catchMindTime}초</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">라운드 수</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="range"
+                      min={1}
+                      max={10}
+                      value={catchMindRounds}
+                      onChange={(e) => setCatchMindRounds(Number(e.target.value))}
+                      className="flex-1"
+                    />
+                    <span className="text-sm font-medium w-12 text-center whitespace-nowrap">{catchMindRounds}라운드</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={catchMindCharHint}
+                      onChange={(e) => setCatchMindCharHint(e.target.checked)}
+                      className="rounded border-border"
+                    />
+                    글자 수 힌트
+                  </label>
                 </div>
               </div>
             )}

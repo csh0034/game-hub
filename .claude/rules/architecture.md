@@ -50,7 +50,9 @@ game-hub/
 │   ├── tetris-engine.ts
 │   ├── tetris-ticker.ts     # 테트리스 서버 틱 타이머
 │   ├── liar-drawing-engine.ts
-│   └── liar-drawing-timer.ts # 라이어 드로잉 페이즈 타이머
+│   ├── liar-drawing-timer.ts # 라이어 드로잉 페이즈 타이머
+│   ├── catch-mind-engine.ts
+│   └── catch-mind-timer.ts   # 캐치마인드 그리기 타이머
 └── socket/
     ├── lobby-handler.ts     # lobby:* + chat:* 이벤트 (ChatStore 사용)
     ├── game-handler.ts      # game:* 이벤트
@@ -85,7 +87,8 @@ game-hub/
 │       ├── texas-holdem/
 │       ├── minesweeper/
 │       ├── tetris/
-│       └── liar-drawing/
+│       ├── liar-drawing/
+│       └── catch-mind/
 ├── hooks/                   # useSocket, useLobby, useGame, useChat, useRequests
 ├── stores/                  # Zustand (lobby-store, game-store, chat-store, request-store)
 └── lib/

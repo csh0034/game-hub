@@ -5,6 +5,7 @@ import { HoldemEngine } from "./holdem-engine.js";
 import { MinesweeperEngine } from "./minesweeper-engine.js";
 import { TetrisEngine } from "./tetris-engine.js";
 import { LiarDrawingEngine } from "./liar-drawing-engine.js";
+import { CatchMindEngine } from "./catch-mind-engine.js";
 import type { GameEngine } from "./engine-interface.js";
 import type { RoomStore } from "../storage/index.js";
 
@@ -23,6 +24,7 @@ export class GameManager {
     this.engines.set("minesweeper", new MinesweeperEngine());
     this.engines.set("tetris", new TetrisEngine());
     this.engines.set("liar-drawing", new LiarDrawingEngine());
+    this.engines.set("catch-mind", new CatchMindEngine());
   }
 
   async loadRoomsFromStore(): Promise<void> {
@@ -157,6 +159,18 @@ export class GameManager {
       return state;
     }
 
+    if (room.gameType === "catch-mind") {
+      const drawTime = room.gameOptions?.catchMindTime ?? 60;
+      const rounds = room.gameOptions?.catchMindRounds ?? 3;
+      const charHint = room.gameOptions?.catchMindCharHint ?? false;
+      const catchMindEngine = new CatchMindEngine(drawTime, rounds, charHint);
+      this.roomEngines.set(roomId, catchMindEngine);
+      const state = catchMindEngine.initState(room.players);
+      this.gameStates.set(roomId, state);
+      this.persistRoom(room);
+      return state;
+    }
+
     const state = engine.initState(room.players);
     this.gameStates.set(roomId, state);
     this.persistRoom(room);
@@ -174,7 +188,7 @@ export class GameManager {
     const newState = engine.processMove(state, playerId, move);
     this.gameStates.set(roomId, newState);
     const result = engine.checkWin(newState);
-    if (result && room.gameType !== "texas-holdem" && room.gameType !== "liar-drawing") {
+    if (result && room.gameType !== "texas-holdem" && room.gameType !== "liar-drawing" && room.gameType !== "catch-mind") {
       room.status = "finished";
       this.persistRoom(room);
     }
@@ -240,6 +254,11 @@ export class GameManager {
   getLiarDrawingEngine(roomId: string): LiarDrawingEngine | null {
     const engine = this.roomEngines.get(roomId);
     return engine instanceof LiarDrawingEngine ? engine : null;
+  }
+
+  getCatchMindEngine(roomId: string): CatchMindEngine | null {
+    const engine = this.roomEngines.get(roomId);
+    return engine instanceof CatchMindEngine ? engine : null;
   }
 
   private cleanupRoomState(roomId: string): void {

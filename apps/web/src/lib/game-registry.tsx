@@ -11,6 +11,7 @@ const GAME_COMPONENTS: Record<GameType, React.LazyExoticComponent<ComponentType<
   minesweeper: lazy(() => import("@/components/games/minesweeper/minesweeper-board")),
   tetris: lazy(() => import("@/components/games/tetris/tetris-board")),
   "liar-drawing": lazy(() => import("@/components/games/liar-drawing/liar-drawing-board")),
+  "catch-mind": lazy(() => import("@/components/games/catch-mind/catch-mind-board")),
 };
 
 export function getGameComponent(gameType: GameType) {
@@ -22,6 +23,7 @@ const HoldemGame = GAME_COMPONENTS["texas-holdem"];
 const MinesweeperGame = GAME_COMPONENTS["minesweeper"];
 const TetrisGame = GAME_COMPONENTS["tetris"];
 const LiarDrawingGame = GAME_COMPONENTS["liar-drawing"];
+const CatchMindGame = GAME_COMPONENTS["catch-mind"];
 
 export function GameRenderer({ gameType, roomId }: { gameType: GameType; roomId: string }) {
   switch (gameType) {
@@ -35,5 +37,7 @@ export function GameRenderer({ gameType, roomId }: { gameType: GameType; roomId:
       return <TetrisGame roomId={roomId} />;
     case "liar-drawing":
       return <LiarDrawingGame roomId={roomId} />;
+    case "catch-mind":
+      return <CatchMindGame roomId={roomId} />;
   }
 }

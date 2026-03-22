@@ -8,6 +8,9 @@ export interface GameOptions {
   tetrisDifficulty?: TetrisDifficulty;
   liarDrawingTime?: number;
   liarDrawingRounds?: number;
+  catchMindTime?: number;
+  catchMindRounds?: number;
+  catchMindCharHint?: boolean;
 }
 
 export interface Room {

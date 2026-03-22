@@ -204,12 +204,22 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-2xl font-bold">{room.name}</h1>
           <p className="text-sm text-muted-foreground">
             {config.icon} {config.name} · 대기 중
           </p>
         </div>
+        <button
+          onClick={() => {
+            navigator.clipboard.writeText(window.location.origin + "/room/" + room.id);
+            toast.success("링크가 복사되었습니다");
+          }}
+          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
+        >
+          <Link className="w-3.5 h-3.5" />
+          링크 복사
+        </button>
       </div>
 
       <div className="bg-card border border-border rounded-xl p-6">
@@ -336,20 +346,6 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
             {myPlayer?.isReady ? "준비 취소" : "준비 완료"}
           </button>
         )}
-      </div>
-
-      <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-        <span>방 코드: <span className="font-mono text-foreground">{room.id}</span></span>
-        <button
-          onClick={() => {
-            navigator.clipboard.writeText(window.location.origin + "/room/" + room.id);
-            toast.success("링크가 복사되었습니다");
-          }}
-          className="inline-flex items-center gap-1 px-2 py-1 rounded-md hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
-        >
-          <Link className="w-3.5 h-3.5" />
-          링크 복사
-        </button>
       </div>
 
       <div className="h-[300px]">

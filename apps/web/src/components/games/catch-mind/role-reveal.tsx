@@ -46,7 +46,7 @@ export function RoleReveal({ privateState, drawerNickname, isDrawer, roundNumber
             <div className="text-2xl font-bold">채팅으로 정답을 맞추세요!</div>
             {keywordLength !== null && (
               <div className="text-sm text-muted-foreground">
-                힌트: <span className="font-bold text-foreground tracking-widest">{"○".repeat(keywordLength)}</span>
+                글자수: <span className="font-bold text-foreground tracking-widest">{"○".repeat(keywordLength)}</span>
               </div>
             )}
           </div>

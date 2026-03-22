@@ -34,7 +34,7 @@ export function DrawingPhase({ state, socket, myId, keyword }: DrawingPhaseProps
       ) : (
         <div className="text-sm text-muted-foreground">
           {state.showCharHint && state.keywordLength !== null ? (
-            <>힌트: <span className="font-bold text-foreground tracking-widest">{"○".repeat(state.keywordLength)}</span></>
+            <>글자수: <span className="font-bold text-foreground tracking-widest">{"○".repeat(state.keywordLength)}</span></>
           ) : (
             "채팅으로 정답을 맞추세요!"
           )}

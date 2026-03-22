@@ -35,7 +35,7 @@ function ensureTetrisFlushTimer(io: IOServer, roomId: string) {
       io.to(roomId).emit("game:tetris-player-updated", { playerId, board });
     }
     buffer.clear();
-  }, 200);
+  }, 500);
   tetrisFlushTimers.set(roomId, timer);
 }
 
@@ -325,22 +325,43 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
     // Tetris: send per-player updates instead of full state
     if (room?.gameType === "tetris" && tetrisEngine) {
       const dirtyIds = tetrisEngine.getDirtyPlayers();
+      const boardDirtyIds = tetrisEngine.getBoardDirtyPlayers();
+
       for (const dirtyPlayerId of dirtyIds) {
-        const board = tetrisEngine.toPublicStateForPlayer(dirtyPlayerId);
-        if (!board) continue;
+        const needsFullBoard = boardDirtyIds.has(dirtyPlayerId);
 
         if (dirtyPlayerId === socket.id) {
-          // Send own board update immediately to the mover
-          socket.emit("game:tetris-player-updated", { playerId: dirtyPlayerId, board });
-          // Buffer for other players (throttled)
-          let buffer = tetrisDirtyBuffers.get(roomId);
-          if (!buffer) {
-            buffer = new Map();
-            tetrisDirtyBuffers.set(roomId, buffer);
+          if (needsFullBoard) {
+            // Board changed (lock/garbage/line clear) — send full update
+            const board = tetrisEngine.toPublicStateForPlayer(dirtyPlayerId);
+            if (!board) continue;
+            socket.emit("game:tetris-player-updated", { playerId: dirtyPlayerId, board });
+            let buffer = tetrisDirtyBuffers.get(roomId);
+            if (!buffer) {
+              buffer = new Map();
+              tetrisDirtyBuffers.set(roomId, buffer);
+            }
+            buffer.set(dirtyPlayerId, board);
+          } else {
+            // Only piece moved — send lightweight piece update
+            const pieceData = tetrisEngine.toPieceUpdate(dirtyPlayerId);
+            if (!pieceData) continue;
+            socket.emit("game:tetris-piece-updated", { playerId: dirtyPlayerId, ...pieceData });
+            // Buffer full board for opponents (they still need full state for flush)
+            const board = tetrisEngine.toPublicStateForPlayer(dirtyPlayerId);
+            if (board) {
+              let buffer = tetrisDirtyBuffers.get(roomId);
+              if (!buffer) {
+                buffer = new Map();
+                tetrisDirtyBuffers.set(roomId, buffer);
+              }
+              buffer.set(dirtyPlayerId, board);
+            }
           }
-          buffer.set(dirtyPlayerId, board);
         } else {
-          // Garbage recipient — send immediately to that player, buffer for others
+          // Garbage recipient or tick — always send full update
+          const board = tetrisEngine.toPublicStateForPlayer(dirtyPlayerId);
+          if (!board) continue;
           const targetSocket = io.sockets.sockets.get(dirtyPlayerId);
           if (targetSocket) {
             targetSocket.emit("game:tetris-player-updated", { playerId: dirtyPlayerId, board });

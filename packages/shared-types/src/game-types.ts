@@ -207,6 +207,7 @@ export interface TetrisPlayerBoard {
   linesCleared: number;
   status: TetrisPlayerStatus;
   pendingGarbage: number;
+  version: number;
 }
 
 export type TetrisMode = "solo" | "versus";
@@ -235,6 +236,13 @@ export interface TetrisMove {
 export interface TetrisPlayerUpdate {
   playerId: string;
   board: TetrisPlayerBoard;
+}
+
+export interface TetrisPieceUpdate {
+  playerId: string;
+  activePiece: TetrisActivePiece | null;
+  ghostRow: number;
+  version: number;
 }
 
 export interface ComingSoonGame {

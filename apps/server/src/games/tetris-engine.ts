@@ -13,7 +13,9 @@ import type {
 } from "@game-hub/shared-types";
 import type { GameEngine } from "./engine-interface.js";
 
-const BOARD_ROWS = 20;
+const VISIBLE_ROWS = 20;
+const BUFFER_ROWS = 4;
+const BOARD_ROWS = VISIBLE_ROWS + BUFFER_ROWS; // 24 rows internally, top 4 hidden
 const BOARD_COLS = 10;
 const NEXT_PREVIEW_COUNT = 2;
 const LINES_PER_LEVEL = 10;
@@ -105,6 +107,7 @@ interface PlayerInternalState {
   linesCleared: number;
   status: "playing" | "gameover";
   pendingGarbage: number;
+  version: number;
 }
 
 export class TetrisEngine implements GameEngine {
@@ -119,6 +122,7 @@ export class TetrisEngine implements GameEngine {
   private baseInterval: number;
   private startLevel: number;
   private dirtyPlayers: Set<string> = new Set();
+  private boardDirtyPlayers: Set<string> = new Set(); // players whose board (not just piece) changed
 
   constructor(difficulty: TetrisDifficulty = "normal") {
     this.difficulty = difficulty;
@@ -145,6 +149,7 @@ export class TetrisEngine implements GameEngine {
         linesCleared: 0,
         status: "playing",
         pendingGarbage: 0,
+        version: 0,
       };
 
       this.fillBag(internal);
@@ -192,6 +197,7 @@ export class TetrisEngine implements GameEngine {
         break;
     }
 
+    ps.version++;
     this.dirtyPlayers.add(playerId);
 
     return this.toPublicState();
@@ -253,7 +259,7 @@ export class TetrisEngine implements GameEngine {
 
     const piece: TetrisActivePiece = {
       type,
-      row: 1,
+      row: BUFFER_ROWS, // spawn at top of visible area (row 0 in client coords)
       col: Math.floor(BOARD_COLS / 2) - 1,
       rotation: 0,
     };
@@ -339,6 +345,8 @@ export class TetrisEngine implements GameEngine {
   private lockPiece(ps: PlayerInternalState): void {
     if (!ps.activePiece) return;
 
+    const currentPlayerId = this.getCurrentPlayerId(ps);
+
     const cells = TETROMINO_SHAPES[ps.activePiece.type][ps.activePiece.rotation];
     for (const [dr, dc] of cells) {
       const r = ps.activePiece.row + dr;
@@ -350,6 +358,11 @@ export class TetrisEngine implements GameEngine {
 
     ps.activePiece = null;
 
+    // Mark board as changed (lock = board mutation)
+    if (currentPlayerId) {
+      this.boardDirtyPlayers.add(currentPlayerId);
+    }
+
     // Apply pending garbage before clearing lines
     this.applyGarbage(ps);
 
@@ -359,11 +372,13 @@ export class TetrisEngine implements GameEngine {
     if (cleared >= 2 && this.mode === "versus") {
       const garbageLines = cleared - 1;
       for (const id of this.playerIds) {
-        if (id !== this.getCurrentPlayerId(ps)) {
+        if (id !== currentPlayerId) {
           const opponent = this.playerStates.get(id);
           if (opponent && opponent.status === "playing") {
             opponent.pendingGarbage += garbageLines;
+            opponent.version++;
             this.dirtyPlayers.add(id);
+            this.boardDirtyPlayers.add(id);
           }
         }
       }
@@ -420,7 +435,7 @@ export class TetrisEngine implements GameEngine {
       ps.holdPiece = currentType;
       ps.activePiece = {
         type: holdType,
-        row: 1,
+        row: BUFFER_ROWS,
         col: Math.floor(BOARD_COLS / 2) - 1,
         rotation: 0,
       };
@@ -467,6 +482,7 @@ export class TetrisEngine implements GameEngine {
     for (const [id, ps] of this.playerStates.entries()) {
       if (ps.status === "playing" && ps.activePiece) {
         this.tick(ps);
+        ps.version++;
         this.dirtyPlayers.add(id);
       }
     }
@@ -494,19 +510,42 @@ export class TetrisEngine implements GameEngine {
     return this.playerToPublicBoard(ps);
   }
 
+  toPieceUpdate(playerId: string): { activePiece: TetrisActivePiece | null; ghostRow: number; version: number } | null {
+    const ps = this.playerStates.get(playerId);
+    if (!ps) return null;
+    const ghostRow = ps.activePiece ? this.calculateGhostRow(ps.board, ps.activePiece) : 0;
+    return {
+      activePiece: ps.activePiece
+        ? { ...ps.activePiece, row: ps.activePiece.row - BUFFER_ROWS }
+        : null,
+      ghostRow: ghostRow - BUFFER_ROWS,
+      version: ps.version,
+    };
+  }
+
   getDirtyPlayers(): Set<string> {
     return new Set(this.dirtyPlayers);
   }
 
+  getBoardDirtyPlayers(): Set<string> {
+    return new Set(this.boardDirtyPlayers);
+  }
+
   clearDirty(): void {
     this.dirtyPlayers.clear();
+    this.boardDirtyPlayers.clear();
   }
 
   private playerToPublicBoard(ps: PlayerInternalState): TetrisPlayerBoard {
-    const ghostRow = ps.activePiece ? this.calculateGhostRow(ps.board, ps.activePiece) : 0;
+    const ghostRow = ps.activePiece ? this.calculateGhostRow(ps.board, ps.activePiece) - BUFFER_ROWS : 0;
+    // Send only visible rows (skip buffer rows at top)
+    const visibleBoard = ps.board.slice(BUFFER_ROWS).map((row) => [...row]);
+    const activePiece = ps.activePiece
+      ? { ...ps.activePiece, row: ps.activePiece.row - BUFFER_ROWS }
+      : null;
     return {
-      board: ps.board.map((row) => [...row]),
-      activePiece: ps.activePiece ? { ...ps.activePiece } : null,
+      board: visibleBoard,
+      activePiece,
       ghostRow,
       holdPiece: ps.holdPiece,
       canHold: ps.canHold,
@@ -516,6 +555,7 @@ export class TetrisEngine implements GameEngine {
       linesCleared: ps.linesCleared,
       status: ps.status,
       pendingGarbage: ps.pendingGarbage,
+      version: ps.version,
     };
   }
 }

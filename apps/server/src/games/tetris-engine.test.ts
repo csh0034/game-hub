@@ -399,6 +399,102 @@ describe("TetrisEngine", () => {
     });
   });
 
+  describe("version tracking", () => {
+    it("초기 version이 0이다", () => {
+      const state = engine.initState(mockPlayers);
+      expect(state.players["player1"].version).toBe(0);
+    });
+
+    it("processMove 후 version이 증가한다", () => {
+      const state = engine.initState(mockPlayers);
+      const prevVersion = state.players["player1"].version;
+      const newState = engine.processMove(state, "player1", { type: "move-left" } as TetrisMove);
+      expect(newState.players["player1"].version).toBe(prevVersion + 1);
+    });
+
+    it("tickAll 후 playing인 플레이어의 version이 증가한다", () => {
+      const versusEngine = new TetrisEngine();
+      const state = versusEngine.initState(mockVersusPlayers);
+      const p1Version = state.players["player1"].version;
+      const newState = versusEngine.tickAll();
+      expect(newState.players["player1"].version).toBe(p1Version + 1);
+    });
+
+    it("잘못된 playerId의 이동은 version이 변하지 않는다", () => {
+      const state = engine.initState(mockPlayers);
+      const prevVersion = state.players["player1"].version;
+      const newState = engine.processMove(state, "unknown", { type: "move-left" } as TetrisMove);
+      expect(newState.players["player1"].version).toBe(prevVersion);
+    });
+  });
+
+  describe("boardDirtyPlayers tracking", () => {
+    it("이동/회전 시 boardDirty에 포함되지 않는다", () => {
+      const state = engine.initState(mockPlayers);
+      engine.clearDirty();
+      engine.processMove(state, "player1", { type: "move-left" } as TetrisMove);
+      expect(engine.getBoardDirtyPlayers().has("player1")).toBe(false);
+      expect(engine.getDirtyPlayers().has("player1")).toBe(true);
+    });
+
+    it("하드 드롭(잠금) 시 boardDirty에 포함된다", () => {
+      const state = engine.initState(mockPlayers);
+      engine.clearDirty();
+      engine.processMove(state, "player1", { type: "hard-drop" } as TetrisMove);
+      expect(engine.getBoardDirtyPlayers().has("player1")).toBe(true);
+    });
+
+    it("clearDirty 후 boardDirty도 비어있다", () => {
+      const state = engine.initState(mockPlayers);
+      engine.processMove(state, "player1", { type: "hard-drop" } as TetrisMove);
+      engine.clearDirty();
+      expect(engine.getBoardDirtyPlayers().size).toBe(0);
+    });
+  });
+
+  describe("toPieceUpdate", () => {
+    it("존재하는 플레이어의 피스 정보를 반환한다", () => {
+      engine.initState(mockPlayers);
+      const pieceUpdate = engine.toPieceUpdate("player1");
+      expect(pieceUpdate).not.toBeNull();
+      expect(pieceUpdate!.activePiece).not.toBeNull();
+      expect(typeof pieceUpdate!.ghostRow).toBe("number");
+      expect(typeof pieceUpdate!.version).toBe("number");
+    });
+
+    it("존재하지 않는 플레이어는 null을 반환한다", () => {
+      engine.initState(mockPlayers);
+      expect(engine.toPieceUpdate("unknown")).toBeNull();
+    });
+
+    it("activePiece와 ghostRow가 toPublicStateForPlayer와 일치한다", () => {
+      engine.initState(mockPlayers);
+      const pieceUpdate = engine.toPieceUpdate("player1")!;
+      const fullBoard = engine.toPublicStateForPlayer("player1")!;
+      expect(pieceUpdate.activePiece).toEqual(fullBoard.activePiece);
+      expect(pieceUpdate.ghostRow).toBe(fullBoard.ghostRow);
+      expect(pieceUpdate.version).toBe(fullBoard.version);
+    });
+  });
+
+  describe("버퍼 행", () => {
+    it("클라이언트에 전송되는 보드는 20행이다", () => {
+      const state = engine.initState(mockPlayers);
+      expect(state.players["player1"].board).toHaveLength(20);
+    });
+
+    it("활성 피스의 row가 0 이상이다 (클라이언트 좌표)", () => {
+      const state = engine.initState(mockPlayers);
+      expect(state.players["player1"].activePiece!.row).toBeGreaterThanOrEqual(0);
+    });
+
+    it("고스트 row가 활성 피스 row 이상이다", () => {
+      const state = engine.initState(mockPlayers);
+      const p = state.players["player1"];
+      expect(p.ghostRow).toBeGreaterThanOrEqual(p.activePiece!.row);
+    });
+  });
+
   describe("난이도별 설정", () => {
     it("easy 난이도가 올바르게 설정된다", () => {
       const easyEngine = new TetrisEngine("easy");

@@ -1,13 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useRef, memo, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState, memo, useCallback } from "react";
 import { useGame } from "@/hooks/use-game";
 import { useSocket } from "@/hooks/use-socket";
-import { useGameStore } from "@/stores/game-store";
+import { useTetrisBoardStore } from "@/stores/tetris-board-store";
 import { useLobbyStore } from "@/stores/lobby-store";
-import { useShallow } from "zustand/react/shallow";
+import { OpponentCanvas } from "./opponent-canvas";
+import {
+  TETROMINO_SHAPES,
+  getPieceCells,
+  tryMove,
+  tryRotate,
+  calculateGhostRow,
+} from "@game-hub/shared-types";
 import type {
-  TetrisPublicState,
   TetrisMove,
   TetrisPlayerBoard,
   TetrominoType,
@@ -34,58 +40,6 @@ const TETROMINO_BORDER_COLORS: Record<TetrominoType, string> = {
   J: "border-blue-500",
   L: "border-orange-400",
 };
-
-const TETROMINO_SHAPES: Record<TetrominoType, [number, number][][]> = {
-  I: [
-    [[0, -1], [0, 0], [0, 1], [0, 2]],
-    [[-1, 0], [0, 0], [1, 0], [2, 0]],
-    [[0, -1], [0, 0], [0, 1], [0, 2]],
-    [[-1, 0], [0, 0], [1, 0], [2, 0]],
-  ],
-  O: [
-    [[0, 0], [0, 1], [1, 0], [1, 1]],
-    [[0, 0], [0, 1], [1, 0], [1, 1]],
-    [[0, 0], [0, 1], [1, 0], [1, 1]],
-    [[0, 0], [0, 1], [1, 0], [1, 1]],
-  ],
-  T: [
-    [[0, -1], [0, 0], [0, 1], [-1, 0]],
-    [[-1, 0], [0, 0], [1, 0], [0, 1]],
-    [[0, -1], [0, 0], [0, 1], [1, 0]],
-    [[-1, 0], [0, 0], [1, 0], [0, -1]],
-  ],
-  S: [
-    [[0, -1], [0, 0], [-1, 0], [-1, 1]],
-    [[-1, 0], [0, 0], [0, 1], [1, 1]],
-    [[0, -1], [0, 0], [-1, 0], [-1, 1]],
-    [[-1, 0], [0, 0], [0, 1], [1, 1]],
-  ],
-  Z: [
-    [[-1, -1], [-1, 0], [0, 0], [0, 1]],
-    [[-1, 0], [0, 0], [0, -1], [1, -1]],
-    [[-1, -1], [-1, 0], [0, 0], [0, 1]],
-    [[-1, 0], [0, 0], [0, -1], [1, -1]],
-  ],
-  J: [
-    [[0, -1], [0, 0], [0, 1], [-1, -1]],
-    [[-1, 0], [0, 0], [1, 0], [-1, 1]],
-    [[0, -1], [0, 0], [0, 1], [1, 1]],
-    [[-1, 0], [0, 0], [1, 0], [1, -1]],
-  ],
-  L: [
-    [[0, -1], [0, 0], [0, 1], [-1, 1]],
-    [[-1, 0], [0, 0], [1, 0], [1, 1]],
-    [[0, -1], [0, 0], [0, 1], [1, -1]],
-    [[-1, 0], [0, 0], [1, 0], [-1, -1]],
-  ],
-};
-
-function getPieceCells(piece: TetrisActivePiece): [number, number][] {
-  return TETROMINO_SHAPES[piece.type][piece.rotation].map(([dr, dc]) => [
-    piece.row + dr,
-    piece.col + dc,
-  ]);
-}
 
 // Phase 1-1: React.memo for MiniPiecePreview (primitive props → shallow compare sufficient)
 const MiniPiecePreview = memo(function MiniPiecePreview({ type, size = "normal" }: { type: TetrominoType | null; size?: "normal" | "small" }) {
@@ -256,23 +210,13 @@ const PlayerBoard = memo(function PlayerBoard({
     </div>
   );
 }, (prev, next) => {
-  // Custom comparator for PlayerBoard
   if (prev.cellSize !== next.cellSize) return false;
   if (prev.compact !== next.compact) return false;
   if (prev.nickname !== next.nickname) return false;
-
-  const pb = prev.board;
-  const nb = next.board;
-  if (pb.score !== nb.score) return false;
-  if (pb.level !== nb.level) return false;
-  if (pb.linesCleared !== nb.linesCleared) return false;
-  if (pb.status !== nb.status) return false;
-  if (pb.holdPiece !== nb.holdPiece) return false;
-  if (pb.pendingGarbage !== nb.pendingGarbage) return false;
-  if (pb.board !== nb.board) return false;
-  if (pb.activePiece !== nb.activePiece) return false;
-  if (!prev.compact && pb.ghostRow !== nb.ghostRow) return false;
-  if (pb.nextPieces !== nb.nextPieces) return false;
+  if (prev.board.version !== next.board.version) return false;
+  // Check prediction changes (activePiece/ghostRow may differ with same version)
+  if (prev.board.activePiece !== next.board.activePiece) return false;
+  if (prev.board.ghostRow !== next.board.ghostRow) return false;
   return true;
 });
 
@@ -297,39 +241,36 @@ export default function TetrisBoard({ roomId }: GameComponentProps) {
   // useGame is still needed for socket event listening
   const { gameResult, makeMove } = useGame(socket);
 
-  const myId = socket?.id;
   const roomPlayers = useLobbyStore((s) => s.currentRoom?.players ?? []);
 
-  // Phase 2: Zustand selectors for fine-grained subscriptions
-  const myBoard = useGameStore((s) => {
-    const state = s.gameState as TetrisPublicState | null;
-    return state && myId ? state.players[myId] ?? null : null;
-  });
+  // Tetris board store: fine-grained per-player subscriptions
+  const myBoard = useTetrisBoardStore((s) => s.myBoard);
+  const opponentBoards = useTetrisBoardStore((s) => s.opponentBoards);
+  const mode = useTetrisBoardStore((s) => s.mode);
 
-  const opponentPlayers = useGameStore(useShallow((s) => {
-    const state = s.gameState as TetrisPublicState | null;
-    if (!state || !myId) return null;
-    const result: Record<string, TetrisPlayerBoard> = {};
-    for (const [id, board] of Object.entries(state.players)) {
-      if (id !== myId) result[id] = board;
+  // Client-side prediction for own board
+  const [prediction, setPrediction] = useState<{ piece: TetrisActivePiece; version: number } | null>(null);
+
+  // Effective piece: prediction takes priority, but only if it matches current server version
+  const effectivePiece = useMemo(() => {
+    if (prediction && myBoard && prediction.version === myBoard.version) {
+      return prediction.piece;
     }
-    return result;
-  }));
+    return myBoard?.activePiece ?? null;
+  }, [prediction, myBoard]);
 
-  const mode = useGameStore((s) => {
-    const state = s.gameState as TetrisPublicState | null;
-    return state?.mode ?? null;
-  });
+  const effectiveGhostRow = useMemo(() => {
+    if (!effectivePiece || !myBoard) return 0;
+    return calculateGhostRow(myBoard.board, effectivePiece);
+  }, [effectivePiece, myBoard]);
 
-  // Phase 1-5: useMemo for opponentEntries
   const opponentEntries = useMemo(() => {
-    if (!opponentPlayers) return [];
-    return Object.entries(opponentPlayers);
-  }, [opponentPlayers]);
+    return Object.entries(opponentBoards);
+  }, [opponentBoards]);
 
   const opponentCellSize = getOpponentCellSize(opponentEntries.length);
 
-  // Phase 3-3: Input throttling ref
+  // Input throttling ref
   const lastEmitTimeRef = useRef<Map<string, number>>(new Map());
 
   const throttledMakeMove = useCallback((move: TetrisMove) => {
@@ -343,7 +284,38 @@ export default function TetrisBoard({ roomId }: GameComponentProps) {
     makeMove(move);
   }, [makeMove]);
 
-  // Phase 1-4: Keyboard handler with minimal deps
+  // Apply client-side prediction for movement/rotation
+  const applyPrediction = useCallback((moveType: TetrisMove["type"]) => {
+    if (!myBoard) return;
+    const version = myBoard.version;
+    setPrediction((prev) => {
+      const currentPiece = (prev && prev.version === version) ? prev.piece : myBoard.activePiece;
+      if (!currentPiece) return null;
+
+      let newPiece: TetrisActivePiece | null = null;
+      switch (moveType) {
+        case "move-left":
+          newPiece = tryMove(myBoard.board, currentPiece, 0, -1);
+          break;
+        case "move-right":
+          newPiece = tryMove(myBoard.board, currentPiece, 0, 1);
+          break;
+        case "soft-drop":
+          newPiece = tryMove(myBoard.board, currentPiece, 1, 0);
+          break;
+        case "rotate-cw":
+          newPiece = tryRotate(myBoard.board, currentPiece, 1);
+          break;
+        case "rotate-ccw":
+          newPiece = tryRotate(myBoard.board, currentPiece, -1);
+          break;
+      }
+
+      return newPiece ? { piece: newPiece, version } : prev;
+    });
+  }, [myBoard]);
+
+  // Keyboard handler
   const myStatus = myBoard?.status ?? null;
   useEffect(() => {
     if (myStatus !== "playing" || gameResult) return;
@@ -384,13 +356,20 @@ export default function TetrisBoard({ roomId }: GameComponentProps) {
 
       e.preventDefault();
       if (moveType) {
+        // Apply prediction for predictable moves (not hard-drop/hold which change board)
+        if (moveType !== "hard-drop" && moveType !== "hold") {
+          applyPrediction(moveType);
+        } else {
+          // For hard-drop and hold, clear prediction — wait for server
+          setPrediction(null);
+        }
         throttledMakeMove({ type: moveType });
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [myStatus, gameResult, throttledMakeMove]);
+  }, [myStatus, gameResult, throttledMakeMove, applyPrediction]);
 
   if (!myBoard) {
     return (
@@ -406,9 +385,14 @@ export default function TetrisBoard({ roomId }: GameComponentProps) {
     <div className="flex flex-col items-center gap-4 p-4">
       {/* Boards */}
       <div className="flex items-start gap-6">
-        {/* My board */}
+        {/* My board — apply prediction overlay */}
         <div className="relative shrink-0">
-          <PlayerBoard board={myBoard} cellSize={32} />
+          <PlayerBoard
+            board={effectivePiece
+              ? { ...myBoard, activePiece: effectivePiece, ghostRow: effectiveGhostRow }
+              : myBoard}
+            cellSize={32}
+          />
         </div>
 
         {/* Opponents grid: 2 columns on the right */}
@@ -418,14 +402,12 @@ export default function TetrisBoard({ roomId }: GameComponentProps) {
             style={{ gridTemplateColumns: `repeat(${Math.min(opponentEntries.length, 2)}, 1fr)` }}
           >
             {opponentEntries.map(([id, board], i) => (
-              <div key={id} className="relative">
-                <PlayerBoard
-                  board={board}
-                  cellSize={opponentCellSize}
-                  compact
-                  nickname={roomPlayers.find((p) => p.id === id)?.nickname ?? `상대 ${i + 1}`}
-                />
-              </div>
+              <OpponentCanvas
+                key={id}
+                board={board}
+                cellSize={opponentCellSize}
+                nickname={roomPlayers.find((p) => p.id === id)?.nickname ?? `상대 ${i + 1}`}
+              />
             ))}
           </div>
         )}

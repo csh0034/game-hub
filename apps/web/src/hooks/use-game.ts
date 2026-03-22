@@ -4,7 +4,8 @@ import { useEffect, useCallback } from "react";
 import { useGameStore } from "@/stores/game-store";
 import type { RoundResult } from "@/stores/game-store";
 import type { GameSocket } from "@/lib/socket";
-import type { GameMove, GameState, GameResult, HoldemPrivateState, LiarDrawingPrivateState, TetrisPlayerUpdate, TetrisPublicState } from "@game-hub/shared-types";
+import { useTetrisBoardStore } from "@/stores/tetris-board-store";
+import type { GameMove, GameState, GameResult, HoldemPrivateState, LiarDrawingPrivateState, TetrisPlayerUpdate, TetrisPieceUpdate, TetrisPublicState } from "@game-hub/shared-types";
 
 export function useGame(socket: GameSocket | null) {
   const {
@@ -28,6 +29,10 @@ export function useGame(socket: GameSocket | null) {
       setGameState(state);
       setGameResult(null);
       setRoundResult(null);
+      // Initialize tetris board store if it's a tetris game
+      if (state && "players" in state && "mode" in state && socket?.id) {
+        useTetrisBoardStore.getState().initFromState(state as TetrisPublicState, socket.id);
+      }
     };
     const onStateUpdated = (state: GameState) => {
       setGameState(state);
@@ -48,12 +53,10 @@ export function useGame(socket: GameSocket | null) {
       setRoundResult(data);
     };
     const onTetrisPlayerUpdated = (data: TetrisPlayerUpdate) => {
-      const current = useGameStore.getState().gameState as TetrisPublicState | null;
-      if (!current || !("players" in current)) return;
-      setGameState({
-        ...current,
-        players: { ...current.players, [data.playerId]: data.board },
-      });
+      useTetrisBoardStore.getState().setPlayerBoard(data.playerId, data.board);
+    };
+    const onTetrisPieceUpdated = (data: TetrisPieceUpdate) => {
+      useTetrisBoardStore.getState().setPlayerPiece(data.playerId, data.activePiece, data.ghostRow, data.version);
     };
 
     socket.on("game:started", onStarted);
@@ -64,6 +67,7 @@ export function useGame(socket: GameSocket | null) {
     socket.on("game:player-left", onPlayerLeft);
     socket.on("game:round-ended", onRoundEnded);
     socket.on("game:tetris-player-updated", onTetrisPlayerUpdated);
+    socket.on("game:tetris-piece-updated", onTetrisPieceUpdated);
 
     return () => {
       socket.off("game:started", onStarted);
@@ -74,6 +78,7 @@ export function useGame(socket: GameSocket | null) {
       socket.off("game:player-left", onPlayerLeft);
       socket.off("game:round-ended", onRoundEnded);
       socket.off("game:tetris-player-updated", onTetrisPlayerUpdated);
+      socket.off("game:tetris-piece-updated", onTetrisPieceUpdated);
     };
   }, [socket, setGameState, setGameResult, setPrivateState, setPlayerLeftInfo, setRoundResult]);
 
@@ -94,6 +99,7 @@ export function useGame(socket: GameSocket | null) {
     if (!socket) return;
     socket.emit("game:rematch");
     reset();
+    useTetrisBoardStore.getState().reset();
   }, [socket, reset]);
 
   return { gameState, gameResult, privateState, playerLeftInfo, roundResult, makeMove, startGame, requestRematch, setPlayerLeftInfo, reset };

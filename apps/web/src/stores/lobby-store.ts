@@ -4,8 +4,10 @@ import type { Room } from "@game-hub/shared-types";
 interface LobbyStore {
   rooms: Room[];
   currentRoom: Room | null;
+  pendingRoomId: string | null;
   setRooms: (rooms: Room[]) => void;
   setCurrentRoom: (room: Room | null) => void;
+  setPendingRoomId: (roomId: string | null) => void;
   addRoom: (room: Room) => void;
   updateRoom: (room: Room) => void;
   removeRoom: (roomId: string) => void;
@@ -14,8 +16,10 @@ interface LobbyStore {
 export const useLobbyStore = create<LobbyStore>((set) => ({
   rooms: [],
   currentRoom: null,
+  pendingRoomId: null,
   setRooms: (rooms) => set({ rooms }),
   setCurrentRoom: (room) => set({ currentRoom: room }),
+  setPendingRoomId: (roomId) => set({ pendingRoomId: roomId }),
   addRoom: (room) =>
     set((state) => ({
       rooms: state.rooms.some((r) => r.id === room.id)

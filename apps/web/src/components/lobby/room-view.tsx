@@ -7,6 +7,7 @@ import { ChatPanel } from "@/components/chat/chat-panel";
 import { useGame } from "@/hooks/use-game";
 import { GameRenderer } from "@/lib/game-registry";
 import type { GameSocket } from "@/lib/socket";
+import { toast } from "sonner";
 import {
   ArrowLeft,
   Crown,
@@ -17,6 +18,7 @@ import {
   MessageCircle,
   ChevronDown,
   ChevronUp,
+  Link,
 } from "lucide-react";
 
 function PlayerLeftOverlay({
@@ -336,9 +338,19 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
         )}
       </div>
 
-      <p className="text-xs text-center text-muted-foreground">
-        방 코드: <span className="font-mono text-foreground">{room.id}</span>
-      </p>
+      <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+        <span>방 코드: <span className="font-mono text-foreground">{room.id}</span></span>
+        <button
+          onClick={() => {
+            navigator.clipboard.writeText(window.location.origin + "/room/" + room.id);
+            toast.success("링크가 복사되었습니다");
+          }}
+          className="inline-flex items-center gap-1 px-2 py-1 rounded-md hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
+        >
+          <Link className="w-3.5 h-3.5" />
+          링크 복사
+        </button>
+      </div>
 
       <div className="h-[300px]">
         <ChatPanel

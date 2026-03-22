@@ -76,7 +76,10 @@ game-hub/
 
 ```
 ├── app/                     # App Router 페이지
+│   ├── page.tsx             # / — 로비 (GameHub 렌더)
+│   └── room/[id]/page.tsx   # /room/[id] — 방 직접 입장 (pendingRoomId 설정 후 GameHub 렌더)
 ├── components/
+│   ├── game-hub.tsx         # 메인 앱 로직 (닉네임, 로비, 방, URL 동기화)
 │   ├── common/confirm-dialog.tsx  # 공통 확인 다이얼로그
 │   ├── layout/navbar.tsx
 │   ├── lobby/               # 로비 UI (방 목록, 생성, 입장)
@@ -97,6 +100,13 @@ game-hub/
     ├── hand-evaluator.ts    # 텍사스 홀덤 핸드 평가
     └── utils.ts
 ```
+
+### 라우팅 & 방 URL 공유
+
+- `/` — 로비 페이지, `/room/[id]` — 방 직접 입장 페이지. 두 라우트 모두 `<GameHub />` 컴포넌트를 렌더한다.
+- `/room/[id]` 접속 시 `pendingRoomId`를 lobby-store에 설정 → `player:set-nickname` 인증 완료 후 자동 `joinRoom` 실행.
+- 방 생성/입장 시 `history.pushState`로 URL을 `/room/{roomId}`로 변경, 나갈 때 `/`로 복원.
+- 방 대기실에서 "링크 복사" 버튼으로 `{origin}/room/{roomId}` URL을 클립보드에 복사.
 
 ## 공유 타입 (packages/shared-types/src)
 

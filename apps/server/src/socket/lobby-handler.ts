@@ -182,20 +182,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
             gameManager.setGameState(roomId, endedState);
             io.to(roomId).emit("game:state-updated", endedState);
 
-            // Schedule next round
-            if (endedState.roundNumber >= endedState.totalRounds) {
-              const finalState = cmEngine.processMove(endedState, room.hostId, { type: "phase-ready" });
-              gameManager.setGameState(roomId, finalState);
-              io.to(roomId).emit("game:state-updated", finalState);
-              const gameResult = cmEngine.checkWin(finalState);
-              if (gameResult) {
-                room.status = "finished";
-                io.to(roomId).emit("game:ended", gameResult);
-                io.emit("lobby:room-updated", room);
-              }
-            } else {
-              startCatchMindNextRound(io, roomId, gameManager);
-            }
+            startCatchMindNextRound(io, roomId, gameManager);
           }
           return; // Don't broadcast the correct answer as chat
         }

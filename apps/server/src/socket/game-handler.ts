@@ -54,11 +54,6 @@ export function startCatchMindNextRound(io: IOServer, roomId: string, gameManage
   const state = gameManager.getGameState(roomId) as CatchMindPublicState | null;
   if (!state) return;
 
-  if (state.roundNumber >= state.totalRounds) {
-    advanceCatchMindRound(io, roomId, gameManager);
-    return;
-  }
-
   startCatchMindTimer(roomId, 10000, () => {
     advanceCatchMindRound(io, roomId, gameManager);
   });
@@ -127,19 +122,7 @@ function startCatchMindDrawTimer(io: IOServer, roomId: string, gameManager: Game
     gameManager.setGameState(roomId, endedState);
     io.to(roomId).emit("game:state-updated", endedState);
 
-    if (endedState.roundNumber >= endedState.totalRounds) {
-      const finalState = cmEngine.processMove(endedState, room.hostId, { type: "phase-ready" });
-      gameManager.setGameState(roomId, finalState);
-      io.to(roomId).emit("game:state-updated", finalState);
-      const gameResult = cmEngine.checkWin(finalState);
-      if (gameResult) {
-        room.status = "finished";
-        io.to(roomId).emit("game:ended", gameResult);
-        io.emit("lobby:room-updated", room);
-      }
-    } else {
-      startCatchMindNextRound(io, roomId, gameManager);
-    }
+    startCatchMindNextRound(io, roomId, gameManager);
   });
 }
 

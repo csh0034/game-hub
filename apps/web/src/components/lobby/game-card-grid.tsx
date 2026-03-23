@@ -115,7 +115,7 @@ export function GameCardGrid({ onCreateRoom }: GameCardGridProps) {
                   )}
                 </div>
                 <h3 className="text-lg font-semibold mb-1">{game.name}</h3>
-                <p className="text-sm text-muted-foreground mb-3">{game.description}</p>
+                <p className="text-sm text-muted-foreground mb-3 line-clamp-2 min-h-10">{game.description}</p>
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                   <Users className="w-3 h-3" />
                   <span>
@@ -157,7 +157,7 @@ export function GameCardGrid({ onCreateRoom }: GameCardGridProps) {
                 </span>
               </div>
               <h3 className="text-lg font-semibold mb-1">{game.name}</h3>
-              <p className="text-sm text-muted-foreground mb-3">{game.description}</p>
+              <p className="text-sm text-muted-foreground mb-3 line-clamp-2 min-h-10">{game.description}</p>
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Users className="w-3 h-3" />
                 <span>

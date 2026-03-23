@@ -286,8 +286,8 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
                 <span className="font-medium">{room.gameOptions?.gomokuTurnTime ?? 30}초</span>
               </div>
             )}
-            {room.gameType === "minesweeper" && room.gameOptions.minesweeperDifficulty && (() => {
-              const diff = MINESWEEPER_DIFFICULTY_CONFIGS[room.gameOptions.minesweeperDifficulty!];
+            {room.gameType === "minesweeper" && room.gameOptions?.minesweeperDifficulty && (() => {
+              const diff = MINESWEEPER_DIFFICULTY_CONFIGS[room.gameOptions.minesweeperDifficulty];
               return (
                 <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
                   <span className="text-muted-foreground">난이도</span>
@@ -295,8 +295,8 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
                 </div>
               );
             })()}
-            {room.gameType === "tetris" && room.gameOptions.tetrisDifficulty && (() => {
-              const diff = TETRIS_DIFFICULTY_CONFIGS[room.gameOptions.tetrisDifficulty!];
+            {room.gameType === "tetris" && room.gameOptions?.tetrisDifficulty && (() => {
+              const diff = TETRIS_DIFFICULTY_CONFIGS[room.gameOptions.tetrisDifficulty];
               return (
                 <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
                   <span className="text-muted-foreground">난이도</span>
@@ -306,13 +306,13 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
             })()}
             {room.gameType === "liar-drawing" && (
               <>
-                {room.gameOptions.liarDrawingTime != null && (
+                {room.gameOptions?.liarDrawingTime != null && (
                   <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
                     <span className="text-muted-foreground">그리기 시간</span>
                     <span className="font-medium">{room.gameOptions.liarDrawingTime}초</span>
                   </div>
                 )}
-                {room.gameOptions.liarDrawingRounds != null && (
+                {room.gameOptions?.liarDrawingRounds != null && (
                   <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
                     <span className="text-muted-foreground">라운드 수</span>
                     <span className="font-medium">{room.gameOptions.liarDrawingRounds}라운드</span>
@@ -322,13 +322,13 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
             )}
             {room.gameType === "catch-mind" && (
               <>
-                {room.gameOptions.catchMindTime != null && (
+                {room.gameOptions?.catchMindTime != null && (
                   <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
                     <span className="text-muted-foreground">그리기 시간</span>
                     <span className="font-medium">{room.gameOptions.catchMindTime}초</span>
                   </div>
                 )}
-                {room.gameOptions.catchMindRounds != null && (
+                {room.gameOptions?.catchMindRounds != null && (
                   <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
                     <span className="text-muted-foreground">라운드 수</span>
                     <span className="font-medium">{room.gameOptions.catchMindRounds}라운드</span>
@@ -336,7 +336,7 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
                 )}
                 <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
                   <span className="text-muted-foreground">글자 수 힌트</span>
-                  <span className="font-medium">{room.gameOptions.catchMindCharHint ? "ON" : "OFF"}</span>
+                  <span className="font-medium">{room.gameOptions?.catchMindCharHint ? "ON" : "OFF"}</span>
                 </div>
               </>
             )}

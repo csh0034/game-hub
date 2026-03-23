@@ -155,12 +155,25 @@ export function ChatPanel({
 
             return (
               <div key={msg.id ?? idx} className={`group text-sm ${isMe ? "text-right" : ""}`}>
-                <span className="text-muted-foreground text-xs mr-1">
-                  {formatTime(msg.timestamp)}
-                </span>
-                <span className={`font-semibold ${isMe ? "text-sky-400" : ""}`}>
-                  {msg.nickname}
-                </span>
+                {isMe ? (
+                  <>
+                    <span className="text-muted-foreground text-xs mr-1">
+                      {formatTime(msg.timestamp)}
+                    </span>
+                    <span className="font-semibold text-sky-400">
+                      {msg.nickname}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="font-semibold">
+                      {msg.nickname}
+                    </span>
+                    <span className="text-muted-foreground text-xs ml-1">
+                      {formatTime(msg.timestamp)}
+                    </span>
+                  </>
+                )}
                 {isAdmin && onDeleteMessage && msg.id && (
                   <button
                     onClick={() => setDeleteTargetId(msg.id)}

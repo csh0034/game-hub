@@ -43,6 +43,22 @@ describe("broadcastAuthenticatedCount", () => {
     });
   });
 
+  it("관리자 닉네임을 '관리자'로 치환하고 isAdmin 플래그를 설정한다", () => {
+    const s1 = createMockSocket("s1", "admin", { authenticatedAt: 1000 });
+    const s2 = createMockSocket("s2", "Player2", { authenticatedAt: 2000 });
+    const io = createMockIo({ sockets: [s1, s2] });
+
+    broadcastAuthenticatedCount(io);
+
+    expect(io.emit).toHaveBeenCalledWith("system:player-count", {
+      count: 2,
+      players: [
+        { nickname: "관리자", connectedAt: 1000, isAdmin: true },
+        { nickname: "Player2", connectedAt: 2000, isAdmin: undefined },
+      ],
+    });
+  });
+
   it("authenticatedAt이 없으면 현재 시간을 사용한다", () => {
     const before = Date.now();
     const s1 = createMockSocket("s1", "Player1");

@@ -65,6 +65,17 @@ describe("setupNicknameHandler", () => {
     expect(socket.data.nickname).toBe("Player_sock");
   });
 
+  it("'관리자' 닉네임을 거부한다", () => {
+    const callback = vi.fn();
+    socket._trigger("player:set-nickname", "관리자", callback);
+
+    expect(callback).toHaveBeenCalledWith({
+      success: false,
+      error: "사용할 수 없는 닉네임입니다.",
+    });
+    expect(socket.data.nickname).toBe("Player_sock");
+  });
+
   it("공백만 있는 닉네임을 거부한다", () => {
     const callback = vi.fn();
     socket._trigger("player:set-nickname", "   ", callback);

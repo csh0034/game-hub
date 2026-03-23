@@ -9,6 +9,7 @@ export interface ChatMessage {
   nickname: string;
   message: string;
   timestamp: number;
+  isAdmin?: boolean;
 }
 
 // Client → Server
@@ -94,7 +95,7 @@ export interface ServerToClientEvents {
   "request:deleted": (requestId: string) => void;
 
   // System
-  "system:player-count": (data: { count: number; players: { nickname: string; connectedAt: number }[] }) => void;
+  "system:player-count": (data: { count: number; players: { nickname: string; connectedAt: number; isAdmin?: boolean }[] }) => void;
   "system:version": (data: { commitHash: string }) => void;
 }
 

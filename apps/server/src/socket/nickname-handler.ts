@@ -29,6 +29,11 @@ export function setupNicknameHandler(
       return;
     }
 
+    if (trimmed === "관리자") {
+      callback({ success: false, error: "사용할 수 없는 닉네임입니다." });
+      return;
+    }
+
     // Nickname uniqueness check
     const taken = await sessionStore.isNicknameTaken(trimmed, socket.id!);
     if (taken) {

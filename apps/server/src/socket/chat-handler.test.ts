@@ -91,6 +91,24 @@ describe("chat:lobby-message", () => {
     expect(io._toEmit).not.toHaveBeenCalled();
   });
 
+  it("관리자 닉네임을 '관리자'로 치환하고 isAdmin 플래그를 설정한다", () => {
+    const adminSocket = createMockSocket("socket-admin", "admin");
+    setupLobbyHandler(io as unknown as GameServer, adminSocket as unknown as GameSocket, gameManager, chatStore);
+    adminSocket.data.authenticated = true;
+    adminSocket.data.roomId = null;
+
+    adminSocket._trigger("chat:lobby-message", "공지사항입니다");
+
+    expect(io._toEmit).toHaveBeenCalledWith(
+      "chat:lobby-message",
+      expect.objectContaining({
+        nickname: "관리자",
+        isAdmin: true,
+        message: "공지사항입니다",
+      }),
+    );
+  });
+
   it("메시지를 500자로 잘라서 전송한다", () => {
     socket.data.authenticated = true;
     socket.data.roomId = null;
@@ -143,6 +161,23 @@ describe("chat:room-message", () => {
     socket._trigger("chat:room-message", "게임 시작!");
 
     expect(io._toEmit).not.toHaveBeenCalled();
+  });
+
+  it("관리자 닉네임을 '관리자'로 치환하고 isAdmin 플래그를 설정한다", () => {
+    const adminSocket = createMockSocket("socket-admin", "admin");
+    setupLobbyHandler(io as unknown as GameServer, adminSocket as unknown as GameSocket, gameManager, chatStore);
+    adminSocket.data.roomId = "room-1";
+
+    adminSocket._trigger("chat:room-message", "방 공지");
+
+    expect(io._toEmit).toHaveBeenCalledWith(
+      "chat:room-message",
+      expect.objectContaining({
+        nickname: "관리자",
+        isAdmin: true,
+        message: "방 공지",
+      }),
+    );
   });
 
   it("메시지를 500자로 잘라서 전송한다", () => {

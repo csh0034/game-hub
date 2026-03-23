@@ -131,12 +131,14 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
   socket.on("chat:lobby-message", (message) => {
     if (!socket.data.authenticated) return;
     if (socket.data.roomId) return;
+    const admin = isAdmin(socket.data.nickname);
     const chatMsg: ChatMessage = {
       id: crypto.randomUUID(),
       playerId: socket.id!,
-      nickname: socket.data.nickname,
+      nickname: admin ? "관리자" : socket.data.nickname,
       message: message.slice(0, 500),
       timestamp: Date.now(),
+      isAdmin: admin || undefined,
     };
     chatStore.pushLobbyMessage(chatMsg);
     io.to("lobby").emit("chat:lobby-message", chatMsg);
@@ -197,12 +199,14 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
       }
     }
 
+    const admin = isAdmin(socket.data.nickname);
     const chatMsg: ChatMessage = {
       id: crypto.randomUUID(),
       playerId: socket.id!,
-      nickname: socket.data.nickname,
+      nickname: admin ? "관리자" : socket.data.nickname,
       message: message.slice(0, 500),
       timestamp: Date.now(),
+      isAdmin: admin || undefined,
     };
     chatStore.pushRoomMessage(roomId, chatMsg);
     io.to(roomId).emit("chat:room-message", chatMsg);

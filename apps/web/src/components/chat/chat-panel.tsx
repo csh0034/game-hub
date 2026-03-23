@@ -160,13 +160,13 @@ export function ChatPanel({
                     <span className="text-muted-foreground text-xs mr-1">
                       {formatTime(msg.timestamp)}
                     </span>
-                    <span className="font-semibold text-sky-400">
+                    <span className={`font-semibold ${msg.isAdmin ? "text-red-400" : "text-sky-400"}`}>
                       {msg.nickname}
                     </span>
                   </>
                 ) : (
                   <>
-                    <span className="font-semibold">
+                    <span className={`font-semibold ${msg.isAdmin ? "text-red-400" : ""}`}>
                       {msg.nickname}
                     </span>
                     <span className="text-muted-foreground text-xs ml-1">

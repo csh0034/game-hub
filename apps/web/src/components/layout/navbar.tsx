@@ -5,6 +5,7 @@ import { Gamepad2, LogOut, Users, Wifi, WifiOff } from "lucide-react";
 interface OnlinePlayer {
   nickname: string;
   connectedAt: number;
+  isAdmin?: boolean;
 }
 
 interface NavbarProps {
@@ -70,7 +71,7 @@ export function Navbar({ isConnected, playerCount, onlinePlayers = [], nickname,
                   <ul className="space-y-0.5">
                     {onlinePlayers.map((player) => (
                       <li key={player.nickname} className="text-sm text-foreground flex items-center justify-between gap-2">
-                        <span className="truncate">{player.nickname}</span>
+                        <span className={`truncate ${player.isAdmin ? "text-red-400 font-bold" : ""}`}>{player.nickname}</span>
                         <span className="text-xs text-muted-foreground whitespace-nowrap">{formatTime(player.connectedAt)}</span>
                       </li>
                     ))}

@@ -179,7 +179,7 @@ export interface MinesweeperMove {
 }
 
 // Tetris types
-export type TetrisDifficulty = "easy" | "normal" | "hard";
+export type TetrisDifficulty = "beginner" | "intermediate" | "expert";
 
 export interface TetrisDifficultyConfig {
   initialInterval: number;
@@ -188,9 +188,9 @@ export interface TetrisDifficultyConfig {
 }
 
 export const TETRIS_DIFFICULTY_CONFIGS: Record<TetrisDifficulty, TetrisDifficultyConfig> = {
-  easy: { initialInterval: 1000, startLevel: 1, label: "Easy" },
-  normal: { initialInterval: 800, startLevel: 1, label: "Normal" },
-  hard: { initialInterval: 400, startLevel: 5, label: "Hard" },
+  beginner: { initialInterval: 800, startLevel: 1, label: "초급" },
+  intermediate: { initialInterval: 600, startLevel: 1, label: "중급" },
+  expert: { initialInterval: 400, startLevel: 5, label: "고급" },
 };
 
 export type TetrominoType = "I" | "O" | "T" | "S" | "Z" | "J" | "L";

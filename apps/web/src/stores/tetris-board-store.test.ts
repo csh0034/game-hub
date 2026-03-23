@@ -26,7 +26,7 @@ function createState(myId: string): TetrisPublicState {
       "opponent-1": createBoard(),
     },
     mode: "battle",
-    difficulty: "normal",
+    difficulty: "intermediate",
   } as TetrisPublicState;
 }
 
@@ -48,7 +48,7 @@ describe("useTetrisBoardStore", () => {
       useTetrisBoardStore.getState().initFromState(createState("me"), "me");
       const state = useTetrisBoardStore.getState();
       expect(state.mode).toBe("battle");
-      expect(state.difficulty).toBe("normal");
+      expect(state.difficulty).toBe("intermediate");
     });
   });
 

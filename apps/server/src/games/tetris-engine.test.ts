@@ -31,7 +31,7 @@ describe("TetrisEngine", () => {
     it("솔로 모드로 초기화한다", () => {
       const state = engine.initState(mockPlayers);
       expect(state.mode).toBe("solo");
-      expect(state.difficulty).toBe("normal");
+      expect(state.difficulty).toBe("beginner");
       expect(Object.keys(state.players)).toHaveLength(1);
     });
 
@@ -70,20 +70,20 @@ describe("TetrisEngine", () => {
     });
 
     it("난이도별 초기 레벨이 다르다", () => {
-      const hardEngine = new TetrisEngine("hard");
-      const state = hardEngine.initState(mockPlayers);
+      const expertEngine = new TetrisEngine("expert");
+      const state = expertEngine.initState(mockPlayers);
       expect(state.players["player1"].level).toBe(5);
-      expect(state.difficulty).toBe("hard");
+      expect(state.difficulty).toBe("expert");
     });
 
     it("난이도별 드롭 간격이 다르다", () => {
-      const easyEngine = new TetrisEngine("easy");
-      const easyState = easyEngine.initState(mockPlayers);
-      expect(easyState.dropInterval).toBe(1000);
+      const beginnerEngine = new TetrisEngine("beginner");
+      const beginnerState = beginnerEngine.initState(mockPlayers);
+      expect(beginnerState.dropInterval).toBe(800);
 
-      const normalEngine = new TetrisEngine("normal");
-      const normalState = normalEngine.initState(mockPlayers);
-      expect(normalState.dropInterval).toBe(800);
+      const intermediateEngine = new TetrisEngine("intermediate");
+      const intermediateState = intermediateEngine.initState(mockPlayers);
+      expect(intermediateState.dropInterval).toBe(600);
     });
   });
 
@@ -495,19 +495,19 @@ describe("TetrisEngine", () => {
   });
 
   describe("난이도별 설정", () => {
-    it("easy 난이도가 올바르게 설정된다", () => {
-      const easyEngine = new TetrisEngine("easy");
-      const state = easyEngine.initState(mockPlayers);
-      expect(state.difficulty).toBe("easy");
-      expect(state.dropInterval).toBe(1000);
+    it("beginner 난이도가 올바르게 설정된다", () => {
+      const beginnerEngine = new TetrisEngine("beginner");
+      const state = beginnerEngine.initState(mockPlayers);
+      expect(state.difficulty).toBe("beginner");
+      expect(state.dropInterval).toBe(800);
       expect(state.players["player1"].level).toBe(1);
     });
 
-    it("hard 난이도가 올바르게 설정된다", () => {
-      const hardEngine = new TetrisEngine("hard");
-      const state = hardEngine.initState(mockPlayers);
-      expect(state.difficulty).toBe("hard");
-      // hard: base 400, startLevel 5, interval = max(400 - 4*50, 100) = 200
+    it("expert 난이도가 올바르게 설정된다", () => {
+      const expertEngine = new TetrisEngine("expert");
+      const state = expertEngine.initState(mockPlayers);
+      expect(state.difficulty).toBe("expert");
+      // expert: base 400, startLevel 5, interval = max(400 - 4*50, 100) = 200
       expect(state.dropInterval).toBe(200);
       expect(state.players["player1"].level).toBe(5);
     });
@@ -690,13 +690,13 @@ describe("TetrisEngine", () => {
   });
 
   describe("getDifficulty", () => {
-    it("기본 난이도 normal을 반환한다", () => {
-      expect(engine.getDifficulty()).toBe("normal");
+    it("기본 난이도 beginner를 반환한다", () => {
+      expect(engine.getDifficulty()).toBe("beginner");
     });
 
-    it("hard 난이도를 반환한다", () => {
-      const hardEngine = new TetrisEngine("hard");
-      expect(hardEngine.getDifficulty()).toBe("hard");
+    it("expert 난이도를 반환한다", () => {
+      const expertEngine = new TetrisEngine("expert");
+      expect(expertEngine.getDifficulty()).toBe("expert");
     });
   });
 

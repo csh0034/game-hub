@@ -70,7 +70,7 @@ describe("InMemoryRankingStore", () => {
   });
 
   describe("addEntry (내림차순 - 테트리스)", () => {
-    const key: RankingKey = "tetris:normal";
+    const key: RankingKey = "tetris:intermediate";
 
     it("높은 점수가 더 높은 순위로 정렬된다", async () => {
       await store.addEntry(key, createEntry("1", "Alice", 1000), false);

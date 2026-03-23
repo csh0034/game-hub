@@ -22,7 +22,7 @@ function getQuickStartBadges(gameType: GameType): string[] | null {
     case "gomoku":
       return ["30초"];
     case "tetris":
-      return ["Normal"];
+      return ["초급"];
     case "liar-drawing":
       return ["60초", "3라운드"];
     case "catch-mind":
@@ -40,7 +40,7 @@ export function GameCardGrid({ onCreateRoom }: GameCardGridProps) {
     if (config.disabled) return;
     const payload: CreateRoomPayload = { name: `${config.name} 방`, gameType };
     if (gameType === "tetris") {
-      payload.gameOptions = { tetrisDifficulty: "normal" };
+      payload.gameOptions = { tetrisDifficulty: "beginner" };
     }
     if (gameType === "liar-drawing") {
       payload.gameOptions = { liarDrawingTime: 60, liarDrawingRounds: 3 };

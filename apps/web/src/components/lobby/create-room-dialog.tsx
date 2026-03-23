@@ -23,7 +23,7 @@ export function CreateRoomDialog({ onCreateRoom }: CreateRoomDialogProps) {
   const [name, setName] = useState("");
   const [gameType, setGameType] = useState<GameType>("gomoku");
   const [minesweeperDifficulty, setMinesweeperDifficulty] = useState<MinesweeperDifficulty>("beginner");
-  const [tetrisDifficulty, setTetrisDifficulty] = useState<TetrisDifficulty>("normal");
+  const [tetrisDifficulty, setTetrisDifficulty] = useState<TetrisDifficulty>("beginner");
   const [liarDrawingTime, setLiarDrawingTime] = useState(60);
   const [liarDrawingRounds, setLiarDrawingRounds] = useState(3);
   const [catchMindTime, setCatchMindTime] = useState(60);
@@ -53,7 +53,7 @@ export function CreateRoomDialog({ onCreateRoom }: CreateRoomDialogProps) {
     setOpen(false);
     setName("");
     setMinesweeperDifficulty("beginner");
-    setTetrisDifficulty("normal");
+    setTetrisDifficulty("beginner");
     setLiarDrawingTime(60);
     setLiarDrawingRounds(3);
     setCatchMindTime(60);

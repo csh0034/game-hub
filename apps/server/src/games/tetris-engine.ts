@@ -131,9 +131,9 @@ export class TetrisEngine implements GameEngine {
   private dirtyPlayers: Set<string> = new Set();
   private boardDirtyPlayers: Set<string> = new Set(); // players whose board (not just piece) changed
 
-  constructor(difficulty: TetrisDifficulty = "normal") {
+  constructor(difficulty: TetrisDifficulty = "beginner") {
     this.difficulty = difficulty;
-    const configs = { easy: { initialInterval: 1000, startLevel: 1 }, normal: { initialInterval: 800, startLevel: 1 }, hard: { initialInterval: 400, startLevel: 5 } };
+    const configs = { beginner: { initialInterval: 800, startLevel: 1 }, intermediate: { initialInterval: 600, startLevel: 1 }, expert: { initialInterval: 400, startLevel: 5 } };
     this.baseInterval = configs[difficulty].initialInterval;
     this.startLevel = configs[difficulty].startLevel;
   }

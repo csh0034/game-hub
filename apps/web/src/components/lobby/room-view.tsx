@@ -358,7 +358,7 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
           difficulty={
             (room.gameType === "minesweeper"
               ? room.gameOptions?.minesweeperDifficulty ?? "beginner"
-              : room.gameOptions?.tetrisDifficulty ?? "normal") as RankingDifficulty
+              : room.gameOptions?.tetrisDifficulty ?? "beginner") as RankingDifficulty
           }
           myNickname={nickname}
           socket={socket}

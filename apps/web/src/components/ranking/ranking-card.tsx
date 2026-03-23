@@ -13,9 +13,6 @@ export const DIFFICULTY_LABELS: Record<string, string> = {
   beginner: "초급",
   intermediate: "중급",
   expert: "고급",
-  easy: "Easy",
-  normal: "Normal",
-  hard: "Hard",
 };
 
 function formatScore(gameType: RankingGameType, score: number): string {

@@ -139,7 +139,7 @@ export class GameManager {
     }
 
     if (room.gameType === "tetris") {
-      const difficulty = room.gameOptions?.tetrisDifficulty ?? "normal";
+      const difficulty = room.gameOptions?.tetrisDifficulty ?? "beginner";
       const tetrisEngine = new TetrisEngine(difficulty);
       this.roomEngines.set(roomId, tetrisEngine);
       const state = tetrisEngine.initState(room.players);

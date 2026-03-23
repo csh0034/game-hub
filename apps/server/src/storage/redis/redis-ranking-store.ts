@@ -7,6 +7,36 @@ const MAX_ENTRIES = 10;
 export class RedisRankingStore implements RankingStore {
   constructor(private redis: Redis) {}
 
+  /**
+   * 테트리스 랭킹 키를 easy/normal/hard → beginner/intermediate/expert로 마이그레이션.
+   * old key가 존재하고 new key가 없으면 rename, 둘 다 있으면 old key 삭제.
+   */
+  async migrateTetrisKeys(): Promise<void> {
+    const migrations: [string, string][] = [
+      ["ranking:tetris:easy", "ranking:tetris:beginner"],
+      ["ranking:tetris:normal", "ranking:tetris:intermediate"],
+      ["ranking:tetris:hard", "ranking:tetris:expert"],
+    ];
+
+    for (const [oldKey, newKey] of migrations) {
+      try {
+        const oldExists = await this.redis.exists(oldKey);
+        if (!oldExists) continue;
+
+        const newExists = await this.redis.exists(newKey);
+        if (newExists) {
+          await this.redis.del(oldKey);
+          console.log(`[ranking-migration] deleted old key ${oldKey} (new key already exists)`);
+        } else {
+          await this.redis.rename(oldKey, newKey);
+          console.log(`[ranking-migration] renamed ${oldKey} → ${newKey}`);
+        }
+      } catch (err) {
+        console.error(`[ranking-migration] failed to migrate ${oldKey}:`, err);
+      }
+    }
+  }
+
   async getRankings(key: RankingKey): Promise<RankingEntry[]> {
     try {
       const data = await this.redis.get(`ranking:${key}`);

@@ -87,6 +87,10 @@ export function GameCardGrid({ onCreateRoom }: GameCardGridProps) {
                     </button>
                   ))}
                 </div>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-3">
+                  <Users className="w-3 h-3" />
+                  <span>1명</span>
+                </div>
               </div>
             </div>
           ) : (

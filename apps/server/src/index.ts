@@ -4,7 +4,6 @@ import { execSync } from "child_process";
 import { Server } from "socket.io";
 import cors from "cors";
 import {
-  GAME_CONFIGS,
   type ClientToServerEvents,
   type ServerToClientEvents,
   type InterServerEvents,
@@ -98,7 +97,7 @@ async function bootstrap() {
       if (roomId) {
         const roomBefore = gameManager.getRoom(roomId);
         if (roomBefore && roomBefore.status === "playing") {
-          const willEnd = roomBefore.players.length - 1 < GAME_CONFIGS[roomBefore.gameType].minPlayers;
+          const willEnd = true;
           socket.to(roomId).emit("game:player-left", {
             playerId: socket.id,
             nickname: socket.data.nickname,

@@ -24,7 +24,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
   function emitPlayerLeftIfPlaying(roomId: string) {
     const room = gameManager.getRoom(roomId);
     if (room && room.status === "playing") {
-      const willEnd = room.players.length - 1 < GAME_CONFIGS[room.gameType].minPlayers;
+      const willEnd = true;
       socket.to(roomId).emit("game:player-left", {
         playerId: socket.id!,
         nickname: socket.data.nickname,

@@ -78,7 +78,7 @@ describe("setupLobbyHandler — game:player-left", () => {
     });
   });
 
-  it("willEnd가 false인 경우 — 남은 인원이 minPlayers 이상", () => {
+  it("게임 중 이탈 시 항상 willEnd가 true", () => {
     // Use tetris which has minPlayers: 1
     setupLobbyHandler(io as unknown as GameServer, socket1 as unknown as GameSocket, gameManager, chatStore);
     setupLobbyHandler(io as unknown as GameServer, socket2 as unknown as GameSocket, gameManager, chatStore);
@@ -106,7 +106,7 @@ describe("setupLobbyHandler — game:player-left", () => {
 
     expect(gameManager.getRoom(room.id)?.status).toBe("playing");
 
-    // Player3 leaves — 2 remaining >= minPlayers(2), so willEnd = false
+    // Player3 leaves — 게임 중 이탈 시 항상 willEnd = true
     socket3._trigger("lobby:leave-room");
 
     const toEmitCalls = socket3._toEmit.mock.calls;
@@ -115,7 +115,7 @@ describe("setupLobbyHandler — game:player-left", () => {
     );
     expect(playerLeftCalls).toHaveLength(1);
     expect(playerLeftCalls[0][1]).toMatchObject({
-      willEnd: false,
+      willEnd: true,
     });
   });
 });

@@ -87,11 +87,8 @@ export class GameManager {
       room.status = "waiting";
       this.cleanupRoomState(roomId);
     } else if (room.status === "playing") {
-      const engine = this.engines.get(room.gameType)!;
-      if (room.players.length < engine.minPlayers) {
-        room.status = "waiting";
-        this.cleanupRoomState(roomId);
-      }
+      room.status = "waiting";
+      this.cleanupRoomState(roomId);
     }
     this.persistRoom(room);
     return room;

@@ -55,7 +55,7 @@ function PlayerLeftOverlay({
         <p className="text-lg font-bold">{nickname} 님이 게임을 떠났습니다.</p>
         {willEnd ? (
           <p className="text-muted-foreground">
-            {countdown}초 후 대기실로 이동합니다.
+            {countdown}초 후 로비로 이동합니다.
           </p>
         ) : (
           <p className="text-muted-foreground">

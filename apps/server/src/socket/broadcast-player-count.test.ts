@@ -59,6 +59,24 @@ describe("broadcastAuthenticatedCount", () => {
     });
   });
 
+  it("로그인 순서(connectedAt 오름차순)로 정렬한다", () => {
+    const s1 = createMockSocket("s1", "Late", { authenticatedAt: 3000 });
+    const s2 = createMockSocket("s2", "Early", { authenticatedAt: 1000 });
+    const s3 = createMockSocket("s3", "Middle", { authenticatedAt: 2000 });
+    const io = createMockIo({ sockets: [s1, s2, s3] });
+
+    broadcastAuthenticatedCount(io);
+
+    expect(io.emit).toHaveBeenCalledWith("system:player-count", {
+      count: 3,
+      players: [
+        { nickname: "Early", connectedAt: 1000 },
+        { nickname: "Middle", connectedAt: 2000 },
+        { nickname: "Late", connectedAt: 3000 },
+      ],
+    });
+  });
+
   it("authenticatedAt이 없으면 현재 시간을 사용한다", () => {
     const before = Date.now();
     const s1 = createMockSocket("s1", "Player1");

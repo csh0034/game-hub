@@ -25,5 +25,6 @@ export function broadcastAuthenticatedCount(io: GameServer) {
       }
     }
   }
+  players.sort((a, b) => a.connectedAt - b.connectedAt);
   io.emit("system:player-count", { count, players });
 }

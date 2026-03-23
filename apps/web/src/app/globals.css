@@ -54,6 +54,53 @@ summary {
   border-radius: 3px;
 }
 
+/* Range slider */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  background: var(--color-border);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: var(--color-primary);
+  border-radius: 50%;
+  border: 2px solid var(--color-background);
+  box-shadow: 0 0 0 2px var(--color-primary);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 50%, transparent);
+}
+input[type="range"]::-webkit-slider-thumb:active {
+  transform: scale(1.05);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: var(--color-primary);
+  border-radius: 50%;
+  border: 2px solid var(--color-background);
+  box-shadow: 0 0 0 2px var(--color-primary);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+input[type="range"]::-moz-range-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 50%, transparent);
+}
+input[type="range"]::-moz-range-track {
+  height: 6px;
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
 /* Holdem card animations */
 @keyframes card-deal {
   from { opacity: 0; transform: scale(0.3) translateY(-40px); }

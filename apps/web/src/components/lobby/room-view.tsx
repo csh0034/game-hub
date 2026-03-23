@@ -311,7 +311,7 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
                       onChange={(e) => handleOptionChange({ ...localOptions, gomokuTurnTime: Number(e.target.value) })}
                       className="flex-1"
                     />
-                    <span className="text-sm font-medium w-12 text-center">{localOptions.gomokuTurnTime ?? 30}초</span>
+                    <span className="text-sm font-semibold tabular-nums min-w-14 text-center text-primary bg-primary/10 rounded-md px-2 py-0.5">{localOptions.gomokuTurnTime ?? 30}초</span>
                   </div>
                 </div>
               )}
@@ -374,7 +374,7 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
                         onChange={(e) => handleOptionChange({ ...localOptions, liarDrawingTime: Number(e.target.value) })}
                         className="flex-1"
                       />
-                      <span className="text-sm font-medium w-12 text-center">{localOptions.liarDrawingTime ?? 60}초</span>
+                      <span className="text-sm font-semibold tabular-nums min-w-14 text-center text-primary bg-primary/10 rounded-md px-2 py-0.5">{localOptions.liarDrawingTime ?? 60}초</span>
                     </div>
                   </div>
                   <div>
@@ -388,7 +388,7 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
                         onChange={(e) => handleOptionChange({ ...localOptions, liarDrawingRounds: Number(e.target.value) })}
                         className="flex-1"
                       />
-                      <span className="text-sm font-medium w-12 text-center whitespace-nowrap">{localOptions.liarDrawingRounds ?? 3}라운드</span>
+                      <span className="text-sm font-semibold tabular-nums min-w-14 text-center text-primary bg-primary/10 rounded-md px-2 py-0.5 whitespace-nowrap">{localOptions.liarDrawingRounds ?? 3}라운드</span>
                     </div>
                   </div>
                 </div>
@@ -406,7 +406,7 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
                         onChange={(e) => handleOptionChange({ ...localOptions, catchMindTime: Number(e.target.value) })}
                         className="flex-1"
                       />
-                      <span className="text-sm font-medium w-12 text-center">{localOptions.catchMindTime ?? 60}초</span>
+                      <span className="text-sm font-semibold tabular-nums min-w-14 text-center text-primary bg-primary/10 rounded-md px-2 py-0.5">{localOptions.catchMindTime ?? 60}초</span>
                     </div>
                   </div>
                   <div>
@@ -420,7 +420,7 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
                         onChange={(e) => handleOptionChange({ ...localOptions, catchMindRounds: Number(e.target.value) })}
                         className="flex-1"
                       />
-                      <span className="text-sm font-medium w-12 text-center whitespace-nowrap">{localOptions.catchMindRounds ?? 3}라운드</span>
+                      <span className="text-sm font-semibold tabular-nums min-w-14 text-center text-primary bg-primary/10 rounded-md px-2 py-0.5 whitespace-nowrap">{localOptions.catchMindRounds ?? 3}라운드</span>
                     </div>
                   </div>
                   <div>

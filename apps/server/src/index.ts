@@ -13,6 +13,7 @@ import { setupLobbyHandler } from "./socket/lobby-handler.js";
 import { setupGameHandler } from "./socket/game-handler.js";
 import { setupNicknameHandler } from "./socket/nickname-handler.js";
 import { setupRequestHandler } from "./socket/request-handler.js";
+import { setupAnnounceHandler } from "./socket/announce-handler.js";
 import { broadcastAuthenticatedCount } from "./socket/broadcast-player-count.js";
 import { GameManager } from "./games/game-manager.js";
 import { parseCorsOrigin } from "./cors.js";
@@ -90,6 +91,7 @@ async function bootstrap() {
     setupLobbyHandler(io, socket, gameManager, chatStore);
     setupGameHandler(io, socket, gameManager, rankingStore);
     setupRequestHandler(io, socket, requestStore);
+    setupAnnounceHandler(io, socket);
 
     socket.on("disconnect", async () => {
       console.log(`[disconnect] ${socket.id}`);

@@ -18,6 +18,7 @@ import { CreateRoomDialog } from "@/components/lobby/create-room-dialog";
 import { RoomView } from "@/components/lobby/room-view";
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
+import { AnnounceDialog } from "@/components/common/announce-dialog";
 import { RequestBoard } from "@/components/request-board/request-board";
 import LobbyRankingPanel from "@/components/ranking/lobby-ranking-panel";
 
@@ -67,12 +68,14 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
     useChat(socket);
   const { requests, createRequest, acceptRequest, rejectRequest, resolveRequest, changeLabelRequest, deleteRequest } = useRequests(socket);
   const [isAdmin, setIsAdmin] = useState(false);
+  const isAdminRef = useRef(false);
   const [githubRepoUrl, setGithubRepoUrl] = useState<string | undefined>();
   const isNavigatingBack = useRef(false);
   const [confirmState, setConfirmState] = useState<{
     open: boolean;
     onConfirm: () => void;
   }>({ open: false, onConfirm: () => {} });
+  const [announceOpen, setAnnounceOpen] = useState(false);
   const confirmResolveRef = useRef<((value: boolean) => void) | null>(null);
 
   const nickname = useSyncExternalStore(
@@ -89,10 +92,13 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
       if (!result.success) {
         store.remove();
         setIsAdmin(false);
+        isAdminRef.current = false;
         return;
       }
 
-      setIsAdmin(result.isAdmin ?? false);
+      const admin = result.isAdmin ?? false;
+      setIsAdmin(admin);
+      isAdminRef.current = admin;
       setGithubRepoUrl(result.githubRepoUrl);
       requestLobbyHistory();
 
@@ -115,6 +121,23 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
         });
     });
   }, [socket, isConnected, nickname, requestLobbyHistory, joinRoom, clearRoomMessages, requestRoomHistory]);
+
+  // 관리자 공지 수신 (관리자 본인은 제외)
+  useEffect(() => {
+    if (!socket) return;
+    const handler = ({ message }: { message: string }) => {
+      if (!isAdminRef.current) {
+        toast("📢 공지", {
+          description: message,
+          duration: 5000,
+        });
+      }
+    };
+    socket.on("system:announcement", handler);
+    return () => {
+      socket.off("system:announcement", handler);
+    };
+  }, [socket]);
 
   const handleNicknameComplete = useCallback((newNickname: string) => {
     store.set(newNickname);
@@ -183,6 +206,7 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
     socket?.emit("player:logout");
     store.remove();
     setIsAdmin(false);
+    isAdminRef.current = false;
   }, [currentRoom, leaveRoom, socket, isGameInProgress, showConfirm]);
 
   // Handle browser back button
@@ -257,6 +281,23 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
     />
   );
 
+  const announceDialog = (
+    <AnnounceDialog
+      open={announceOpen}
+      onClose={() => setAnnounceOpen(false)}
+      onSubmit={(message) => {
+        socket?.emit("system:announce", message, (result) => {
+          if (result.success) {
+            setAnnounceOpen(false);
+            toast.success("공지를 전송했습니다");
+          } else {
+            toast.error(result.error ?? "공지 전송에 실패했습니다");
+          }
+        });
+      }}
+    />
+  );
+
   if (currentRoom) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -276,6 +317,7 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
         </main>
         <Footer githubRepoUrl={githubRepoUrl} />
         {confirmDialog}
+        {announceDialog}
       </div>
     );
   }
@@ -313,6 +355,14 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
                   </span>
                 )}
               </Link>
+              {isAdmin && (
+                <button
+                  onClick={() => setAnnounceOpen(true)}
+                  className="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  공지하기
+                </button>
+              )}
             </div>
 
             {activeTab === "lobby" ? (
@@ -370,6 +420,7 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
         </div>
       </main>
       <Footer githubRepoUrl={githubRepoUrl} />
+      {announceDialog}
     </div>
   );
 }

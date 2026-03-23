@@ -53,6 +53,9 @@ export interface ClientToServerEvents {
 
   // Ranking
   "ranking:get": (key: RankingKey, callback: (entries: RankingEntry[]) => void) => void;
+
+  // System
+  "system:announce": (message: string, callback: (result: { success: boolean; error?: string }) => void) => void;
 }
 
 // Server → Client
@@ -105,6 +108,7 @@ export interface ServerToClientEvents {
   // System
   "system:player-count": (data: { count: number; players: { nickname: string; connectedAt: number; isAdmin?: boolean }[] }) => void;
   "system:version": (data: { commitHash: string }) => void;
+  "system:announcement": (data: { message: string; nickname: string; timestamp: number }) => void;
 }
 
 export interface InterServerEvents {

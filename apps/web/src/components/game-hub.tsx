@@ -327,7 +327,7 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
                 </section>
 
                 <section>
-                  <h2 className="text-2xl font-bold mb-4">열린 방 목록</h2>
+                  <h2 className="text-2xl font-bold mb-4">방 목록</h2>
                   <RoomList rooms={rooms} onJoinRoom={wrappedJoinRoom} />
                 </section>
               </>

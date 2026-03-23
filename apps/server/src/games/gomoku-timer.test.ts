@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { startGomokuTimer, clearGomokuTimer, GOMOKU_TURN_TIMEOUT_MS } from "./gomoku-timer.js";
+import { startGomokuTimer, clearGomokuTimer } from "./gomoku-timer.js";
 
 describe("gomoku-timer", () => {
   beforeEach(() => {
@@ -11,15 +11,11 @@ describe("gomoku-timer", () => {
     vi.useRealTimers();
   });
 
-  it("GOMOKU_TURN_TIMEOUT_MS는 15000이다", () => {
-    expect(GOMOKU_TURN_TIMEOUT_MS).toBe(15_000);
-  });
-
-  it("타임아웃 시 콜백을 호출한다", () => {
+  it("지정된 시간 후 콜백을 호출한다", () => {
     const callback = vi.fn();
-    startGomokuTimer("room-1", callback);
+    startGomokuTimer("room-1", 30_000, callback);
 
-    vi.advanceTimersByTime(14_999);
+    vi.advanceTimersByTime(29_999);
     expect(callback).not.toHaveBeenCalled();
 
     vi.advanceTimersByTime(1);
@@ -28,10 +24,10 @@ describe("gomoku-timer", () => {
 
   it("clearGomokuTimer로 타이머를 취소한다", () => {
     const callback = vi.fn();
-    startGomokuTimer("room-1", callback);
+    startGomokuTimer("room-1", 30_000, callback);
 
     clearGomokuTimer("room-1");
-    vi.advanceTimersByTime(20_000);
+    vi.advanceTimersByTime(30_000);
     expect(callback).not.toHaveBeenCalled();
   });
 
@@ -39,10 +35,10 @@ describe("gomoku-timer", () => {
     const callback1 = vi.fn();
     const callback2 = vi.fn();
 
-    startGomokuTimer("room-1", callback1);
-    startGomokuTimer("room-1", callback2);
+    startGomokuTimer("room-1", 30_000, callback1);
+    startGomokuTimer("room-1", 30_000, callback2);
 
-    vi.advanceTimersByTime(15_000);
+    vi.advanceTimersByTime(30_000);
     expect(callback1).not.toHaveBeenCalled();
     expect(callback2).toHaveBeenCalledOnce();
   });
@@ -51,11 +47,11 @@ describe("gomoku-timer", () => {
     const callback1 = vi.fn();
     const callback2 = vi.fn();
 
-    startGomokuTimer("room-1", callback1);
-    startGomokuTimer("room-2", callback2);
+    startGomokuTimer("room-1", 30_000, callback1);
+    startGomokuTimer("room-2", 30_000, callback2);
 
     clearGomokuTimer("room-1");
-    vi.advanceTimersByTime(15_000);
+    vi.advanceTimersByTime(30_000);
 
     expect(callback1).not.toHaveBeenCalled();
     expect(callback2).toHaveBeenCalledOnce();
@@ -65,5 +61,16 @@ describe("gomoku-timer", () => {
 
   it("존재하지 않는 타이머를 clear해도 에러가 발생하지 않는다", () => {
     expect(() => clearGomokuTimer("nonexistent")).not.toThrow();
+  });
+
+  it("다른 타임아웃 값으로 동작한다", () => {
+    const callback = vi.fn();
+    startGomokuTimer("room-1", 10_000, callback);
+
+    vi.advanceTimersByTime(9_999);
+    expect(callback).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(1);
+    expect(callback).toHaveBeenCalledOnce();
   });
 });

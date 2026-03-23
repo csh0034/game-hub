@@ -5,6 +5,11 @@ export class GomokuEngine implements GameEngine {
   gameType = "gomoku" as const;
   minPlayers = 2;
   maxPlayers = 2;
+  private turnTimeSeconds: number;
+
+  constructor(turnTime: number = 30) {
+    this.turnTimeSeconds = turnTime;
+  }
 
   initState(players: Player[]): GomokuState {
     const board: (null | "black" | "white")[][] = Array.from({ length: 15 }, () =>
@@ -22,6 +27,7 @@ export class GomokuEngine implements GameEngine {
       moveCount: 0,
       turnStartedAt: now,
       gameStartedAt: now,
+      turnTimeSeconds: this.turnTimeSeconds,
     };
   }
 

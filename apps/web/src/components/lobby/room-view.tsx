@@ -276,10 +276,16 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
         </div>
       </div>
 
-      {room.gameOptions && (
+      {(room.gameOptions || room.gameType === "gomoku") && (
         <div className="bg-card border border-border rounded-xl p-6">
           <h2 className="text-lg font-semibold mb-3">게임 옵션</h2>
           <div className="space-y-2 text-sm">
+            {room.gameType === "gomoku" && (
+              <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
+                <span className="text-muted-foreground">턴 제한시간</span>
+                <span className="font-medium">{room.gameOptions?.gomokuTurnTime ?? 30}초</span>
+              </div>
+            )}
             {room.gameType === "minesweeper" && room.gameOptions.minesweeperDifficulty && (() => {
               const diff = MINESWEEPER_DIFFICULTY_CONFIGS[room.gameOptions.minesweeperDifficulty!];
               return (

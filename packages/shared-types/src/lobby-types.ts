@@ -11,6 +11,7 @@ export interface GameOptions {
   catchMindTime?: number;
   catchMindRounds?: number;
   catchMindCharHint?: boolean;
+  gomokuTurnTime?: number;
 }
 
 export interface Room {

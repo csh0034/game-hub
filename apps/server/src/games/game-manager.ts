@@ -171,6 +171,16 @@ export class GameManager {
       return state;
     }
 
+    if (room.gameType === "gomoku") {
+      const turnTime = room.gameOptions?.gomokuTurnTime ?? 30;
+      const gomokuEngine = new GomokuEngine(turnTime);
+      this.roomEngines.set(roomId, gomokuEngine);
+      const state = gomokuEngine.initState(room.players);
+      this.gameStates.set(roomId, state);
+      this.persistRoom(room);
+      return state;
+    }
+
     const state = engine.initState(room.players);
     this.gameStates.set(roomId, state);
     this.persistRoom(room);

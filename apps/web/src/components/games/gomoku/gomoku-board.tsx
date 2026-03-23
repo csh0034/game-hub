@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react";
 import { useGame } from "@/hooks/use-game";
 import { useSocket } from "@/hooks/use-socket";
+import { HelpCircle } from "lucide-react";
 import type { GomokuState, GomokuMove } from "@game-hub/shared-types";
 import type { GameComponentProps } from "@/lib/game-registry";
+import { GameHelpDialog } from "@/components/common/game-help-dialog";
 
 const BOARD_SIZE = 15;
 const CELL_SIZE = 36;
@@ -17,13 +19,15 @@ export default function GomokuBoard({ roomId }: GameComponentProps) {
 
   const state = gameState as GomokuState | null;
 
-  const [remainingTime, setRemainingTime] = useState(15);
+  const turnTime = state?.turnTimeSeconds ?? 30;
+  const [remainingTime, setRemainingTime] = useState(turnTime);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [showHelp, setShowHelp] = useState(false);
 
   useEffect(() => {
     if (!state || gameResult) return;
     const interval = setInterval(() => {
-      setRemainingTime(Math.max(0, 15 - (Date.now() - state.turnStartedAt) / 1000));
+      setRemainingTime(Math.max(0, state.turnTimeSeconds - (Date.now() - state.turnStartedAt) / 1000));
       setElapsedTime(Math.floor((Date.now() - state.gameStartedAt) / 1000));
     }, 200);
     return () => clearInterval(interval);
@@ -44,6 +48,15 @@ export default function GomokuBoard({ roomId }: GameComponentProps) {
 
   return (
     <div className="flex flex-col items-center gap-4">
+      <div className="flex justify-end w-full" style={{ maxWidth: BOARD_PX }}>
+        <button
+          onClick={() => setShowHelp(true)}
+          className="text-muted-foreground hover:text-foreground transition-colors"
+          title="게임 도움말"
+        >
+          <HelpCircle className="w-5 h-5" />
+        </button>
+      </div>
       <div className="flex items-center gap-4 text-sm">
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded-full bg-gray-900 border border-gray-600" />
@@ -151,6 +164,32 @@ export default function GomokuBoard({ roomId }: GameComponentProps) {
       <p className="text-xs text-muted-foreground">
         수: {state.moveCount} · 경과 {String(Math.floor(elapsedTime / 60)).padStart(2, "0")}:{String(elapsedTime % 60).padStart(2, "0")}
       </p>
+
+      <GameHelpDialog open={showHelp} onClose={() => setShowHelp(false)} title="오목">
+        <div>
+          <h3 className="text-foreground font-semibold mb-1">게임 방법</h3>
+          <ul className="list-disc list-inside space-y-1">
+            <li>15×15 보드에서 흑과 백이 번갈아 돌을 놓는다</li>
+            <li>흑이 먼저 시작한다</li>
+            <li>가로, 세로, 대각선으로 5개 이상 연속으로 놓으면 승리</li>
+          </ul>
+        </div>
+        <div>
+          <h3 className="text-foreground font-semibold mb-1">턴 제한시간</h3>
+          <ul className="list-disc list-inside space-y-1">
+            <li>제한시간: {state.turnTimeSeconds}초</li>
+            <li>시간 초과 시 상대에게 턴이 넘어간다</li>
+          </ul>
+        </div>
+        <div>
+          <h3 className="text-foreground font-semibold mb-1">특이 사항</h3>
+          <ul className="list-disc list-inside space-y-1">
+            <li>금수 규칙 없음 (삼삼, 사사 허용)</li>
+            <li>장목(6목 이상) 허용</li>
+            <li>225칸이 모두 차면 무승부</li>
+          </ul>
+        </div>
+      </GameHelpDialog>
     </div>
   );
 }

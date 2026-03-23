@@ -29,6 +29,7 @@ export function CreateRoomDialog({ onCreateRoom }: CreateRoomDialogProps) {
   const [catchMindTime, setCatchMindTime] = useState(60);
   const [catchMindRounds, setCatchMindRounds] = useState(3);
   const [catchMindCharHint, setCatchMindCharHint] = useState(false);
+  const [gomokuTurnTime, setGomokuTurnTime] = useState(30);
 
   const handleCreate = async () => {
     const roomName = name.trim() || `${GAME_CONFIGS[gameType].name} 방`;
@@ -45,6 +46,9 @@ export function CreateRoomDialog({ onCreateRoom }: CreateRoomDialogProps) {
     if (gameType === "catch-mind") {
       payload.gameOptions = { catchMindTime, catchMindRounds, catchMindCharHint };
     }
+    if (gameType === "gomoku") {
+      payload.gameOptions = { gomokuTurnTime };
+    }
     await onCreateRoom(payload);
     setOpen(false);
     setName("");
@@ -55,6 +59,7 @@ export function CreateRoomDialog({ onCreateRoom }: CreateRoomDialogProps) {
     setCatchMindTime(60);
     setCatchMindRounds(3);
     setCatchMindCharHint(false);
+    setGomokuTurnTime(30);
   };
 
   if (!open) {
@@ -220,6 +225,23 @@ export function CreateRoomDialog({ onCreateRoom }: CreateRoomDialogProps) {
                     />
                     <span className="text-sm font-medium w-12 text-center whitespace-nowrap">{liarDrawingRounds}라운드</span>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {gameType === "gomoku" && (
+              <div>
+                <label className="block text-sm font-medium mb-1.5">턴 제한시간</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="range"
+                    min={10}
+                    max={60}
+                    value={gomokuTurnTime}
+                    onChange={(e) => setGomokuTurnTime(Number(e.target.value))}
+                    className="flex-1"
+                  />
+                  <span className="text-sm font-medium w-12 text-center">{gomokuTurnTime}초</span>
                 </div>
               </div>
             )}

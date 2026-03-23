@@ -53,6 +53,17 @@ describe("GomokuEngine", () => {
       expect(state.gameStartedAt).toBeGreaterThanOrEqual(before);
       expect(state.gameStartedAt).toBeLessThanOrEqual(after);
     });
+
+    it("기본 턴 제한시간은 30초이다", () => {
+      const state = engine.initState(mockPlayers);
+      expect(state.turnTimeSeconds).toBe(30);
+    });
+
+    it("생성자로 턴 제한시간을 설정할 수 있다", () => {
+      const customEngine = new GomokuEngine(45);
+      const state = customEngine.initState(mockPlayers);
+      expect(state.turnTimeSeconds).toBe(45);
+    });
   });
 
   describe("processMove", () => {
@@ -289,6 +300,7 @@ describe("GomokuEngine", () => {
         moveCount: 225,
         turnStartedAt: Date.now(),
         gameStartedAt: Date.now(),
+        turnTimeSeconds: 30,
       };
 
       const result = engine.checkWin(drawState);

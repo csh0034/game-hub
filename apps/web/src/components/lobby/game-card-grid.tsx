@@ -19,6 +19,8 @@ const NEW_GAMES: GameType[] = ["liar-drawing", "catch-mind"];
 
 function getQuickStartBadges(gameType: GameType): string[] | null {
   switch (gameType) {
+    case "gomoku":
+      return ["30초"];
     case "tetris":
       return ["Normal"];
     case "liar-drawing":
@@ -45,6 +47,9 @@ export function GameCardGrid({ onCreateRoom }: GameCardGridProps) {
     }
     if (gameType === "catch-mind") {
       payload.gameOptions = { catchMindTime: 60, catchMindRounds: 3, catchMindCharHint: false };
+    }
+    if (gameType === "gomoku") {
+      payload.gameOptions = { gomokuTurnTime: 30 };
     }
     await onCreateRoom(payload);
   };

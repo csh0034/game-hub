@@ -74,6 +74,7 @@ export interface GomokuState {
   moveCount: number;
   turnStartedAt: number;
   gameStartedAt: number;
+  turnTimeSeconds: number;
 }
 
 export interface GomokuMove {

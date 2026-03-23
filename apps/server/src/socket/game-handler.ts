@@ -128,18 +128,23 @@ function startCatchMindDrawTimer(io: IOServer, roomId: string, gameManager: Game
 
 export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: GameManager) {
   function startGomokuTurnTimer(roomId: string) {
-    startGomokuTimer(roomId, () => {
-      const room = gameManager.getRoom(roomId);
-      const state = gameManager.getGameState(roomId) as GomokuState | null;
-      if (!room || !state || room.status !== "playing") return;
+    const state = gameManager.getGameState(roomId) as GomokuState | null;
+    if (!state) return;
+    const timeoutMs = state.turnTimeSeconds * 1000;
 
-      const loserColor = state.currentTurn === "black" ? "흑" : "백";
-      room.status = "finished";
-      io.to(roomId).emit("game:ended", {
-        winnerId: state.players[state.currentTurn === "black" ? "white" : "black"],
-        reason: `${loserColor}의 시간이 초과되었습니다!`,
-      });
-      io.emit("lobby:room-updated", room);
+    startGomokuTimer(roomId, timeoutMs, () => {
+      const room = gameManager.getRoom(roomId);
+      const currentState = gameManager.getGameState(roomId) as GomokuState | null;
+      if (!room || !currentState || room.status !== "playing") return;
+
+      const newState: GomokuState = {
+        ...currentState,
+        currentTurn: currentState.currentTurn === "black" ? "white" : "black",
+        turnStartedAt: Date.now(),
+      };
+      gameManager.setGameState(roomId, newState);
+      io.to(roomId).emit("game:state-updated", newState);
+      startGomokuTurnTimer(roomId);
     });
   }
 

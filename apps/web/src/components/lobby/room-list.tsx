@@ -12,7 +12,7 @@ interface RoomListProps {
 export function RoomList({ rooms, onJoinRoom }: RoomListProps) {
   if (rooms.length === 0) {
     return (
-      <div className="text-center py-12 text-muted-foreground">
+      <div className="text-center py-12 text-muted-foreground border border-border rounded-xl">
         <p className="text-lg">열린 방이 없습니다</p>
         <p className="text-sm mt-1">새 방을 만들어보세요!</p>
       </div>
@@ -20,7 +20,7 @@ export function RoomList({ rooms, onJoinRoom }: RoomListProps) {
   }
 
   return (
-    <div className="space-y-2">
+    <div className="border border-border rounded-xl overflow-hidden">
       {rooms.map((room) => {
         const config = GAME_CONFIGS[room.gameType];
         const isFull = room.players.length >= room.maxPlayers;
@@ -29,7 +29,7 @@ export function RoomList({ rooms, onJoinRoom }: RoomListProps) {
         return (
           <div
             key={room.id}
-            className="flex items-center justify-between bg-card border border-border rounded-lg px-4 py-3 hover:border-border/80 transition-colors"
+            className="flex items-center justify-between bg-card px-4 py-3 hover:bg-secondary/30 transition-colors border-t border-border first:border-t-0"
           >
             <div className="flex items-center gap-4">
               <span className="text-2xl">{config.icon}</span>

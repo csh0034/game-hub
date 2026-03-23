@@ -24,12 +24,13 @@ export function CatchMindChat({ state, socket, myId, messages, onSendMessage, my
   const isDisabled = state.phase === "drawing" && (isDrawer || hasGuessed);
 
   useEffect(() => {
-    const handleCorrect = (data: { playerId: string; nickname: string }) => {
+    const handleCorrect = (data: { playerId: string; nickname: string; rank: number; score: number }) => {
+      const rankText = `${data.rank}등`;
       const sysMsg: ChatMessage = {
         id: `sys-${Date.now()}-${data.playerId}`,
         playerId: "system",
         nickname: "system",
-        message: `${data.nickname}님이 정답을 맞추었습니다!`,
+        message: `${data.nickname}님이 정답을 맞추었습니다! (${rankText}, +${data.score}점)`,
         timestamp: Date.now(),
       };
       setSystemMessages((prev) => [...prev, sysMsg]);

@@ -167,12 +167,16 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
         if (result.correct) {
           gameManager.setGameState(roomId, result.newState);
           io.to(roomId).emit("game:state-updated", result.newState);
+          const rank = result.newState.guessOrder.length;
+          const rankScores = [3, 2, 1];
           io.to(roomId).emit("game:catch-mind-correct", {
             playerId: socket.id!,
             nickname: socket.data.nickname,
+            rank,
+            score: rankScores[rank - 1] || 0,
           });
 
-          if (result.newState.allGuessedCorrectly) {
+          if (result.newState.roundEnded) {
             clearCatchMindTimer(roomId);
             const endedState = cmEngine.endRound(result.newState);
             gameManager.setGameState(roomId, endedState);

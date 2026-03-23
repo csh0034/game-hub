@@ -344,8 +344,8 @@ export interface CatchMindPublicState {
   canvas: DrawPoint[];
   keyword: string | null;
   keywordLength: number | null;
-  firstGuesserId: string | null;
-  allGuessedCorrectly: boolean;
+  guessOrder: string[];
+  roundEnded: boolean;
   roundScores: Record<string, number>;
   showCharHint: boolean;
 }

@@ -50,8 +50,8 @@ export class CatchMindEngine implements GameEngine {
       canvas: [],
       keyword: null,
       keywordLength: null,
-      firstGuesserId: null,
-      allGuessedCorrectly: false,
+      guessOrder: [],
+      roundEnded: false,
       roundScores: {},
       showCharHint: this.showCharHint,
     };
@@ -81,8 +81,8 @@ export class CatchMindEngine implements GameEngine {
       canvas: [],
       keyword: null,
       keywordLength: this.showCharHint ? this.keyword.length : null,
-      firstGuesserId: null,
-      allGuessedCorrectly: false,
+      guessOrder: [],
+      roundEnded: false,
       roundScores: {},
       players: state.players.map((p) => ({
         ...p,
@@ -152,6 +152,7 @@ export class CatchMindEngine implements GameEngine {
   checkGuess(state: CatchMindPublicState, playerId: string, guess: string): { correct: boolean; newState: CatchMindPublicState } {
     if (state.phase !== "drawing") return { correct: false, newState: state };
     if (playerId === state.drawerId) return { correct: false, newState: state };
+    if (state.roundEnded) return { correct: false, newState: state };
 
     const player = state.players.find((p) => p.id === playerId);
     if (!player || player.hasGuessedCorrectly) return { correct: false, newState: state };
@@ -163,38 +164,37 @@ export class CatchMindEngine implements GameEngine {
       return { correct: false, newState: state };
     }
 
-    const isFirstGuesser = state.firstGuesserId === null;
     const newPlayers = state.players.map((p) =>
       p.id === playerId ? { ...p, hasGuessedCorrectly: true } : p,
     );
 
+    const newGuessOrder = [...state.guessOrder, playerId];
     const nonDrawerPlayers = newPlayers.filter((p) => p.id !== state.drawerId);
     const allGuessed = nonDrawerPlayers.every((p) => p.hasGuessedCorrectly);
+    const roundEnded = newGuessOrder.length >= 3 || allGuessed;
 
     const newState: CatchMindPublicState = {
       ...state,
       players: newPlayers,
-      firstGuesserId: isFirstGuesser ? playerId : state.firstGuesserId,
-      allGuessedCorrectly: allGuessed,
+      guessOrder: newGuessOrder,
+      roundEnded,
     };
 
     return { correct: true, newState };
   }
 
   endRound(state: CatchMindPublicState): CatchMindPublicState {
+    const RANK_SCORES = [3, 2, 1];
     const roundScores: Record<string, number> = {};
     for (const p of state.players) {
       roundScores[p.id] = 0;
     }
 
-    let someoneGuessed = false;
-    for (const p of state.players) {
-      if (p.id !== state.drawerId && p.hasGuessedCorrectly) {
-        roundScores[p.id] = 1;
-        someoneGuessed = true;
-      }
+    for (let i = 0; i < state.guessOrder.length; i++) {
+      roundScores[state.guessOrder[i]] = RANK_SCORES[i] || 0;
     }
-    if (someoneGuessed) {
+
+    if (state.guessOrder.length > 0) {
       roundScores[state.drawerId] = 1;
     }
 

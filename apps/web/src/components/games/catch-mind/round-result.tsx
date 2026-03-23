@@ -22,7 +22,12 @@ export function RoundResult({ state }: RoundResultProps) {
   }, [isLastRound]);
 
   const drawer = state.players.find((p) => p.id === state.drawerId);
-  const firstGuesser = state.firstGuesserId ? state.players.find((p) => p.id === state.firstGuesserId) : null;
+  const rankLabels = ["1등", "2등", "3등"];
+
+  const guessers = state.guessOrder.map((id, i) => ({
+    player: state.players.find((p) => p.id === id),
+    rank: rankLabels[i],
+  }));
 
   return (
     <div className="flex flex-col items-center gap-4 py-6">
@@ -35,9 +40,13 @@ export function RoundResult({ state }: RoundResultProps) {
         <div>
           출제자: <span className="font-bold">{drawer?.nickname}</span>
         </div>
-        {firstGuesser ? (
-          <div className="text-green-500">
-            가장 먼저 맞춘 사람: <span className="font-bold">{firstGuesser.nickname}</span>
+        {guessers.length > 0 ? (
+          <div className="space-y-1">
+            {guessers.map(({ player, rank }) => (
+              <div key={player?.id} className="text-green-500">
+                {rank}: <span className="font-bold">{player?.nickname}</span>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="text-destructive">아무도 맞추지 못했습니다</div>
@@ -49,12 +58,14 @@ export function RoundResult({ state }: RoundResultProps) {
         <div className="space-y-1">
           {state.players.map((player) => {
             const roundScore = state.roundScores[player.id] || 0;
+            const guessRankIndex = state.guessOrder.indexOf(player.id);
+            const rankTag = guessRankIndex >= 0 ? rankLabels[guessRankIndex] : null;
             return (
               <div key={player.id} className="flex justify-between text-sm">
                 <span>
                   {player.nickname}
                   {player.id === state.drawerId && <span className="text-primary ml-1">(출제자)</span>}
-                  {player.id === state.firstGuesserId && <span className="text-green-500 ml-1">(1등)</span>}
+                  {rankTag && <span className="text-green-500 ml-1">({rankTag})</span>}
                 </span>
                 <span className={roundScore > 0 ? "text-primary font-bold" : roundScore < 0 ? "text-destructive font-bold" : "text-muted-foreground"}>
                   {roundScore > 0 ? `+${roundScore}` : roundScore < 0 ? `${roundScore}` : "0"}

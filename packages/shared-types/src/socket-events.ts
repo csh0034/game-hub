@@ -67,7 +67,7 @@ export interface ServerToClientEvents {
   "game:ended": (result: GameResult) => void;
   "game:error": (message: string) => void;
   "game:private-state": (state: HoldemPrivateState | LiarDrawingPrivateState | CatchMindPrivateState) => void;
-  "game:catch-mind-correct": (data: { playerId: string; nickname: string }) => void;
+  "game:catch-mind-correct": (data: { playerId: string; nickname: string; rank: number; score: number }) => void;
   "game:draw-points": (data: { playerId: string; points: DrawPoint[] }) => void;
   "game:clear-canvas": (data: { playerId: string }) => void;
   "game:tetris-player-updated": (data: TetrisPlayerUpdate) => void;

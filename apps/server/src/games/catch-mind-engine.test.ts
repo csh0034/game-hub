@@ -25,8 +25,8 @@ describe("CatchMindEngine", () => {
       expect(state.players).toHaveLength(3);
       expect(state.drawTimeSeconds).toBe(60);
       expect(state.canvas).toEqual([]);
-      expect(state.firstGuesserId).toBeNull();
-      expect(state.allGuessedCorrectly).toBe(false);
+      expect(state.guessOrder).toEqual([]);
+      expect(state.roundEnded).toBe(false);
     });
 
     it("첫 번째 플레이어가 출제자로 선정된다", () => {
@@ -147,7 +147,7 @@ describe("CatchMindEngine", () => {
     it("정답을 맞추면 correct: true를 반환한다", () => {
       const result = engine.checkGuess(drawingState, "p2", keyword);
       expect(result.correct).toBe(true);
-      expect(result.newState.firstGuesserId).toBe("p2");
+      expect(result.newState.guessOrder).toEqual(["p2"]);
 
       const player = result.newState.players.find((p) => p.id === "p2")!;
       expect(player.hasGuessedCorrectly).toBe(true);
@@ -182,25 +182,93 @@ describe("CatchMindEngine", () => {
       expect(result.correct).toBe(false);
     });
 
-    it("첫 번째 정답자만 firstGuesserId로 기록된다", () => {
+    it("맞춘 순서가 guessOrder에 기록된다", () => {
       const result1 = engine.checkGuess(drawingState, "p2", keyword);
-      expect(result1.newState.firstGuesserId).toBe("p2");
+      expect(result1.newState.guessOrder).toEqual(["p2"]);
 
       const result2 = engine.checkGuess(result1.newState, "p3", keyword);
-      expect(result2.newState.firstGuesserId).toBe("p2");
+      expect(result2.newState.guessOrder).toEqual(["p2", "p3"]);
     });
 
-    it("모든 비출제자가 맞추면 allGuessedCorrectly가 true가 된다", () => {
+    it("모든 비출제자가 맞추면 roundEnded가 true가 된다", () => {
       const result1 = engine.checkGuess(drawingState, "p2", keyword);
-      expect(result1.newState.allGuessedCorrectly).toBe(false);
+      expect(result1.newState.roundEnded).toBe(false);
 
       const result2 = engine.checkGuess(result1.newState, "p3", keyword);
-      expect(result2.newState.allGuessedCorrectly).toBe(true);
+      expect(result2.newState.roundEnded).toBe(true);
+    });
+
+    it("roundEnded가 true이면 추가 정답을 맞출 수 없다", () => {
+      const stateWithRoundEnded: CatchMindPublicState = {
+        ...drawingState,
+        roundEnded: true,
+      };
+      const result = engine.checkGuess(stateWithRoundEnded, "p2", keyword);
+      expect(result.correct).toBe(false);
+    });
+  });
+
+  describe("3등 후 라운드 종료 (5인)", () => {
+    const fivePlayers: Player[] = [
+      { id: "p1", nickname: "Alice", isReady: true },
+      { id: "p2", nickname: "Bob", isReady: true },
+      { id: "p3", nickname: "Charlie", isReady: true },
+      { id: "p4", nickname: "Dave", isReady: true },
+      { id: "p5", nickname: "Eve", isReady: true },
+    ];
+
+    it("3명이 맞추면 roundEnded가 true가 된다", () => {
+      const eng = new CatchMindEngine(60, 3, false);
+      const state = eng.initState(fivePlayers) as CatchMindPublicState;
+      const drawingState = eng.startDrawingPhase(state);
+      const kw = eng.getKeyword()!;
+
+      const r1 = eng.checkGuess(drawingState, "p2", kw);
+      expect(r1.newState.roundEnded).toBe(false);
+
+      const r2 = eng.checkGuess(r1.newState, "p3", kw);
+      expect(r2.newState.roundEnded).toBe(false);
+
+      const r3 = eng.checkGuess(r2.newState, "p4", kw);
+      expect(r3.newState.roundEnded).toBe(true);
+      expect(r3.newState.guessOrder).toEqual(["p2", "p3", "p4"]);
+    });
+
+    it("3등 후 4등은 맞출 수 없다", () => {
+      const eng = new CatchMindEngine(60, 3, false);
+      const state = eng.initState(fivePlayers) as CatchMindPublicState;
+      const drawingState = eng.startDrawingPhase(state);
+      const kw = eng.getKeyword()!;
+
+      const r1 = eng.checkGuess(drawingState, "p2", kw);
+      const r2 = eng.checkGuess(r1.newState, "p3", kw);
+      const r3 = eng.checkGuess(r2.newState, "p4", kw);
+
+      const r4 = eng.checkGuess(r3.newState, "p5", kw);
+      expect(r4.correct).toBe(false);
+    });
+
+    it("1등 3점, 2등 2점, 3등 1점 차등 부여 (5인)", () => {
+      const eng = new CatchMindEngine(60, 3, false);
+      const state = eng.initState(fivePlayers) as CatchMindPublicState;
+      const drawingState = eng.startDrawingPhase(state);
+      const kw = eng.getKeyword()!;
+
+      const r1 = eng.checkGuess(drawingState, "p2", kw);
+      const r2 = eng.checkGuess(r1.newState, "p3", kw);
+      const r3 = eng.checkGuess(r2.newState, "p4", kw);
+      const endedState = eng.endRound(r3.newState);
+
+      expect(endedState.roundScores["p2"]).toBe(3); // 1등
+      expect(endedState.roundScores["p3"]).toBe(2); // 2등
+      expect(endedState.roundScores["p4"]).toBe(1); // 3등
+      expect(endedState.roundScores["p1"]).toBe(1); // 출제자
+      expect(endedState.roundScores["p5"]).toBe(0); // 못 맞춤
     });
   });
 
   describe("endRound", () => {
-    it("맞춘 플레이어 +1, 출제자 +1, 못 맞춘 플레이어 0", () => {
+    it("1등 +3점, 출제자 +1점, 못 맞춘 플레이어 0점", () => {
       const state = engine.initState(mockPlayers) as CatchMindPublicState;
       const drawingState = engine.startDrawingPhase(state);
       const keyword = engine.getKeyword()!;
@@ -209,10 +277,24 @@ describe("CatchMindEngine", () => {
       const endedState = engine.endRound(guessResult.newState);
 
       expect(endedState.phase).toBe("round-result");
-      expect(endedState.roundScores["p2"]).toBe(1); // 맞춘 플레이어
+      expect(endedState.roundScores["p2"]).toBe(3); // 1등
       expect(endedState.roundScores["p1"]).toBe(1); // 출제자
       expect(endedState.roundScores["p3"]).toBe(0); // 못 맞춤
       expect(endedState.keyword).toBe(keyword); // 정답 공개
+    });
+
+    it("1등 +3점, 2등 +2점 차등 부여", () => {
+      const state = engine.initState(mockPlayers) as CatchMindPublicState;
+      const drawingState = engine.startDrawingPhase(state);
+      const keyword = engine.getKeyword()!;
+
+      const result1 = engine.checkGuess(drawingState, "p2", keyword);
+      const result2 = engine.checkGuess(result1.newState, "p3", keyword);
+      const endedState = engine.endRound(result2.newState);
+
+      expect(endedState.roundScores["p2"]).toBe(3); // 1등
+      expect(endedState.roundScores["p3"]).toBe(2); // 2등
+      expect(endedState.roundScores["p1"]).toBe(1); // 출제자
     });
 
     it("아무도 못 맞추면 모두 0점", () => {
@@ -237,7 +319,7 @@ describe("CatchMindEngine", () => {
       const p1 = endedState.players.find((p) => p.id === "p1")!;
       const p2 = endedState.players.find((p) => p.id === "p2")!;
       expect(p1.score).toBe(1); // 출제자
-      expect(p2.score).toBe(1); // 맞춘 플레이어
+      expect(p2.score).toBe(3); // 1등
     });
   });
 
@@ -266,8 +348,8 @@ describe("CatchMindEngine", () => {
         canvas: [],
         keyword: null,
         keywordLength: null,
-        firstGuesserId: null,
-        allGuessedCorrectly: false,
+        guessOrder: [],
+        roundEnded: false,
         roundScores: {},
         showCharHint: false,
       };
@@ -293,8 +375,8 @@ describe("CatchMindEngine", () => {
         canvas: [],
         keyword: null,
         keywordLength: null,
-        firstGuesserId: null,
-        allGuessedCorrectly: false,
+        guessOrder: [],
+        roundEnded: false,
         roundScores: {},
         showCharHint: false,
       };
@@ -323,8 +405,8 @@ describe("CatchMindEngine", () => {
         canvas: [],
         keyword: "고양이",
         keywordLength: null,
-        firstGuesserId: "p2",
-        allGuessedCorrectly: false,
+        guessOrder: ["p2"],
+        roundEnded: false,
         roundScores: { p1: 1, p2: 1, p3: 0 },
         showCharHint: false,
       };
@@ -351,8 +433,8 @@ describe("CatchMindEngine", () => {
         canvas: [],
         keyword: "강아지",
         keywordLength: null,
-        firstGuesserId: null,
-        allGuessedCorrectly: false,
+        guessOrder: [],
+        roundEnded: false,
         roundScores: {},
         showCharHint: false,
       };

@@ -27,9 +27,11 @@ export function Scoreboard({ state, myId }: ScoreboardProps) {
               {player.id === state.drawerId && " [출제자]"}
             </span>
             <div className="flex items-center gap-1 ml-2">
-              {state.phase === "drawing" && player.hasGuessedCorrectly && (
-                <span className="text-green-500 text-xs">&#10003;</span>
-              )}
+              {state.phase === "drawing" && player.hasGuessedCorrectly && (() => {
+                const rankIndex = state.guessOrder.indexOf(player.id);
+                const rankLabels = ["1등", "2등", "3등"];
+                return <span className="text-green-500 text-xs">{rankIndex >= 0 ? rankLabels[rankIndex] : "✓"}</span>;
+              })()}
               <span className="font-mono">{player.score}</span>
             </div>
           </div>

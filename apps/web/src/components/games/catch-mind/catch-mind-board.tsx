@@ -111,7 +111,8 @@ export default function CatchMindBoard({ roomId: _roomId }: GameComponentProps) 
         <div>
           <h3 className="text-foreground font-semibold mb-1">점수 체계</h3>
           <ul className="list-disc list-inside space-y-1">
-            <li>정답을 맞춘 플레이어: +1점</li>
+            <li>1등: +3점, 2등: +2점, 3등: +1점</li>
+            <li>3등이 나오면 즉시 라운드 종료</li>
             <li>출제자: 누군가 맞추면 +1점, 아무도 못 맞추면 0점</li>
           </ul>
         </div>

@@ -14,7 +14,6 @@ import { Footer } from "@/components/layout/footer";
 import { NicknameForm } from "@/components/lobby/nickname-form";
 import { GameCardGrid } from "@/components/lobby/game-card-grid";
 import { RoomList } from "@/components/lobby/room-list";
-import { CreateRoomDialog } from "@/components/lobby/create-room-dialog";
 import { RoomView } from "@/components/lobby/room-view";
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
@@ -375,7 +374,6 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
                         게임을 클릭하면 기본 설정으로 바로 방이 만들어집니다
                       </p>
                     </div>
-                    <CreateRoomDialog onCreateRoom={wrappedCreateRoom} />
                   </div>
                   <GameCardGrid onCreateRoom={wrappedCreateRoom} />
                 </section>

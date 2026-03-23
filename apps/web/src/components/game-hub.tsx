@@ -282,7 +282,7 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar isConnected={isConnected} playerCount={playerCount} onlinePlayers={onlinePlayers} nickname={nickname} githubRepoUrl={githubRepoUrl} onGoHome={handleGoHome} onLogout={handleLogout} />
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-6">
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 pt-6 pb-8">
         <div className={`lg:grid lg:gap-6 ${activeTab === "lobby" ? "lg:grid-cols-[1fr_320px]" : ""}`}>
           <div className="space-y-8">
             {/* 탭 네비게이션 */}

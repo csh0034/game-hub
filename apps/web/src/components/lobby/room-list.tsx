@@ -1,7 +1,7 @@
 "use client";
 
 import type { Room } from "@game-hub/shared-types";
-import { GAME_CONFIGS } from "@game-hub/shared-types";
+import { GAME_CONFIGS, MINESWEEPER_DIFFICULTY_CONFIGS, TETRIS_DIFFICULTY_CONFIGS } from "@game-hub/shared-types";
 import { Users, Clock, Play, Loader2 } from "lucide-react";
 
 interface RoomListProps {
@@ -54,6 +54,15 @@ export function RoomList({ rooms, onJoinRoom }: RoomListProps) {
                     <Clock className="w-3 h-3" />
                     {formatTime(room.createdAt)}
                   </span>
+                  {(() => {
+                    const summary = getOptionsSummary(room);
+                    return summary ? (
+                      <span className="bg-secondary px-1.5 py-0.5 rounded">{summary}</span>
+                    ) : null;
+                  })()}
+                </div>
+                <div className="mt-1 text-xs text-muted-foreground truncate max-w-64">
+                  {room.players.map((p) => p.nickname).join(", ")}
                 </div>
               </div>
             </div>
@@ -70,6 +79,39 @@ export function RoomList({ rooms, onJoinRoom }: RoomListProps) {
       })}
     </div>
   );
+}
+
+function getOptionsSummary(room: Room): string | null {
+  const opts = room.gameOptions;
+  switch (room.gameType) {
+    case "gomoku":
+      return `턴 ${opts?.gomokuTurnTime ?? 30}초`;
+    case "minesweeper": {
+      if (!opts?.minesweeperDifficulty) return null;
+      const diff = MINESWEEPER_DIFFICULTY_CONFIGS[opts.minesweeperDifficulty];
+      return `${diff.label} (${diff.rows}×${diff.cols})`;
+    }
+    case "tetris": {
+      if (!opts?.tetrisDifficulty) return null;
+      const diff = TETRIS_DIFFICULTY_CONFIGS[opts.tetrisDifficulty];
+      return `${diff.label} (Lv.${diff.startLevel})`;
+    }
+    case "liar-drawing": {
+      const parts: string[] = [];
+      if (opts?.liarDrawingTime != null) parts.push(`${opts.liarDrawingTime}초`);
+      if (opts?.liarDrawingRounds != null) parts.push(`${opts.liarDrawingRounds}라운드`);
+      return parts.length > 0 ? parts.join(" · ") : null;
+    }
+    case "catch-mind": {
+      const parts: string[] = [];
+      if (opts?.catchMindTime != null) parts.push(`${opts.catchMindTime}초`);
+      if (opts?.catchMindRounds != null) parts.push(`${opts.catchMindRounds}라운드`);
+      if (opts?.catchMindCharHint != null) parts.push(`힌트${opts.catchMindCharHint ? "ON" : "OFF"}`);
+      return parts.length > 0 ? parts.join(" · ") : null;
+    }
+    default:
+      return null;
+  }
 }
 
 function formatTime(timestamp: number): string {

@@ -116,7 +116,7 @@ game-hub/
 - `/lobby` — 로비 (게임 카드, 방 목록, 채팅). `/request` — 요청사항 게시판. 탭 전환은 Next.js `<Link>`로 라우팅.
 - `/room/[id]` — 방 직접 입장. `pendingRoomId`를 lobby-store에 설정 → `player:set-nickname` 인증 완료 후 자동 `joinRoom` 실행.
 - 방 생성/입장 시 `history.pushState`로 URL을 `/room/{roomId}`로 변경, 나갈 때 `/lobby`로 복원.
-- 방 대기실에서 "링크 복사" 버튼으로 `{origin}/room/{roomId}` URL을 클립보드에 복사.
+- 웨이팅룸에서 "링크 복사" 버튼으로 `{origin}/room/{roomId}` URL을 클립보드에 복사.
 
 ## 공유 타입 (packages/shared-types/src)
 

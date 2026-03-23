@@ -272,12 +272,6 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
     const state = gameManager.getGameState(roomId) as LiarDrawingPublicState | null;
     if (!state) return;
 
-    // Last round - skip countdown and show final result immediately
-    if (state.roundNumber >= state.totalRounds) {
-      advanceLiarDrawingRound(roomId);
-      return;
-    }
-
     startLiarDrawingTimer(roomId, 10000, () => {
       advanceLiarDrawingRound(roomId);
     });

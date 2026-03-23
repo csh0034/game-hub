@@ -18,6 +18,7 @@ import { RoomView } from "@/components/lobby/room-view";
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import { RequestBoard } from "@/components/request-board/request-board";
+import LobbyRankingPanel from "@/components/ranking/lobby-ranking-panel";
 
 const NICKNAME_KEY = "game-hub-nickname";
 
@@ -346,14 +347,20 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
           </div>
 
           {activeTab === "lobby" && (
-            <aside className="mt-8 lg:mt-0 h-[500px]">
-              <ChatPanel
-                messages={lobbyMessages}
-                onSendMessage={sendLobbyMessage}
-                placeholder="로비 채팅..."
-                myNickname={nickname ?? undefined}
-                isAdmin={isAdmin}
-                onDeleteMessage={(messageId) => deleteMessage("lobby", messageId)}
+            <aside className="mt-8 lg:mt-0 flex flex-col gap-4">
+              <div className="h-[400px]">
+                <ChatPanel
+                  messages={lobbyMessages}
+                  onSendMessage={sendLobbyMessage}
+                  placeholder="로비 채팅..."
+                  myNickname={nickname ?? undefined}
+                  isAdmin={isAdmin}
+                  onDeleteMessage={(messageId) => deleteMessage("lobby", messageId)}
+                />
+              </div>
+              <LobbyRankingPanel
+                myNickname={nickname ?? ""}
+                socket={socket}
               />
             </aside>
           )}

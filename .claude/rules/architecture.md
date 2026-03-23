@@ -90,7 +90,9 @@ game-hub/
 │   ├── layout/navbar.tsx
 │   ├── lobby/               # 로비 UI (방 목록, 생성, 입장)
 │   ├── chat/chat-panel.tsx  # 채팅 UI (로비/방 공용)
-│   ├── ranking/ranking-card.tsx  # 랭킹 카드 UI (대기실, 난이도별 Top 10)
+│   ├── ranking/
+│   │   ├── ranking-card.tsx         # 랭킹 카드 UI (난이도별 Top 10)
+│   │   └── lobby-ranking-panel.tsx  # 로비 랭킹 패널 (게임/난이도 탭 + RankingCard)
 │   ├── request-board/       # 요청사항 게시판 UI (목록, 작성, 수락/거부/완료 처리)
 │   └── games/               # 게임별 UI
 │       ├── gomoku/

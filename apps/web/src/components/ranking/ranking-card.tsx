@@ -9,7 +9,7 @@ import type { RankingGameType, RankingDifficulty, RankingKey } from "@game-hub/s
 
 const RANK_ICONS = ["🥇", "🥈", "🥉"];
 
-const DIFFICULTY_LABELS: Record<string, string> = {
+export const DIFFICULTY_LABELS: Record<string, string> = {
   beginner: "초급",
   intermediate: "중급",
   expert: "고급",
@@ -63,7 +63,7 @@ export default function RankingCard({ gameType, difficulty, myNickname, socket }
             return (
               <div
                 key={entry.id}
-                className={`flex items-center justify-between rounded-lg px-3 py-1.5 text-sm ${
+                className={`flex flex-col rounded-lg px-3 py-1.5 text-sm ${
                   isMe ? "bg-primary/10 text-primary font-semibold" : "bg-secondary/50"
                 }`}
               >
@@ -73,9 +73,9 @@ export default function RankingCard({ gameType, difficulty, myNickname, socket }
                   </span>
                   <span className="truncate">{entry.nickname}</span>
                 </div>
-                <div className="flex items-center gap-3 shrink-0 ml-2">
-                  <span className="font-mono">{formatScore(gameType, entry.score)}</span>
-                  <span className="text-xs text-muted-foreground">{formatDateTime(entry.date)}</span>
+                <div className="flex items-center gap-2 ml-8 text-xs">
+                  <span className="font-mono font-semibold">{formatScore(gameType, entry.score)}</span>
+                  <span className="text-muted-foreground">{formatDateTime(entry.date)}</span>
                 </div>
               </div>
             );

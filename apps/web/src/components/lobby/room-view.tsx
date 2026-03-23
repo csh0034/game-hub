@@ -428,17 +428,17 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         type="button"
-                        onClick={() => handleOptionChange({ ...localOptions, catchMindCharHint: false })}
-                        className={`py-2 rounded-lg text-sm font-medium border transition-colors ${!localOptions.catchMindCharHint ? "border-primary bg-primary/15 text-primary" : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:bg-primary/5"}`}
-                      >
-                        OFF
-                      </button>
-                      <button
-                        type="button"
                         onClick={() => handleOptionChange({ ...localOptions, catchMindCharHint: true })}
                         className={`py-2 rounded-lg text-sm font-medium border transition-colors ${localOptions.catchMindCharHint ? "border-primary bg-primary/15 text-primary" : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:bg-primary/5"}`}
                       >
                         ON
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleOptionChange({ ...localOptions, catchMindCharHint: false })}
+                        className={`py-2 rounded-lg text-sm font-medium border transition-colors ${!localOptions.catchMindCharHint ? "border-primary bg-primary/15 text-primary" : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:bg-primary/5"}`}
+                      >
+                        OFF
                       </button>
                     </div>
                   </div>

@@ -16,6 +16,7 @@ interface ChatPanelProps {
   isAdmin?: boolean;
   onDeleteMessage?: (messageId: string) => void;
   disabled?: boolean;
+  newMessageButtonBottom?: string;
 }
 
 
@@ -29,6 +30,7 @@ export function ChatPanel({
   isAdmin = false,
   onDeleteMessage,
   disabled = false,
+  newMessageButtonBottom = "bottom-6",
 }: ChatPanelProps) {
   const [input, setInput] = useState("");
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
@@ -186,7 +188,7 @@ export function ChatPanel({
       {showNewMessageButton && hasNewMessages && (
         <button
           onClick={scrollToBottom}
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-primary text-primary-foreground text-sm font-medium px-4 py-2 rounded-full shadow-lg hover:bg-primary/90 transition-colors"
+          className={`fixed ${newMessageButtonBottom} left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-primary text-primary-foreground text-sm font-medium px-4 py-2 rounded-full shadow-lg hover:bg-primary/90 transition-colors`}
         >
           새 메시지
           <ChevronDown className="w-4 h-4" />

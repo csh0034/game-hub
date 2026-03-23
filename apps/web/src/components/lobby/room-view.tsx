@@ -365,31 +365,6 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
         />
       )}
 
-      <div className="flex gap-3">
-        {isHost ? (
-          <button
-            onClick={startGame}
-            disabled={room.players.length < config.minPlayers || !room.players.filter((p) => p.id !== room.hostId).every((p) => p.isReady)}
-            className="flex-1 flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground text-primary-foreground py-3 rounded-lg font-medium transition-colors disabled:cursor-not-allowed"
-          >
-            <Play className="w-5 h-5" />
-            게임 시작
-          </button>
-        ) : (
-          <button
-            onClick={onToggleReady}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-colors ${
-              myPlayer?.isReady
-                ? "bg-success hover:bg-success/90 text-white"
-                : "bg-primary hover:bg-primary/90 text-primary-foreground"
-            }`}
-          >
-            {myPlayer?.isReady && <CheckCircle2 className="w-5 h-5" />}
-            {myPlayer?.isReady ? "준비 취소" : "준비 완료"}
-          </button>
-        )}
-      </div>
-
       <div className="h-[300px]">
         <ChatPanel
           messages={roomMessages}
@@ -397,7 +372,35 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
           placeholder="방 채팅..."
           myNickname={nickname}
           showNewMessageButton
+          newMessageButtonBottom="bottom-20"
         />
+      </div>
+
+      <div className="sticky bottom-0 z-10 bg-background pt-4 pb-2">
+        <div className="flex gap-3">
+          {isHost ? (
+            <button
+              onClick={startGame}
+              disabled={room.players.length < config.minPlayers || !room.players.filter((p) => p.id !== room.hostId).every((p) => p.isReady)}
+              className="flex-1 flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground text-primary-foreground py-3 rounded-lg font-medium transition-colors disabled:cursor-not-allowed"
+            >
+              <Play className="w-5 h-5" />
+              게임 시작
+            </button>
+          ) : (
+            <button
+              onClick={onToggleReady}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-colors ${
+                myPlayer?.isReady
+                  ? "bg-success hover:bg-success/90 text-white"
+                  : "bg-primary hover:bg-primary/90 text-primary-foreground"
+              }`}
+            >
+              {myPlayer?.isReady && <CheckCircle2 className="w-5 h-5" />}
+              {myPlayer?.isReady ? "준비 취소" : "준비 완료"}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

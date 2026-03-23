@@ -316,4 +316,37 @@ describe("MinesweeperEngine", () => {
       expect(engine.checkWin(state)).toBeNull();
     });
   });
+
+  describe("getCompletionTime", () => {
+    it("승리 전에는 null을 반환한다", () => {
+      engine.initState(mockPlayers);
+      expect(engine.getCompletionTime()).toBeNull();
+    });
+
+    it("승리 후 완료 시간을 반환한다", () => {
+      engine.initState(mockPlayers);
+      // 9x9 보드(beginner)에 (0,0)만 지뢰로 설정
+      const board = createTestBoard(9, 9, [[0, 0]]);
+      engine._setBoard(board);
+      engine._setStartedAt(Date.now() - 5000);
+
+      // 지뢰가 아닌 칸 하나를 열면 floodFill로 전체가 열림
+      engine.processMove(engine.toPublicState(), "player1", { type: "reveal", row: 8, col: 8 });
+
+      const time = engine.getCompletionTime();
+      expect(time).not.toBeNull();
+      expect(time!).toBeGreaterThanOrEqual(4000);
+    });
+  });
+
+  describe("getDifficulty", () => {
+    it("설정된 난이도를 반환한다", () => {
+      expect(engine.getDifficulty()).toBe("beginner");
+    });
+
+    it("expert 난이도를 반환한다", () => {
+      const expertEngine = new MinesweeperEngine("expert");
+      expect(expertEngine.getDifficulty()).toBe("expert");
+    });
+  });
 });

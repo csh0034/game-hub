@@ -2,6 +2,7 @@ import type { Room, CreateRoomPayload, JoinRoomPayload } from "./lobby-types";
 import type { GameState, GameMove, GameResult, HoldemPrivateState, LiarDrawingPrivateState, CatchMindPrivateState, Card, DrawPoint, TetrisPlayerUpdate, TetrisPieceUpdate } from "./game-types";
 import type { Player } from "./player-types";
 import type { FeatureRequest, CreateRequestPayload, AcceptRequestPayload, RejectRequestPayload, ResolveRequestPayload, ChangeLabelPayload } from "./request-types";
+import type { RankingKey, RankingEntry } from "./ranking-types";
 
 export interface ChatMessage {
   id: string;
@@ -48,6 +49,9 @@ export interface ClientToServerEvents {
   "request:resolve": (payload: ResolveRequestPayload, callback: (result: { success: boolean; error?: string }) => void) => void;
   "request:change-label": (payload: ChangeLabelPayload, callback: (result: { success: boolean; error?: string }) => void) => void;
   "request:delete": (requestId: string, callback: (result: { success: boolean; error?: string }) => void) => void;
+
+  // Ranking
+  "ranking:get": (key: RankingKey, callback: (entries: RankingEntry[]) => void) => void;
 }
 
 // Server → Client
@@ -93,6 +97,9 @@ export interface ServerToClientEvents {
   "request:resolved": (request: FeatureRequest) => void;
   "request:label-changed": (request: FeatureRequest) => void;
   "request:deleted": (requestId: string) => void;
+
+  // Ranking
+  "ranking:updated": (data: { key: RankingKey; rankings: RankingEntry[] }) => void;
 
   // System
   "system:player-count": (data: { count: number; players: { nickname: string; connectedAt: number; isAdmin?: boolean }[] }) => void;

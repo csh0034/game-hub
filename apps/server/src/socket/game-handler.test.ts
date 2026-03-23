@@ -2,6 +2,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { setupGameHandler } from "./game-handler.js";
 import { GameManager } from "../games/game-manager.js";
 import { createMockSocket, createMockIo, type GameServer, type GameSocket, type MockSocket, type MockIo } from "./socket-test-helpers.js";
+import type { RankingStore } from "../storage/index.js";
+
+const mockRankingStore: RankingStore = {
+  getRankings: vi.fn().mockResolvedValue([]),
+  addEntry: vi.fn().mockResolvedValue({ rank: null, entries: [] }),
+};
 
 vi.mock("../games/gomoku-timer.js", () => ({
   startGomokuTimer: vi.fn(),
@@ -49,7 +55,7 @@ describe("setupGameHandler", () => {
     it("방장이 게임을 시작하면 game:started를 발송한다", () => {
       const { room } = setupGomokuRoom(gameManager);
       hostSocket.data.roomId = room.id;
-      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager);
+      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager, mockRankingStore);
 
       hostSocket._trigger("game:start");
 
@@ -60,7 +66,7 @@ describe("setupGameHandler", () => {
     it("방장이 아니면 game:error를 발송한다", () => {
       const { room } = setupGomokuRoom(gameManager);
       guestSocket.data.roomId = room.id;
-      setupGameHandler(io as unknown as GameServer, guestSocket as unknown as GameSocket, gameManager);
+      setupGameHandler(io as unknown as GameServer, guestSocket as unknown as GameSocket, gameManager, mockRankingStore);
 
       guestSocket._trigger("game:start");
 
@@ -68,7 +74,7 @@ describe("setupGameHandler", () => {
     });
 
     it("roomId가 없으면 무시한다", () => {
-      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager);
+      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager, mockRankingStore);
 
       hostSocket._trigger("game:start");
 
@@ -81,7 +87,7 @@ describe("setupGameHandler", () => {
       const host = { id: "host-1", nickname: "Host", isReady: true };
       const room = gameManager.createRoom({ name: "오목 방", gameType: "gomoku" }, host);
       hostSocket.data.roomId = room.id;
-      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager);
+      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager, mockRankingStore);
 
       hostSocket._trigger("game:start");
 
@@ -91,11 +97,11 @@ describe("setupGameHandler", () => {
     it("오목 게임 시작 시 gomoku 타이머를 시작한다", () => {
       const { room } = setupGomokuRoom(gameManager);
       hostSocket.data.roomId = room.id;
-      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager);
+      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager, mockRankingStore);
 
       hostSocket._trigger("game:start");
 
-      expect(startGomokuTimer).toHaveBeenCalledWith(room.id, expect.any(Function));
+      expect(startGomokuTimer).toHaveBeenCalledWith(room.id, expect.any(Number), expect.any(Function));
     });
   });
 
@@ -103,7 +109,7 @@ describe("setupGameHandler", () => {
     it("유효한 수를 처리하고 state-updated를 발송한다", () => {
       const { room } = setupGomokuRoom(gameManager);
       hostSocket.data.roomId = room.id;
-      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager);
+      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager, mockRankingStore);
 
       hostSocket._trigger("game:start");
       vi.clearAllMocks();
@@ -115,7 +121,7 @@ describe("setupGameHandler", () => {
     });
 
     it("roomId가 없으면 무시한다", () => {
-      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager);
+      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager, mockRankingStore);
 
       hostSocket._trigger("game:move", { row: 7, col: 7 });
 
@@ -124,7 +130,7 @@ describe("setupGameHandler", () => {
 
     it("roomId에 해당하는 방이 없으면 game:error를 발송하지 않는다", () => {
       hostSocket.data.roomId = "nonexistent-room";
-      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager);
+      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager, mockRankingStore);
 
       hostSocket._trigger("game:move", { row: 7, col: 7 });
 
@@ -135,8 +141,8 @@ describe("setupGameHandler", () => {
     it("승리 시 game:ended를 발송한다", () => {
       const { room } = setupGomokuRoom(gameManager);
       hostSocket.data.roomId = room.id;
-      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager);
-      setupGameHandler(io as unknown as GameServer, guestSocket as unknown as GameSocket, gameManager);
+      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager, mockRankingStore);
+      setupGameHandler(io as unknown as GameServer, guestSocket as unknown as GameSocket, gameManager, mockRankingStore);
       guestSocket.data.roomId = room.id;
 
       hostSocket._trigger("game:start");
@@ -165,7 +171,7 @@ describe("setupGameHandler", () => {
     it("방을 리셋하고 room-updated를 발송한다", () => {
       const { room } = setupGomokuRoom(gameManager);
       hostSocket.data.roomId = room.id;
-      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager);
+      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager, mockRankingStore);
 
       hostSocket._trigger("game:start");
       vi.clearAllMocks();
@@ -178,7 +184,7 @@ describe("setupGameHandler", () => {
     it("모든 타이머를 정리한다", () => {
       const { room } = setupGomokuRoom(gameManager);
       hostSocket.data.roomId = room.id;
-      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager);
+      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager, mockRankingStore);
 
       hostSocket._trigger("game:start");
       vi.clearAllMocks();
@@ -191,7 +197,7 @@ describe("setupGameHandler", () => {
     });
 
     it("roomId가 없으면 무시한다", () => {
-      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager);
+      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager, mockRankingStore);
 
       hostSocket._trigger("game:rematch");
 

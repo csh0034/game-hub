@@ -68,7 +68,7 @@ async function bootstrap() {
     gameManager = new GameManager(storage.roomStore);
   }
 
-  const { chatStore, sessionStore, requestStore } = storage;
+  const { chatStore, sessionStore, requestStore, rankingStore } = storage;
 
   app.get("/health", (_req, res) => {
     res.json({ status: "ok", rooms: gameManager.getRoomCount() });
@@ -86,7 +86,7 @@ async function bootstrap() {
 
     setupNicknameHandler(io, socket, sessionStore, gameManager);
     setupLobbyHandler(io, socket, gameManager, chatStore);
-    setupGameHandler(io, socket, gameManager);
+    setupGameHandler(io, socket, gameManager, rankingStore);
     setupRequestHandler(io, socket, requestStore);
 
     socket.on("disconnect", async () => {

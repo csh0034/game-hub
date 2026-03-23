@@ -20,6 +20,8 @@ import {
   ChevronUp,
   Link,
 } from "lucide-react";
+import RankingCard from "@/components/ranking/ranking-card";
+import type { RankingGameType, RankingDifficulty } from "@game-hub/shared-types";
 
 function PlayerLeftOverlay({
   nickname,
@@ -152,6 +154,12 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
                   : "패배 하였습니다."
                 : gameResult.reason}
             </p>
+            {gameResult.rankingResult && gameResult.rankingResult.rank != null && (
+              <p className="text-sm text-muted-foreground mt-1">
+                {gameResult.rankingResult.isNewRecord ? "🏆 새로운 1위! " : ""}
+                전체 {gameResult.rankingResult.rank}위
+              </p>
+            )}
           </div>
         )}
 
@@ -342,6 +350,19 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
             )}
           </div>
         </div>
+      )}
+
+      {(room.gameType === "minesweeper" || (room.gameType === "tetris" && room.players.length <= 1)) && (
+        <RankingCard
+          gameType={room.gameType as RankingGameType}
+          difficulty={
+            (room.gameType === "minesweeper"
+              ? room.gameOptions?.minesweeperDifficulty ?? "beginner"
+              : room.gameOptions?.tetrisDifficulty ?? "normal") as RankingDifficulty
+          }
+          myNickname={nickname}
+          socket={socket}
+        />
       )}
 
       <div className="flex gap-3">

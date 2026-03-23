@@ -124,6 +124,15 @@ export class MinesweeperEngine implements GameEngine {
     return null;
   }
 
+  getCompletionTime(): number | null {
+    if (this.status !== "won" || !this.startedAt) return null;
+    return Date.now() - this.startedAt;
+  }
+
+  getDifficulty(): MinesweeperDifficulty {
+    return this.difficulty;
+  }
+
   toPublicState(): MinesweeperPublicState {
     const board: MinesweeperPublicCell[][] = this.board.map((row) =>
       row.map((cell) => {

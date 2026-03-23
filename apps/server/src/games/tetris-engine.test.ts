@@ -679,4 +679,39 @@ describe("TetrisEngine", () => {
       }
     });
   });
+
+  describe("getPlayerScore", () => {
+    it("플레이어의 현재 점수를 반환한다", () => {
+      engine.initState(mockPlayers);
+      expect(engine.getPlayerScore("player1")).toBe(0);
+    });
+
+    it("존재하지 않는 플레이어는 0을 반환한다", () => {
+      engine.initState(mockPlayers);
+      expect(engine.getPlayerScore("unknown")).toBe(0);
+    });
+  });
+
+  describe("getDifficulty", () => {
+    it("기본 난이도 normal을 반환한다", () => {
+      expect(engine.getDifficulty()).toBe("normal");
+    });
+
+    it("hard 난이도를 반환한다", () => {
+      const hardEngine = new TetrisEngine("hard");
+      expect(hardEngine.getDifficulty()).toBe("hard");
+    });
+  });
+
+  describe("getMode", () => {
+    it("1인 플레이 시 solo를 반환한다", () => {
+      engine.initState(mockPlayers);
+      expect(engine.getMode()).toBe("solo");
+    });
+
+    it("2인 이상 플레이 시 versus를 반환한다", () => {
+      engine.initState(mockVersusPlayers);
+      expect(engine.getMode()).toBe("versus");
+    });
+  });
 });

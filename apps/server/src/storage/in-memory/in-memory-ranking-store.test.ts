@@ -1,0 +1,109 @@
+import { describe, it, expect, beforeEach } from "vitest";
+import { InMemoryRankingStore } from "./in-memory-ranking-store.js";
+import type { RankingEntry, RankingKey } from "@game-hub/shared-types";
+
+function createEntry(id: string, nickname: string, score: number, date = Date.now()): RankingEntry {
+  return { id, nickname, score, date };
+}
+
+describe("InMemoryRankingStore", () => {
+  let store: InMemoryRankingStore;
+
+  beforeEach(() => {
+    store = new InMemoryRankingStore();
+  });
+
+  describe("getRankings", () => {
+    it("존재하지 않는 키에 대해 빈 배열을 반환한다", async () => {
+      const result = await store.getRankings("minesweeper:beginner");
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe("addEntry (오름차순 - 지뢰찾기)", () => {
+    const key: RankingKey = "minesweeper:beginner";
+
+    it("엔트리를 추가하고 rank 1을 반환한다", async () => {
+      const entry = createEntry("1", "Alice", 5000);
+      const result = await store.addEntry(key, entry, true);
+
+      expect(result.rank).toBe(1);
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].nickname).toBe("Alice");
+    });
+
+    it("낮은 점수가 더 높은 순위로 정렬된다", async () => {
+      await store.addEntry(key, createEntry("1", "Alice", 10000), true);
+      const result = await store.addEntry(key, createEntry("2", "Bob", 5000), true);
+
+      expect(result.rank).toBe(1);
+      expect(result.entries[0].nickname).toBe("Bob");
+      expect(result.entries[1].nickname).toBe("Alice");
+    });
+
+    it("10개를 초과하면 하위 엔트리가 제거된다", async () => {
+      for (let i = 0; i < 10; i++) {
+        await store.addEntry(key, createEntry(`${i}`, `Player${i}`, (i + 1) * 1000), true);
+      }
+
+      const result = await store.addEntry(key, createEntry("11", "Slow", 99999), true);
+      expect(result.rank).toBeNull();
+      expect(result.entries).toHaveLength(10);
+    });
+
+    it("10개를 초과해도 신기록이면 rank 1을 반환한다", async () => {
+      for (let i = 0; i < 10; i++) {
+        await store.addEntry(key, createEntry(`${i}`, `Player${i}`, (i + 1) * 1000), true);
+      }
+
+      const result = await store.addEntry(key, createEntry("new", "Fast", 500), true);
+      expect(result.rank).toBe(1);
+      expect(result.entries[0].nickname).toBe("Fast");
+      expect(result.entries).toHaveLength(10);
+    });
+
+    it("isNewRecord는 rank가 1일 때만 true이다", async () => {
+      await store.addEntry(key, createEntry("1", "Alice", 5000), true);
+      const result = await store.addEntry(key, createEntry("2", "Bob", 10000), true);
+      expect(result.rank).toBe(2);
+    });
+  });
+
+  describe("addEntry (내림차순 - 테트리스)", () => {
+    const key: RankingKey = "tetris:normal";
+
+    it("높은 점수가 더 높은 순위로 정렬된다", async () => {
+      await store.addEntry(key, createEntry("1", "Alice", 1000), false);
+      const result = await store.addEntry(key, createEntry("2", "Bob", 5000), false);
+
+      expect(result.rank).toBe(1);
+      expect(result.entries[0].nickname).toBe("Bob");
+      expect(result.entries[1].nickname).toBe("Alice");
+    });
+
+    it("낮은 점수는 Top 10 밖이면 null을 반환한다", async () => {
+      for (let i = 0; i < 10; i++) {
+        await store.addEntry(key, createEntry(`${i}`, `Player${i}`, (i + 1) * 10000), false);
+      }
+
+      const result = await store.addEntry(key, createEntry("low", "Low", 100), false);
+      expect(result.rank).toBeNull();
+      expect(result.entries).toHaveLength(10);
+    });
+  });
+
+  describe("난이도별 분리", () => {
+    it("같은 게임이라도 난이도가 다르면 별도 랭킹이다", async () => {
+      await store.addEntry("minesweeper:beginner", createEntry("1", "A", 5000), true);
+      await store.addEntry("minesweeper:expert", createEntry("2", "B", 3000), true);
+
+      const beginner = await store.getRankings("minesweeper:beginner");
+      const expert = await store.getRankings("minesweeper:expert");
+
+      expect(beginner).toHaveLength(1);
+      expect(expert).toHaveLength(1);
+      expect(beginner[0].nickname).toBe("A");
+      expect(expert[0].nickname).toBe("B");
+    });
+  });
+});

@@ -21,6 +21,7 @@ import { setupNicknameHandler } from "../socket/nickname-handler.js";
 import { broadcastAuthenticatedCount } from "../socket/broadcast-player-count.js";
 import { InMemorySessionStore } from "../storage/in-memory/in-memory-session-store.js";
 import { InMemoryChatStore } from "../storage/in-memory/in-memory-chat-store.js";
+import { InMemoryRankingStore } from "../storage/in-memory/in-memory-ranking-store.js";
 
 const NUM_PLAYERS = 8;
 const TEST_TIMEOUT = 30_000;
@@ -98,7 +99,7 @@ describe("Tetris 8-player E2E", () => {
 
       setupNicknameHandler(ioServer, socket, sessionStore, gameManager);
       setupLobbyHandler(ioServer, socket, gameManager, chatStore);
-      setupGameHandler(ioServer, socket, gameManager);
+      setupGameHandler(ioServer, socket, gameManager, new InMemoryRankingStore());
 
       socket.on("disconnect", () => {
         const rid = socket.data.roomId;

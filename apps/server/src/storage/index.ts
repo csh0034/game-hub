@@ -3,13 +3,15 @@ import type { ChatStore } from "./interfaces/chat-store.js";
 import type { RoomStore } from "./interfaces/room-store.js";
 import type { SessionStore } from "./interfaces/session-store.js";
 import type { RequestStore } from "./interfaces/request-store.js";
-import { RedisChatStore, RedisRoomStore, RedisSessionStore, RedisRequestStore } from "./redis/index.js";
-import { InMemoryChatStore, InMemoryRoomStore, InMemorySessionStore, InMemoryRequestStore } from "./in-memory/index.js";
+import type { RankingStore } from "./interfaces/ranking-store.js";
+import { RedisChatStore, RedisRoomStore, RedisSessionStore, RedisRequestStore, RedisRankingStore } from "./redis/index.js";
+import { InMemoryChatStore, InMemoryRoomStore, InMemorySessionStore, InMemoryRequestStore, InMemoryRankingStore } from "./in-memory/index.js";
 
 export type { ChatStore } from "./interfaces/index.js";
 export type { RoomStore } from "./interfaces/index.js";
 export type { SessionStore } from "./interfaces/index.js";
 export type { RequestStore } from "./interfaces/index.js";
+export type { RankingStore } from "./interfaces/index.js";
 export { getRedisClient, connectRedis, closeRedis } from "./redis-client.js";
 
 export interface Storage {
@@ -17,6 +19,7 @@ export interface Storage {
   roomStore: RoomStore;
   sessionStore: SessionStore;
   requestStore: RequestStore;
+  rankingStore: RankingStore;
 }
 
 export function createStorage(redis: Redis): Storage {
@@ -25,6 +28,7 @@ export function createStorage(redis: Redis): Storage {
     roomStore: new RedisRoomStore(redis),
     sessionStore: new RedisSessionStore(redis),
     requestStore: new RedisRequestStore(redis),
+    rankingStore: new RedisRankingStore(redis),
   };
 }
 
@@ -34,5 +38,6 @@ export function createInMemoryStorage(): Storage {
     roomStore: new InMemoryRoomStore(),
     sessionStore: new InMemorySessionStore(),
     requestStore: new InMemoryRequestStore(),
+    rankingStore: new InMemoryRankingStore(),
   };
 }

@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import type { Server, Socket } from "socket.io";
 import type {
   ClientToServerEvents,
@@ -12,8 +13,12 @@ import type {
   LiarDrawingPublicState,
   CatchMindPublicState,
   DrawPoint,
+  GameResult,
+  RankingKey,
+  RankingEntry,
 } from "@game-hub/shared-types";
 import type { GameManager } from "../games/game-manager.js";
+import type { RankingStore } from "../storage/index.js";
 import { startGomokuTimer, clearGomokuTimer } from "../games/gomoku-timer.js";
 import { startTetrisTicker, updateTetrisTickerInterval, clearTetrisTicker } from "../games/tetris-ticker.js";
 import { startLiarDrawingTimer, clearLiarDrawingTimer } from "../games/liar-drawing-timer.js";
@@ -126,7 +131,33 @@ function startCatchMindDrawTimer(io: IOServer, roomId: string, gameManager: Game
   });
 }
 
-export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: GameManager) {
+async function submitRanking(
+  io: IOServer,
+  rankingStore: RankingStore,
+  gameType: "minesweeper" | "tetris",
+  difficulty: string,
+  nickname: string,
+  score: number,
+  result: GameResult,
+): Promise<void> {
+  const sortAsc = gameType === "minesweeper"; // lower time = better
+  const key = `${gameType}:${difficulty}` as RankingKey;
+  const entry: RankingEntry = {
+    id: randomUUID(),
+    nickname,
+    score,
+    date: Date.now(),
+  };
+
+  const { rank, entries } = await rankingStore.addEntry(key, entry, sortAsc);
+  result.rankingResult = {
+    rank,
+    isNewRecord: rank === 1,
+  };
+  io.emit("ranking:updated", { key, rankings: entries });
+}
+
+export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: GameManager, rankingStore: RankingStore) {
   function startGomokuTurnTimer(roomId: string) {
     const state = gameManager.getGameState(roomId) as GomokuState | null;
     if (!state) return;
@@ -157,7 +188,7 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
 
     let currentInterval = state.dropInterval;
 
-    const onTick = () => {
+    const onTick = async () => {
       const room = gameManager.getRoom(roomId);
       if (!room || room.status !== "playing") {
         clearTetrisTicker(roomId);
@@ -185,6 +216,17 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
         clearTetrisTicker(roomId);
         cleanupTetrisFlush(roomId);
         room.status = "finished";
+
+        // Submit tetris solo ranking
+        if (tetrisEngine.getMode() === "solo") {
+          const playerId = room.players[0]?.id;
+          if (playerId) {
+            const playerSocket = io.sockets.sockets.get(playerId);
+            const nickname = playerSocket?.data?.nickname ?? "Unknown";
+            await submitRanking(io, rankingStore, "tetris", tetrisEngine.getDifficulty(), nickname, tetrisEngine.getPlayerScore(playerId), result);
+          }
+        }
+
         io.to(roomId).emit("game:ended", result);
         io.emit("lobby:room-updated", room);
       } else if (newState.dropInterval !== currentInterval) {
@@ -411,7 +453,7 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
     }
   });
 
-  socket.on("game:move", (move) => {
+  socket.on("game:move", async (move) => {
     const roomId = socket.data.roomId;
     if (!roomId) return;
 
@@ -548,6 +590,22 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
           }
         }
       } else {
+        // Submit ranking for single-player games
+        if (room?.gameType === "minesweeper" && result.result.winnerId) {
+          const msEngine = gameManager.getMinesweeperEngine(roomId);
+          if (msEngine) {
+            const completionTime = msEngine.getCompletionTime();
+            if (completionTime != null) {
+              await submitRanking(io, rankingStore, "minesweeper", msEngine.getDifficulty(), socket.data.nickname, completionTime, result.result);
+            }
+          }
+        } else if (room?.gameType === "tetris") {
+          const tetrisEngine = gameManager.getTetrisEngine(roomId);
+          if (tetrisEngine && tetrisEngine.getMode() === "solo") {
+            await submitRanking(io, rankingStore, "tetris", tetrisEngine.getDifficulty(), socket.data.nickname, tetrisEngine.getPlayerScore(socket.id!), result.result);
+          }
+        }
+
         io.to(roomId).emit("game:ended", result.result);
         const updatedRoom = gameManager.getRoom(roomId);
         if (updatedRoom) {
@@ -621,5 +679,10 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
       io.to(roomId).emit("lobby:room-updated", room);
       io.emit("lobby:room-updated", room);
     }
+  });
+
+  socket.on("ranking:get", async (key, callback) => {
+    const entries = await rankingStore.getRankings(key);
+    callback(entries);
   });
 }

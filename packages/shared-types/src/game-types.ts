@@ -367,4 +367,8 @@ export type GameMove = GomokuMove | HoldemMove | MinesweeperMove | TetrisMove | 
 export interface GameResult {
   winnerId: string | null; // null = draw
   reason: string;
+  rankingResult?: {
+    rank: number | null; // 1-based, null if not in top 10
+    isNewRecord: boolean;
+  };
 }

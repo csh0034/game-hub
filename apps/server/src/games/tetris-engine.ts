@@ -241,6 +241,18 @@ export class TetrisEngine implements GameEngine {
     return null;
   }
 
+  getPlayerScore(playerId: string): number {
+    return this.playerStates.get(playerId)?.score ?? 0;
+  }
+
+  getDifficulty(): TetrisDifficulty {
+    return this.difficulty;
+  }
+
+  getMode(): TetrisMode {
+    return this.mode;
+  }
+
   // --- Internal methods ---
 
   private createEmptyBoard(): (TetrominoType | null)[][] {

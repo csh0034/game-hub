@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { Trophy } from "lucide-react";
 import { useRanking } from "@/hooks/use-ranking";
+import { formatDateTime } from "@/lib/utils";
 import type { GameSocket } from "@/lib/socket";
 import type { RankingGameType, RankingDifficulty, RankingKey } from "@game-hub/shared-types";
 
@@ -24,16 +25,6 @@ function formatScore(gameType: RankingGameType, score: number): string {
   return `${score.toLocaleString()}점`;
 }
 
-function formatDate(timestamp: number): string {
-  const d = new Date(timestamp);
-  const y = d.getFullYear();
-  const M = String(d.getMonth() + 1).padStart(2, "0");
-  const D = String(d.getDate()).padStart(2, "0");
-  const h = String(d.getHours()).padStart(2, "0");
-  const m = String(d.getMinutes()).padStart(2, "0");
-  const s = String(d.getSeconds()).padStart(2, "0");
-  return `${y}-${M}-${D} ${h}:${m}:${s}`;
-}
 
 interface RankingCardProps {
   gameType: RankingGameType;
@@ -84,7 +75,7 @@ export default function RankingCard({ gameType, difficulty, myNickname, socket }
                 </div>
                 <div className="flex items-center gap-3 shrink-0 ml-2">
                   <span className="font-mono">{formatScore(gameType, entry.score)}</span>
-                  <span className="text-xs text-muted-foreground">{formatDate(entry.date)}</span>
+                  <span className="text-xs text-muted-foreground">{formatDateTime(entry.date)}</span>
                 </div>
               </div>
             );

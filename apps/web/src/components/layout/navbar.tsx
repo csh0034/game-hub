@@ -1,6 +1,7 @@
 "use client";
 
 import { Gamepad2, LogOut, Users, Wifi, WifiOff } from "lucide-react";
+import { formatDateTime } from "@/lib/utils";
 
 interface OnlinePlayer {
   nickname: string;
@@ -18,11 +19,6 @@ interface NavbarProps {
   onLogout?: () => void;
 }
 
-function formatTime(timestamp: number): string {
-  const d = new Date(timestamp);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-}
 
 export function Navbar({ isConnected, playerCount, onlinePlayers = [], nickname, githubRepoUrl, onGoHome, onLogout }: NavbarProps) {
   return (
@@ -72,7 +68,7 @@ export function Navbar({ isConnected, playerCount, onlinePlayers = [], nickname,
                     {onlinePlayers.map((player) => (
                       <li key={player.nickname} className="text-sm text-foreground flex items-center justify-between gap-2">
                         <span className={`truncate ${player.isAdmin ? "text-red-400 font-bold" : ""}`}>{player.nickname}</span>
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">{formatTime(player.connectedAt)}</span>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">{formatDateTime(player.connectedAt)}</span>
                       </li>
                     ))}
                   </ul>

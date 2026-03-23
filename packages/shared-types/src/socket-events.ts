@@ -1,4 +1,4 @@
-import type { Room, CreateRoomPayload, JoinRoomPayload } from "./lobby-types";
+import type { Room, CreateRoomPayload, JoinRoomPayload, GameOptions } from "./lobby-types";
 import type { GameState, GameMove, GameResult, HoldemPrivateState, LiarDrawingPrivateState, CatchMindPrivateState, Card, DrawPoint, TetrisPlayerUpdate, TetrisPieceUpdate } from "./game-types";
 import type { Player } from "./player-types";
 import type { FeatureRequest, CreateRequestPayload, AcceptRequestPayload, RejectRequestPayload, ResolveRequestPayload, ChangeLabelPayload } from "./request-types";
@@ -21,6 +21,7 @@ export interface ClientToServerEvents {
   "lobby:leave-room": () => void;
   "lobby:get-rooms": (callback: (rooms: Room[]) => void) => void;
   "lobby:toggle-ready": () => void;
+  "lobby:update-game-options": (gameOptions: GameOptions, callback: (result: { success: boolean; error?: string }) => void) => void;
 
   // Game
   "game:move": (move: GameMove) => void;

@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState, useCallback } from "react";
-import type { Room, ChatMessage } from "@game-hub/shared-types";
+import type { Room, ChatMessage, GameOptions, MinesweeperDifficulty, TetrisDifficulty } from "@game-hub/shared-types";
 import { GAME_CONFIGS, MINESWEEPER_DIFFICULTY_CONFIGS, TETRIS_DIFFICULTY_CONFIGS } from "@game-hub/shared-types";
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { useGame } from "@/hooks/use-game";
@@ -74,18 +74,28 @@ interface RoomViewProps {
   onLeave: () => void;
   onLeaveImmediate: () => void;
   onToggleReady: () => void;
+  onUpdateGameOptions: (gameOptions: GameOptions) => void;
   roomMessages: ChatMessage[];
   onSendRoomMessage: (message: string) => void;
 }
 
-export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, onToggleReady, roomMessages, onSendRoomMessage }: RoomViewProps) {
+export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, onToggleReady, onUpdateGameOptions, roomMessages, onSendRoomMessage }: RoomViewProps) {
   const { gameState, gameResult, playerLeftInfo, startGame, requestRematch, setPlayerLeftInfo } = useGame(socket);
   const [chatOpen, setChatOpen] = useState(true);
   const [lastSeenMessageCount, setLastSeenMessageCount] = useState(roomMessages.length);
+  const [pendingOptions, setPendingOptions] = useState<GameOptions | null>(null);
   const config = GAME_CONFIGS[room.gameType];
   const isHost = socket?.id === room.hostId;
   const myPlayer = room.players.find((p) => p.id === socket?.id);
   const isPlaying = room.status === "playing" || !!gameState;
+
+  // 방장: 로컬 pending 값 우선, 아니면 서버 값 사용
+  const localOptions = (isHost && pendingOptions) ? pendingOptions : (room.gameOptions ?? {});
+
+  const handleOptionChange = useCallback((newOptions: GameOptions) => {
+    setPendingOptions(newOptions);
+    onUpdateGameOptions(newOptions);
+  }, [onUpdateGameOptions]);
 
   // 채팅 열린 상태에서 메시지 수 동기화
   if (chatOpen && lastSeenMessageCount !== roomMessages.length) {
@@ -287,68 +297,218 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
       {(room.gameOptions || room.gameType === "gomoku") && (
         <div className="bg-card border border-border rounded-xl p-6">
           <h2 className="text-lg font-semibold mb-3">게임 옵션</h2>
-          <div className="space-y-2 text-sm">
-            {room.gameType === "gomoku" && (
-              <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
-                <span className="text-muted-foreground">턴 제한시간</span>
-                <span className="font-medium">{room.gameOptions?.gomokuTurnTime ?? 30}초</span>
-              </div>
-            )}
-            {room.gameType === "minesweeper" && room.gameOptions?.minesweeperDifficulty && (() => {
-              const diff = MINESWEEPER_DIFFICULTY_CONFIGS[room.gameOptions.minesweeperDifficulty];
-              return (
-                <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
-                  <span className="text-muted-foreground">난이도</span>
-                  <span className="font-medium">{diff.label} ({diff.rows}×{diff.cols} · 💣{diff.mineCount})</span>
+          {isHost && !isPlaying ? (
+            <div className="space-y-3 text-sm">
+              {room.gameType === "gomoku" && (
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">턴 제한시간</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="range"
+                      min={10}
+                      max={60}
+                      value={localOptions.gomokuTurnTime ?? 30}
+                      onChange={(e) => handleOptionChange({ ...localOptions, gomokuTurnTime: Number(e.target.value) })}
+                      className="flex-1"
+                    />
+                    <span className="text-sm font-medium w-12 text-center">{localOptions.gomokuTurnTime ?? 30}초</span>
+                  </div>
                 </div>
-              );
-            })()}
-            {room.gameType === "tetris" && room.gameOptions?.tetrisDifficulty && (() => {
-              const diff = TETRIS_DIFFICULTY_CONFIGS[room.gameOptions.tetrisDifficulty];
-              return (
-                <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
-                  <span className="text-muted-foreground">난이도</span>
-                  <span className="font-medium">{diff.label} (Lv.{diff.startLevel} · {diff.initialInterval}ms)</span>
+              )}
+              {room.gameType === "minesweeper" && (
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">난이도</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(Object.entries(MINESWEEPER_DIFFICULTY_CONFIGS) as [MinesweeperDifficulty, typeof MINESWEEPER_DIFFICULTY_CONFIGS[MinesweeperDifficulty]][]).map(([key, config]) => (
+                      <button
+                        key={key}
+                        onClick={() => handleOptionChange({ ...localOptions, minesweeperDifficulty: key })}
+                        className={`p-2 rounded-lg border text-sm text-center transition-colors ${
+                          (localOptions.minesweeperDifficulty ?? "beginner") === key
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border hover:border-border/80"
+                        }`}
+                      >
+                        <div className="font-medium">{config.label}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          {config.rows}×{config.cols} · 💣{config.mineCount}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              );
-            })()}
-            {room.gameType === "liar-drawing" && (
-              <>
-                {room.gameOptions?.liarDrawingTime != null && (
-                  <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
-                    <span className="text-muted-foreground">그리기 시간</span>
-                    <span className="font-medium">{room.gameOptions.liarDrawingTime}초</span>
+              )}
+              {room.gameType === "tetris" && (
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">난이도</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(Object.entries(TETRIS_DIFFICULTY_CONFIGS) as [TetrisDifficulty, typeof TETRIS_DIFFICULTY_CONFIGS[TetrisDifficulty]][]).map(([key, config]) => (
+                      <button
+                        key={key}
+                        onClick={() => handleOptionChange({ ...localOptions, tetrisDifficulty: key })}
+                        className={`p-2 rounded-lg border text-sm text-center transition-colors ${
+                          (localOptions.tetrisDifficulty ?? "beginner") === key
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border hover:border-border/80"
+                        }`}
+                      >
+                        <div className="font-medium">{config.label}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          Lv.{config.startLevel} · {config.initialInterval}ms
+                        </div>
+                      </button>
+                    ))}
                   </div>
-                )}
-                {room.gameOptions?.liarDrawingRounds != null && (
-                  <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
-                    <span className="text-muted-foreground">라운드 수</span>
-                    <span className="font-medium">{room.gameOptions.liarDrawingRounds}라운드</span>
-                  </div>
-                )}
-              </>
-            )}
-            {room.gameType === "catch-mind" && (
-              <>
-                {room.gameOptions?.catchMindTime != null && (
-                  <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
-                    <span className="text-muted-foreground">그리기 시간</span>
-                    <span className="font-medium">{room.gameOptions.catchMindTime}초</span>
-                  </div>
-                )}
-                {room.gameOptions?.catchMindRounds != null && (
-                  <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
-                    <span className="text-muted-foreground">라운드 수</span>
-                    <span className="font-medium">{room.gameOptions.catchMindRounds}라운드</span>
-                  </div>
-                )}
-                <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
-                  <span className="text-muted-foreground">글자 수 힌트</span>
-                  <span className="font-medium">{room.gameOptions?.catchMindCharHint ? "ON" : "OFF"}</span>
                 </div>
-              </>
-            )}
-          </div>
+              )}
+              {room.gameType === "liar-drawing" && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">그리기 시간</label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="range"
+                        min={1}
+                        max={120}
+                        value={localOptions.liarDrawingTime ?? 60}
+                        onChange={(e) => handleOptionChange({ ...localOptions, liarDrawingTime: Number(e.target.value) })}
+                        className="flex-1"
+                      />
+                      <span className="text-sm font-medium w-12 text-center">{localOptions.liarDrawingTime ?? 60}초</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">라운드 수</label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="range"
+                        min={1}
+                        max={10}
+                        value={localOptions.liarDrawingRounds ?? 3}
+                        onChange={(e) => handleOptionChange({ ...localOptions, liarDrawingRounds: Number(e.target.value) })}
+                        className="flex-1"
+                      />
+                      <span className="text-sm font-medium w-12 text-center whitespace-nowrap">{localOptions.liarDrawingRounds ?? 3}라운드</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {room.gameType === "catch-mind" && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">그리기 시간</label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="range"
+                        min={1}
+                        max={120}
+                        value={localOptions.catchMindTime ?? 60}
+                        onChange={(e) => handleOptionChange({ ...localOptions, catchMindTime: Number(e.target.value) })}
+                        className="flex-1"
+                      />
+                      <span className="text-sm font-medium w-12 text-center">{localOptions.catchMindTime ?? 60}초</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">라운드 수</label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="range"
+                        min={1}
+                        max={10}
+                        value={localOptions.catchMindRounds ?? 3}
+                        onChange={(e) => handleOptionChange({ ...localOptions, catchMindRounds: Number(e.target.value) })}
+                        className="flex-1"
+                      />
+                      <span className="text-sm font-medium w-12 text-center whitespace-nowrap">{localOptions.catchMindRounds ?? 3}라운드</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">글자 수 힌트</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleOptionChange({ ...localOptions, catchMindCharHint: false })}
+                        className={`py-2 rounded-lg text-sm font-medium border transition-colors ${!localOptions.catchMindCharHint ? "border-primary bg-primary/15 text-primary" : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:bg-primary/5"}`}
+                      >
+                        OFF
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleOptionChange({ ...localOptions, catchMindCharHint: true })}
+                        className={`py-2 rounded-lg text-sm font-medium border transition-colors ${localOptions.catchMindCharHint ? "border-primary bg-primary/15 text-primary" : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:bg-primary/5"}`}
+                      >
+                        ON
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-2 text-sm">
+              {room.gameType === "gomoku" && (
+                <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
+                  <span className="text-muted-foreground">턴 제한시간</span>
+                  <span className="font-medium">{room.gameOptions?.gomokuTurnTime ?? 30}초</span>
+                </div>
+              )}
+              {room.gameType === "minesweeper" && room.gameOptions?.minesweeperDifficulty && (() => {
+                const diff = MINESWEEPER_DIFFICULTY_CONFIGS[room.gameOptions.minesweeperDifficulty];
+                return (
+                  <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
+                    <span className="text-muted-foreground">난이도</span>
+                    <span className="font-medium">{diff.label} ({diff.rows}×{diff.cols} · 💣{diff.mineCount})</span>
+                  </div>
+                );
+              })()}
+              {room.gameType === "tetris" && room.gameOptions?.tetrisDifficulty && (() => {
+                const diff = TETRIS_DIFFICULTY_CONFIGS[room.gameOptions.tetrisDifficulty];
+                return (
+                  <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
+                    <span className="text-muted-foreground">난이도</span>
+                    <span className="font-medium">{diff.label} (Lv.{diff.startLevel} · {diff.initialInterval}ms)</span>
+                  </div>
+                );
+              })()}
+              {room.gameType === "liar-drawing" && (
+                <>
+                  {room.gameOptions?.liarDrawingTime != null && (
+                    <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
+                      <span className="text-muted-foreground">그리기 시간</span>
+                      <span className="font-medium">{room.gameOptions.liarDrawingTime}초</span>
+                    </div>
+                  )}
+                  {room.gameOptions?.liarDrawingRounds != null && (
+                    <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
+                      <span className="text-muted-foreground">라운드 수</span>
+                      <span className="font-medium">{room.gameOptions.liarDrawingRounds}라운드</span>
+                    </div>
+                  )}
+                </>
+              )}
+              {room.gameType === "catch-mind" && (
+                <>
+                  {room.gameOptions?.catchMindTime != null && (
+                    <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
+                      <span className="text-muted-foreground">그리기 시간</span>
+                      <span className="font-medium">{room.gameOptions.catchMindTime}초</span>
+                    </div>
+                  )}
+                  {room.gameOptions?.catchMindRounds != null && (
+                    <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
+                      <span className="text-muted-foreground">라운드 수</span>
+                      <span className="font-medium">{room.gameOptions.catchMindRounds}라운드</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
+                    <span className="text-muted-foreground">글자 수 힌트</span>
+                    <span className="font-medium">{room.gameOptions?.catchMindCharHint ? "ON" : "OFF"}</span>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
       )}
 

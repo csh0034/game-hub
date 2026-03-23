@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { useLobbyStore } from "@/stores/lobby-store";
 import { useGameStore } from "@/stores/game-store";
 import type { GameSocket } from "@/lib/socket";
-import type { CreateRoomPayload, Room } from "@game-hub/shared-types";
+import type { CreateRoomPayload, GameOptions, Room } from "@game-hub/shared-types";
 
 export function useLobby(socket: GameSocket | null) {
   const { rooms, currentRoom, setRooms, setCurrentRoom, addRoom, updateRoom, removeRoom } =
@@ -76,5 +76,21 @@ export function useLobby(socket: GameSocket | null) {
     socket.emit("lobby:toggle-ready");
   }, [socket]);
 
-  return { rooms, currentRoom, createRoom, joinRoom, leaveRoom, toggleReady };
+  const updateTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const updateGameOptions = useCallback(
+    (gameOptions: GameOptions) => {
+      if (!socket) return;
+      if (updateTimerRef.current) clearTimeout(updateTimerRef.current);
+      updateTimerRef.current = setTimeout(() => {
+        socket.emit("lobby:update-game-options", gameOptions, (result) => {
+          if (!result.success) {
+            console.error("[lobby] update game options failed:", result.error);
+          }
+        });
+      }, 300);
+    },
+    [socket]
+  );
+
+  return { rooms, currentRoom, createRoom, joinRoom, leaveRoom, toggleReady, updateGameOptions };
 }

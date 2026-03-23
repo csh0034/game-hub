@@ -119,6 +119,16 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
     socket.join("lobby");
   });
 
+  socket.on("lobby:update-game-options", (gameOptions, callback) => {
+    const roomId = socket.data.roomId;
+    if (!roomId) return callback({ success: false, error: "방에 참가하고 있지 않습니다." });
+    const room = gameManager.updateGameOptions(roomId, socket.id!, gameOptions);
+    if (!room) return callback({ success: false, error: "게임 옵션을 변경할 수 없습니다." });
+    io.to(roomId).emit("lobby:room-updated", room);
+    io.emit("lobby:room-updated", room);
+    callback({ success: true });
+  });
+
   socket.on("lobby:toggle-ready", () => {
     const roomId = socket.data.roomId;
     if (!roomId) return;

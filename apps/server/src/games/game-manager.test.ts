@@ -220,6 +220,32 @@ describe("GameManager", () => {
     });
   });
 
+  describe("updateGameOptions", () => {
+    it("방장이 대기 중인 방의 게임 옵션을 변경한다", () => {
+      const room = gm.createRoom(gomokuPayload, host);
+      const updated = gm.updateGameOptions(room.id, host.id, { gomokuTurnTime: 45 });
+      expect(updated).not.toBeNull();
+      expect(updated!.gameOptions?.gomokuTurnTime).toBe(45);
+    });
+
+    it("방장이 아닌 플레이어가 변경하면 null을 반환한다", () => {
+      const room = gm.createRoom(gomokuPayload, host);
+      gm.joinRoom(room.id, guest);
+      expect(gm.updateGameOptions(room.id, guest.id, { gomokuTurnTime: 45 })).toBeNull();
+    });
+
+    it("playing 상태에서는 null을 반환한다", () => {
+      const room = gm.createRoom(gomokuPayload, host);
+      gm.joinRoom(room.id, guest);
+      gm.startGame(room.id);
+      expect(gm.updateGameOptions(room.id, host.id, { gomokuTurnTime: 45 })).toBeNull();
+    });
+
+    it("존재하지 않는 방에 대해 null을 반환한다", () => {
+      expect(gm.updateGameOptions("invalid", host.id, { gomokuTurnTime: 45 })).toBeNull();
+    });
+  });
+
   describe("resetRoom", () => {
     it("방을 waiting 상태로 리셋한다", () => {
       const room = gm.createRoom(gomokuPayload, host);

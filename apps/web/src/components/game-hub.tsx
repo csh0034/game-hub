@@ -10,6 +10,7 @@ import { useLobby } from "@/hooks/use-lobby";
 import { useChat } from "@/hooks/use-chat";
 import { useRequests } from "@/hooks/use-requests";
 import { Navbar } from "@/components/layout/navbar";
+import { Footer } from "@/components/layout/footer";
 import { NicknameForm } from "@/components/lobby/nickname-form";
 import { GameCardGrid } from "@/components/lobby/game-card-grid";
 import { RoomList } from "@/components/lobby/room-list";
@@ -272,6 +273,7 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
             onSendRoomMessage={sendRoomMessage}
           />
         </main>
+        <Footer githubRepoUrl={githubRepoUrl} />
         {confirmDialog}
       </div>
     );
@@ -366,6 +368,7 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
           )}
         </div>
       </main>
+      <Footer githubRepoUrl={githubRepoUrl} />
     </div>
   );
 }

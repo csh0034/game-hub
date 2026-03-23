@@ -307,6 +307,7 @@ export interface LiarDrawingPublicState {
   liarId: string | null;
   liarGuess: string | null;
   liarGuessCorrect: boolean | null;
+  keyword: string | null;
   roundScores: Record<string, number>;
 }
 

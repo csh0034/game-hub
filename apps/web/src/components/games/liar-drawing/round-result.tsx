@@ -29,6 +29,11 @@ export function RoundResult({ state }: RoundResultProps) {
       <div className="text-lg font-bold">라운드 {state.roundNumber} 결과</div>
 
       <div className="space-y-2 text-center">
+        {state.keyword && (
+          <div>
+            정답: <span className="font-bold text-primary text-xl">{state.keyword}</span>
+          </div>
+        )}
         <div>
           라이어: <span className="font-bold text-destructive">{liar?.nickname}</span>
         </div>

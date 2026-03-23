@@ -58,6 +58,7 @@ export class LiarDrawingEngine implements GameEngine {
       liarId: null,
       liarGuess: null,
       liarGuessCorrect: null,
+      keyword: null,
       roundScores: {},
     };
 
@@ -106,6 +107,7 @@ export class LiarDrawingEngine implements GameEngine {
       liarId: null,
       liarGuess: null,
       liarGuessCorrect: null,
+      keyword: null,
       roundScores: {},
       players: state.players.map((p) => ({
         ...p,
@@ -272,6 +274,7 @@ export class LiarDrawingEngine implements GameEngine {
         phase: "round-result",
         accusedPlayerId: null,
         liarId: this.liarId,
+        keyword: this.keyword,
         roundScores,
         players: this.applyScores(state.players, roundScores),
       };
@@ -297,6 +300,7 @@ export class LiarDrawingEngine implements GameEngine {
       phase: "round-result",
       accusedPlayerId,
       liarId: this.liarId,
+      keyword: this.keyword,
       roundScores,
       players: this.applyScores(state.players, roundScores),
     };
@@ -314,6 +318,7 @@ export class LiarDrawingEngine implements GameEngine {
       phase: "round-result",
       liarGuess: guess.trim(),
       liarGuessCorrect: isCorrect,
+      keyword: this.keyword,
       roundScores,
       turnStartedAt: null,
       players: this.applyScores(state.players, roundScores),

@@ -135,7 +135,6 @@ describe("TetrisEngine", () => {
     });
 
     it("하드 드롭 시 피스가 고정되고 새 피스가 생성된다", () => {
-      const origPieceType = state.players["player1"].activePiece!.type;
       const newState = engine.processMove(state, "player1", { type: "hard-drop" } as TetrisMove);
       const p = newState.players["player1"];
       // 보드에 블록이 놓여 있어야 함
@@ -534,7 +533,7 @@ describe("TetrisEngine", () => {
     it("T피스가 아닌 경우 T-Spin으로 판정하지 않는다", () => {
       engine.initState(mockPlayers);
       // 하드 드롭 후 lastClearType에 tspin이 포함되지 않아야 함
-      let state = engine.processMove({} as TetrisPublicState, "player1", { type: "hard-drop" } as TetrisMove);
+      const state = engine.processMove({} as TetrisPublicState, "player1", { type: "hard-drop" } as TetrisMove);
       const clearType = state.players["player1"].lastClearType;
       // 클리어가 발생했더라도 T-spin이 아님 (랜덤 피스이므로 조건부)
       if (clearType) {
@@ -621,7 +620,6 @@ describe("TetrisEngine", () => {
 
       // 아직 playing이면 tick을 보냄
       if (currentState.players["player1"].status === "playing" && currentState.players["player1"].activePiece) {
-        const beforePiece = currentState.players["player1"].activePiece;
         // tick — 바닥에 닿으면 첫 틱은 유예
         const afterTick1 = engine.processMove(currentState, "player1", { type: "tick" } as TetrisMove);
 
@@ -665,7 +663,6 @@ describe("TetrisEngine", () => {
 
     it("하드 드롭은 Lock Delay를 무시하고 즉시 고정한다", () => {
       const state = engine.initState(mockPlayers);
-      const beforeType = state.players["player1"].activePiece!.type;
       const newState = engine.processMove(state, "player1", { type: "hard-drop" } as TetrisMove);
       const p = newState.players["player1"];
 

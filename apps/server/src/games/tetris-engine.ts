@@ -216,7 +216,7 @@ export class TetrisEngine implements GameEngine {
     return this.toPublicState();
   }
 
-  checkWin(state: GameState): GameResult | null {
+  checkWin(_state: GameState): GameResult | null {
     if (this.mode === "solo") {
       const ps = this.playerStates.get(this.playerIds[0]);
       if (ps && ps.status === "gameover") {

@@ -14,18 +14,6 @@ import type { GameEngine } from "./engine-interface.js";
 const SUITS: Suit[] = ["hearts", "diamonds", "clubs", "spades"];
 const RANKS: Rank[] = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
 
-const HAND_RANKS = [
-  "High Card",
-  "One Pair",
-  "Two Pair",
-  "Three of a Kind",
-  "Straight",
-  "Flush",
-  "Full House",
-  "Four of a Kind",
-  "Straight Flush",
-  "Royal Flush",
-] as const;
 
 function rankValue(rank: Rank): number {
   const map: Record<Rank, number> = {
@@ -36,7 +24,7 @@ function rankValue(rank: Rank): number {
 }
 
 interface HandEvaluation {
-  rank: number; // 0-9 index into HAND_RANKS
+  rank: number; // 0-9 (High Card ~ Royal Flush)
   name: string;
   tiebreakers: number[]; // for comparing same-rank hands
 }
@@ -326,7 +314,7 @@ export class HoldemEngine implements GameEngine {
     return -1;
   }
 
-  private isRoundComplete(state: HoldemPublicState, lastActorIndex: number): boolean {
+  private isRoundComplete(state: HoldemPublicState, _lastActorIndex: number): boolean {
     const active = state.players.filter((p) => !p.folded && !p.isAllIn);
     if (active.length <= 1) return true;
     // All active players have same bet AND have acted

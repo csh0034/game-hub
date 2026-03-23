@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { LiarDrawingEngine } from "./liar-drawing-engine.js";
-import type { Player, LiarDrawingPublicState, LiarDrawingMove } from "@game-hub/shared-types";
+import type { Player, LiarDrawingPublicState } from "@game-hub/shared-types";
 
 const mockPlayers: Player[] = [
   { id: "p1", nickname: "Alice", isReady: true },

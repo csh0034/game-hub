@@ -127,6 +127,21 @@ export default function MinesweeperBoard({ roomId }: GameComponentProps) {
             </button>
           )),
         )}
+
+        {/* Game result overlay */}
+        {state.status !== "playing" && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded gap-2">
+            <span className={`text-3xl font-bold drop-shadow-lg ${state.status === "won" ? "text-yellow-400" : "text-red-400"}`}>
+              {state.status === "won" ? "CLEAR!" : "GAME OVER"}
+            </span>
+            <span className="text-sm text-white/80">
+              시간: {elapsed}초
+            </span>
+            {gameResult?.rankingResult?.isNewRecord && (
+              <span className="text-sm text-yellow-400 font-bold">🏆 새로운 1위!</span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Controls hint */}
@@ -134,24 +149,6 @@ export default function MinesweeperBoard({ roomId }: GameComponentProps) {
         <span>좌클릭 열기</span>
         <span>우클릭 깃발</span>
       </div>
-
-      {/* Game over overlay */}
-      {state.status !== "playing" && (
-        <div className="text-center">
-          <p className={`text-lg font-bold ${state.status === "won" ? "text-green-600" : "text-red-600"}`}>
-            {state.status === "won" ? "축하합니다! 모든 지뢰를 찾았습니다!" : "지뢰를 밟았습니다!"}
-          </p>
-          <p className="text-sm text-muted-foreground mt-1">
-            시간: {elapsed}초
-          </p>
-          {gameResult?.rankingResult && gameResult.rankingResult.rank != null && (
-            <p className="text-sm text-muted-foreground mt-1">
-              {gameResult.rankingResult.isNewRecord ? "🏆 새로운 1위! " : ""}
-              전체 {gameResult.rankingResult.rank}위
-            </p>
-          )}
-        </div>
-      )}
     </div>
   );
 }

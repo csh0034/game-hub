@@ -94,24 +94,32 @@ async function bootstrap() {
       console.log(`[disconnect] ${socket.id}`);
       const roomId = socket.data.roomId;
       if (roomId) {
-        const roomBefore = gameManager.getRoom(roomId);
-        if (roomBefore && roomBefore.status === "playing") {
-          const willEnd = true;
-          socket.to(roomId).emit("game:player-left", {
-            playerId: socket.id,
-            nickname: socket.data.nickname,
-            willEnd,
-          });
-        }
-        const room = gameManager.removePlayer(roomId, socket.id);
-        if (room) {
-          io.to(roomId).emit("lobby:player-left", socket.id);
-          io.to(roomId).emit("lobby:room-updated", room);
-          io.emit("lobby:room-updated", room);
+        if (socket.data.isSpectator) {
+          const room = gameManager.removeSpectator(roomId, socket.id);
+          if (room) {
+            io.to(roomId).emit("lobby:spectator-left", socket.id);
+            io.to(roomId).emit("lobby:room-updated", room);
+            io.emit("lobby:room-updated", room);
+          }
         } else {
-          // Room was deleted (empty)
-          chatStore.deleteRoomHistory(roomId);
-          io.emit("lobby:room-removed", roomId);
+          const roomBefore = gameManager.getRoom(roomId);
+          if (roomBefore && roomBefore.status === "playing") {
+            const willEnd = true;
+            socket.to(roomId).emit("game:player-left", {
+              playerId: socket.id,
+              nickname: socket.data.nickname,
+              willEnd,
+            });
+          }
+          const room = gameManager.removePlayer(roomId, socket.id);
+          if (room) {
+            io.to(roomId).emit("lobby:player-left", socket.id);
+            io.to(roomId).emit("lobby:room-updated", room);
+            io.emit("lobby:room-updated", room);
+          } else {
+            chatStore.deleteRoomHistory(roomId);
+            io.emit("lobby:room-removed", roomId);
+          }
         }
       }
       if (socket.data.authenticated) {

@@ -226,7 +226,9 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto">
+      <div className="lg:grid lg:gap-6 lg:grid-cols-[1fr_320px]">
+      <div className="space-y-6">
       <div className="flex items-center gap-3">
         <button
           onClick={onLeave}
@@ -633,31 +635,6 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
           )}
         </div>
 
-      {(room.gameType === "minesweeper" || (room.gameType === "tetris" && room.players.length <= 1)) && (
-        <RankingCard
-          gameType={room.gameType as RankingGameType}
-          difficulty={
-            (room.gameType === "minesweeper"
-              ? room.gameOptions?.minesweeperDifficulty ?? "beginner"
-              : room.gameOptions?.tetrisDifficulty ?? "beginner") as RankingDifficulty
-          }
-          myNickname={nickname}
-          socket={socket}
-        />
-      )}
-
-      <div className="h-[300px]">
-        <ChatPanel
-          messages={roomMessages}
-          onSendMessage={onSendRoomMessage}
-          placeholder={isSpectating && !spectateChatEnabled ? "관전자 채팅이 허용되지 않습니다" : "방 채팅..."}
-          myNickname={nickname}
-          showNewMessageButton
-          newMessageButtonBottom="bottom-20"
-          disabled={isSpectating && !spectateChatEnabled}
-        />
-      </div>
-
       <div className="sticky bottom-0 z-10 bg-background pt-4 pb-2">
         <div className="flex gap-3">
           {isSpectating ? (
@@ -688,6 +665,35 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
             </button>
           )}
         </div>
+      </div>
+
+      </div>
+
+      <aside className="mt-6 lg:mt-0 flex flex-col gap-4">
+        <div className="h-[400px]">
+          <ChatPanel
+            messages={roomMessages}
+            onSendMessage={onSendRoomMessage}
+            placeholder={isSpectating && !spectateChatEnabled ? "관전자 채팅이 허용되지 않습니다" : "방 채팅..."}
+            myNickname={nickname}
+            showNewMessageButton
+            newMessageButtonBottom="bottom-20"
+            disabled={isSpectating && !spectateChatEnabled}
+          />
+        </div>
+        {(room.gameType === "minesweeper" || (room.gameType === "tetris" && room.players.length <= 1)) && (
+          <RankingCard
+            gameType={room.gameType as RankingGameType}
+            difficulty={
+              (room.gameType === "minesweeper"
+                ? room.gameOptions?.minesweeperDifficulty ?? "beginner"
+                : room.gameOptions?.tetrisDifficulty ?? "beginner") as RankingDifficulty
+            }
+            myNickname={nickname}
+            socket={socket}
+          />
+        )}
+      </aside>
       </div>
 
       <ConfirmDialog

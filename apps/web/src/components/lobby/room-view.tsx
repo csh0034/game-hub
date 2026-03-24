@@ -94,7 +94,7 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
   const isHost = socket?.id === room.hostId;
   const myPlayer = room.players.find((p) => p.id === socket?.id);
   const isPlaying = room.status === "playing" || !!gameState;
-  const spectateChatEnabled = room.gameOptions?.spectateChatEnabled ?? false;
+  const spectateChatEnabled = room.gameOptions?.spectateChatEnabled ?? true;
 
   // 방장: 로컬 pending 값 우선, 아니면 서버 값 사용
   const localOptions = (isHost && pendingOptions) ? pendingOptions : (room.gameOptions ?? {});

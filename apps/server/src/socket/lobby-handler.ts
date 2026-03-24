@@ -240,7 +240,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
 
     // 관전자 채팅 차단: spectateChatEnabled가 OFF이면 메시지 차단
     if (socket.data.isSpectator) {
-      if (!room?.gameOptions?.spectateChatEnabled) return;
+      if (room?.gameOptions?.spectateChatEnabled === false) return;
 
       const admin = isAdmin(socket.data.nickname);
       const chatMsg: ChatMessage = {

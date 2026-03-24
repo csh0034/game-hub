@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import type Redis from "ioredis";
 import type { ChatMessage } from "@game-hub/shared-types";
 import type { ChatStore } from "../interfaces/chat-store.js";
@@ -19,7 +20,7 @@ export class RedisChatStore implements ChatStore {
   async getLobbyHistory(): Promise<ChatMessage[]> {
     try {
       const items = await this.redis.lrange("chat:lobby", 0, -1);
-      return items.map((item) => JSON.parse(item) as ChatMessage);
+      return await this.migrateMessages("chat:lobby", items);
     } catch (err) {
       console.error("[chat-store] failed to get lobby history:", err);
       return [];
@@ -40,7 +41,7 @@ export class RedisChatStore implements ChatStore {
     try {
       const key = `chat:room:${roomId}`;
       const items = await this.redis.lrange(key, 0, -1);
-      return items.map((item) => JSON.parse(item) as ChatMessage);
+      return await this.migrateMessages(key, items);
     } catch (err) {
       console.error("[chat-store] failed to get room history:", err);
       return [];
@@ -53,6 +54,27 @@ export class RedisChatStore implements ChatStore {
     } catch (err) {
       console.error("[chat-store] failed to delete room history:", err);
     }
+  }
+
+  private async migrateMessages(key: string, items: string[]): Promise<ChatMessage[]> {
+    let needsMigration = false;
+    const messages = items.map((item) => {
+      const msg = JSON.parse(item) as ChatMessage;
+      if (!msg.id) {
+        msg.id = crypto.randomUUID();
+        needsMigration = true;
+      }
+      return msg;
+    });
+    if (needsMigration) {
+      const pipeline = this.redis.pipeline();
+      pipeline.del(key);
+      for (const msg of messages) {
+        pipeline.rpush(key, JSON.stringify(msg));
+      }
+      await pipeline.exec();
+    }
+    return messages;
   }
 
   async deleteLobbyMessage(messageId: string): Promise<boolean> {

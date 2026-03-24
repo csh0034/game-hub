@@ -57,11 +57,29 @@ function ensureTetrisFlushTimer(io: IOServer, roomId: string) {
   tetrisFlushTimers.set(roomId, timer);
 }
 
-function cleanupTetrisFlush(roomId: string) {
+function cleanupTetrisFlush(roomId: string, io?: IOServer) {
   const timer = tetrisFlushTimers.get(roomId);
   if (timer) {
     clearInterval(timer);
     tetrisFlushTimers.delete(roomId);
+  }
+  // Flush remaining dirty buffers so clients see final state
+  if (io) {
+    const buffer = tetrisDirtyBuffers.get(roomId);
+    if (buffer && buffer.size > 0) {
+      const roomSockets = io.sockets.adapter.rooms.get(roomId);
+      if (roomSockets) {
+        for (const [playerId, board] of buffer) {
+          for (const socketId of roomSockets) {
+            if (socketId !== playerId) {
+              io.sockets.sockets.get(socketId)?.emit(
+                "game:tetris-player-updated", { playerId, board },
+              );
+            }
+          }
+        }
+      }
+    }
   }
   tetrisDirtyBuffers.delete(roomId);
 }
@@ -237,7 +255,7 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
 
       if (result) {
         clearTetrisTicker(roomId);
-        cleanupTetrisFlush(roomId);
+        cleanupTetrisFlush(roomId, io);
         room.status = "finished";
 
         // Submit tetris solo ranking
@@ -562,7 +580,7 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
     if (result.result) {
       clearGomokuTimer(roomId);
       clearTetrisTicker(roomId);
-      cleanupTetrisFlush(roomId);
+      cleanupTetrisFlush(roomId, io);
 
       if (room?.gameType === "texas-holdem") {
         const holdemEngine = gameManager.getHoldemEngine(roomId);

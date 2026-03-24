@@ -134,11 +134,10 @@ export default function MinesweeperBoard({ roomId }: GameComponentProps) {
             <span className={`text-3xl font-bold drop-shadow-lg ${state.status === "won" ? "text-yellow-400" : "text-red-400"}`}>
               {state.status === "won" ? "CLEAR!" : "GAME OVER"}
             </span>
-            <span className="text-sm text-white/80">
-              시간: {elapsed}초
-            </span>
-            {gameResult?.rankingResult?.isNewRecord && (
-              <span className="text-sm text-yellow-400 font-bold">🏆 새로운 1위!</span>
+            {gameResult?.rankingResult && gameResult.rankingResult.rank != null && (
+              <span className="text-sm text-yellow-400 font-bold">
+                {gameResult.rankingResult.isNewRecord ? "🏆 새로운 1위!" : `전체 ${gameResult.rankingResult.rank}위`}
+              </span>
             )}
           </div>
         )}

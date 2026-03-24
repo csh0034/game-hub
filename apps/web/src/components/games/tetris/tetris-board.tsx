@@ -341,8 +341,10 @@ export default function TetrisBoard({ roomId }: GameComponentProps) {
         <span className="text-sm text-white/80">
           점수: {myScore.toLocaleString()}
         </span>
-        {gameResult.rankingResult?.isNewRecord && (
-          <span className="text-sm text-yellow-400 font-bold">🏆 새로운 1위!</span>
+        {gameResult.rankingResult && gameResult.rankingResult.rank != null && (
+          <span className="text-sm text-yellow-400 font-bold">
+            {gameResult.rankingResult.isNewRecord ? "🏆 새로운 1위!" : `전체 ${gameResult.rankingResult.rank}위`}
+          </span>
         )}
       </div>
     );

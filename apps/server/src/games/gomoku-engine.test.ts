@@ -301,6 +301,7 @@ describe("GomokuEngine", () => {
         turnStartedAt: Date.now(),
         gameStartedAt: Date.now(),
         turnTimeSeconds: 30,
+        winLine: null,
       };
 
       const result = engine.checkWin(drawState);

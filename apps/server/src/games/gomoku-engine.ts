@@ -28,6 +28,7 @@ export class GomokuEngine implements GameEngine {
       turnStartedAt: now,
       gameStartedAt: now,
       turnTimeSeconds: this.turnTimeSeconds,
+      winLine: null,
     };
   }
 
@@ -64,22 +65,23 @@ export class GomokuEngine implements GameEngine {
     ];
 
     for (const [dr, dc] of directions) {
-      let count = 1;
+      const cells: { row: number; col: number }[] = [{ row, col }];
       for (let d = 1; d < 5; d++) {
         const r = row + dr * d;
         const c = col + dc * d;
         if (r < 0 || r >= 15 || c < 0 || c >= 15) break;
         if (state.board[r][c] !== stone) break;
-        count++;
+        cells.push({ row: r, col: c });
       }
       for (let d = 1; d < 5; d++) {
         const r = row - dr * d;
         const c = col - dc * d;
         if (r < 0 || r >= 15 || c < 0 || c >= 15) break;
         if (state.board[r][c] !== stone) break;
-        count++;
+        cells.push({ row: r, col: c });
       }
-      if (count >= 5) {
+      if (cells.length >= 5) {
+        state.winLine = cells;
         return {
           winnerId: state.players[stone],
           reason: `${stone === "black" ? "흑" : "백"}이 5목을 완성했습니다!`,

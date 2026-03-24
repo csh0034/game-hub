@@ -38,11 +38,15 @@ export default function GomokuBoard({ roomId }: GameComponentProps) {
   const isMyTurn = state.players[state.currentTurn] === socket?.id;
 
   const handleClick = (row: number, col: number) => {
+    if (gameResult) return;
     if (!isMyTurn) return;
     if (state.board[row][col] !== null) return;
     const move: GomokuMove = { row, col };
     makeMove(move);
   };
+
+  const isWinCell = (row: number, col: number) =>
+    state.winLine?.some((c) => c.row === row && c.col === col) ?? false;
 
   const myColor = socket?.id === state.players.black ? "black" : "white";
 
@@ -141,7 +145,7 @@ export default function GomokuBoard({ roomId }: GameComponentProps) {
                   height: CELL_SIZE - 2,
                 }}
                 onClick={() => handleClick(row, col)}
-                disabled={!isMyTurn || stone !== null}
+                disabled={!!gameResult || !isMyTurn || stone !== null}
               >
                 {stone && (
                   <div
@@ -149,10 +153,10 @@ export default function GomokuBoard({ roomId }: GameComponentProps) {
                       stone === "black"
                         ? "bg-gradient-to-br from-gray-700 to-gray-950"
                         : "bg-gradient-to-br from-white to-gray-200 border border-gray-300"
-                    } ${isLast ? "ring-2 ring-primary ring-offset-1 ring-offset-amber-700" : ""}`}
+                    } ${isLast ? "ring-2 ring-primary ring-offset-1 ring-offset-amber-700" : ""} ${isWinCell(row, col) ? "ring-2 ring-yellow-400 ring-offset-1 ring-offset-amber-700 scale-110" : ""}`}
                   />
                 )}
-                {!stone && isMyTurn && (
+                {!stone && isMyTurn && !gameResult && (
                   <div className="w-[30px] h-[30px] rounded-full mx-auto opacity-0 hover:opacity-30 transition-opacity bg-gray-500" />
                 )}
               </button>

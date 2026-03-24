@@ -75,6 +75,7 @@ export interface GomokuState {
   turnStartedAt: number;
   gameStartedAt: number;
   turnTimeSeconds: number;
+  winLine: { row: number; col: number }[] | null;
 }
 
 export interface GomokuMove {

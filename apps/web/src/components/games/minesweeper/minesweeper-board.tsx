@@ -82,7 +82,8 @@ export default function MinesweeperBoard({ roomId }: GameComponentProps) {
 
       {/* Header */}
       <div className="flex items-center justify-between w-full max-w-sm px-2">
-        <div className="flex items-center gap-2 text-lg font-mono font-bold bg-gray-900 text-red-500 px-3 py-1 rounded">
+        <div className="flex items-center gap-1.5 text-lg font-mono font-bold bg-gray-900 text-red-500 px-3 py-1 rounded">
+          <span className="text-base">🚩</span>
           {String(remainingMines).padStart(3, "0")}
         </div>
         <div className="text-sm text-muted-foreground">
@@ -90,7 +91,8 @@ export default function MinesweeperBoard({ roomId }: GameComponentProps) {
           {state.status === "won" && "승리!"}
           {state.status === "lost" && "게임 오버"}
         </div>
-        <div className="flex items-center gap-2 text-lg font-mono font-bold bg-gray-900 text-red-500 px-3 py-1 rounded">
+        <div className="flex items-center gap-1.5 text-lg font-mono font-bold bg-gray-900 text-red-500 px-3 py-1 rounded">
+          <span className="text-base">⏱</span>
           {String(elapsed).padStart(3, "0")}
         </div>
       </div>

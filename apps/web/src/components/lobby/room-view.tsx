@@ -20,6 +20,7 @@ import {
   ChevronUp,
   Link,
   Eye,
+  Users,
   X,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
@@ -275,7 +276,8 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
       </div>
 
       <div className="bg-card border border-border rounded-xl p-6">
-        <h2 className="text-lg font-semibold mb-4">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Users className="w-5 h-5 text-primary" />
           플레이어 ({room.players.length}/{room.maxPlayers})
         </h2>
         <div className="space-y-3">

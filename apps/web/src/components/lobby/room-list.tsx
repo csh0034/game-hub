@@ -71,9 +71,16 @@ export function RoomList({ rooms, onJoinRoom, onSpectateRoom }: RoomListProps) {
                     ) : null;
                   })()}
                 </div>
-                <div className="mt-1 text-xs text-muted-foreground truncate max-w-64">
+                <div className="mt-1 text-xs text-muted-foreground truncate max-w-64 flex items-center gap-1">
+                  <Users className="w-3 h-3 shrink-0" />
                   {room.players.map((p) => p.nickname).join(", ")}
                 </div>
+                {room.spectators.length > 0 && (
+                  <div className="mt-0.5 text-xs text-muted-foreground truncate max-w-64 flex items-center gap-1">
+                    <Eye className="w-3 h-3 shrink-0" />
+                    {room.spectators.map((s) => s.nickname).join(", ")}
+                  </div>
+                )}
               </div>
             </div>
 

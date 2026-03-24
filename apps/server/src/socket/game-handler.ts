@@ -780,9 +780,9 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
       holdemRoundTimers.delete(roomId);
     }
 
-    // For simplicity, reset the room immediately
     const room = gameManager.resetRoom(roomId);
     if (room) {
+      io.to(roomId).emit("game:rematch-requested", socket.id!);
       io.to(roomId).emit("lobby:room-updated", room);
       io.emit("lobby:room-updated", room);
     }

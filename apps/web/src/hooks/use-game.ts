@@ -53,6 +53,10 @@ export function useGame(socket: GameSocket | null) {
     const onRoundEnded = (data: RoundResult) => {
       setRoundResult(data);
     };
+    const onRematchRequested = () => {
+      reset();
+      useTetrisBoardStore.getState().reset();
+    };
     const onTetrisPlayerUpdated = (data: TetrisPlayerUpdate) => {
       useTetrisBoardStore.getState().setPlayerBoard(data.playerId, data.board);
     };
@@ -69,6 +73,7 @@ export function useGame(socket: GameSocket | null) {
     socket.on("game:round-ended", onRoundEnded);
     socket.on("game:tetris-player-updated", onTetrisPlayerUpdated);
     socket.on("game:tetris-piece-updated", onTetrisPieceUpdated);
+    socket.on("game:rematch-requested", onRematchRequested);
 
     return () => {
       socket.off("game:started", onStarted);
@@ -80,8 +85,9 @@ export function useGame(socket: GameSocket | null) {
       socket.off("game:round-ended", onRoundEnded);
       socket.off("game:tetris-player-updated", onTetrisPlayerUpdated);
       socket.off("game:tetris-piece-updated", onTetrisPieceUpdated);
+      socket.off("game:rematch-requested", onRematchRequested);
     };
-  }, [socket, setGameState, setGameResult, setPrivateState, setPlayerLeftInfo, setRoundResult]);
+  }, [socket, setGameState, setGameResult, setPrivateState, setPlayerLeftInfo, setRoundResult, reset]);
 
   const makeMove = useCallback(
     (move: GameMove) => {

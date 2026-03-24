@@ -70,4 +70,16 @@ export class RedisRankingStore implements RankingStore {
       return { rank: null, entries: [] };
     }
   }
+
+  async deleteEntry(key: RankingKey, entryId: string): Promise<RankingEntry[]> {
+    try {
+      const existing = await this.getRankings(key);
+      const filtered = existing.filter((e) => e.id !== entryId);
+      await this.redis.set(`ranking:${key}`, JSON.stringify(filtered));
+      return filtered;
+    } catch (err) {
+      console.error("[ranking-store] failed to delete entry:", err);
+      return [];
+    }
+  }
 }

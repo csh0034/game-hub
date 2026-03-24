@@ -31,5 +31,15 @@ export function useRanking(socket: GameSocket | null) {
     [socket, setRankings],
   );
 
-  return { rankings, fetchRankings };
+  const deleteRanking = useCallback(
+    (key: RankingKey, entryId: string): Promise<{ success: boolean; error?: string }> => {
+      return new Promise((resolve) => {
+        if (!socket) return resolve({ success: false, error: "소켓 연결 없음" });
+        socket.emit("ranking:delete", key, entryId, resolve);
+      });
+    },
+    [socket],
+  );
+
+  return { rankings, fetchRankings, deleteRanking };
 }

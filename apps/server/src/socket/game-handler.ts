@@ -23,6 +23,7 @@ import { startGomokuTimer, clearGomokuTimer } from "../games/gomoku-timer.js";
 import { startTetrisTicker, updateTetrisTickerInterval, clearTetrisTicker } from "../games/tetris-ticker.js";
 import { startLiarDrawingTimer, clearLiarDrawingTimer } from "../games/liar-drawing-timer.js";
 import { startCatchMindTimer, clearCatchMindTimer } from "../games/catch-mind-timer.js";
+import { isAdmin } from "../admin.js";
 
 const holdemRoundTimers: Map<string, NodeJS.Timeout> = new Map();
 
@@ -684,5 +685,13 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
   socket.on("ranking:get", async (key, callback) => {
     const entries = await rankingStore.getRankings(key);
     callback(entries);
+  });
+
+  socket.on("ranking:delete", async (key, entryId, callback) => {
+    if (!socket.data.authenticated) return callback({ success: false, error: "인증이 필요합니다" });
+    if (!isAdmin(socket.data.nickname)) return callback({ success: false, error: "권한이 없습니다" });
+    const entries = await rankingStore.deleteEntry(key, entryId);
+    io.emit("ranking:updated", { key, rankings: entries });
+    callback({ success: true });
   });
 }

@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
-import { Trophy } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Trophy, X } from "lucide-react";
+import { toast } from "sonner";
 import { useRanking } from "@/hooks/use-ranking";
 import { formatDateTime } from "@/lib/utils";
+import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import type { GameSocket } from "@/lib/socket";
 import type { RankingGameType, RankingDifficulty, RankingKey } from "@game-hub/shared-types";
 
@@ -28,12 +30,14 @@ interface RankingCardProps {
   difficulty: RankingDifficulty;
   myNickname: string;
   socket: GameSocket | null;
+  isAdmin?: boolean;
 }
 
-export default function RankingCard({ gameType, difficulty, myNickname, socket }: RankingCardProps) {
-  const { rankings, fetchRankings } = useRanking(socket);
+export default function RankingCard({ gameType, difficulty, myNickname, socket, isAdmin }: RankingCardProps) {
+  const { rankings, fetchRankings, deleteRanking } = useRanking(socket);
   const key: RankingKey = `${gameType}:${difficulty}`;
   const entries = rankings[key] ?? [];
+  const [deleteTarget, setDeleteTarget] = useState<{ entryId: string; nickname: string } | null>(null);
 
   useEffect(() => {
     fetchRankings(key);
@@ -41,6 +45,15 @@ export default function RankingCard({ gameType, difficulty, myNickname, socket }
 
   const myBest = entries.find((e) => e.nickname === myNickname);
   const myRank = myBest ? entries.indexOf(myBest) + 1 : null;
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    const result = await deleteRanking(key, deleteTarget.entryId);
+    if (!result.success) {
+      toast.error(result.error ?? "삭제 실패");
+    }
+    setDeleteTarget(null);
+  };
 
   return (
     <div className="bg-card border border-border rounded-xl p-6">
@@ -68,7 +81,16 @@ export default function RankingCard({ gameType, difficulty, myNickname, socket }
                   <span className="w-6 text-center shrink-0">
                     {i < 3 ? RANK_ICONS[i] : `${i + 1}`}
                   </span>
-                  <span className="truncate">{entry.nickname}</span>
+                  <span className="truncate flex-1">{entry.nickname}</span>
+                  {isAdmin && (
+                    <button
+                      onClick={() => setDeleteTarget({ entryId: entry.id, nickname: entry.nickname })}
+                      className="shrink-0 p-0.5 rounded hover:bg-red-500/20 text-muted-foreground hover:text-red-500 transition-colors"
+                      title="기록 삭제"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 ml-8 text-xs">
                   <span className="font-mono font-semibold">{formatScore(gameType, entry.score)}</span>
@@ -85,6 +107,16 @@ export default function RankingCard({ gameType, difficulty, myNickname, socket }
           )}
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="랭킹 기록 삭제"
+        message={`"${deleteTarget?.nickname}" 의 기록을 삭제하시겠습니까?`}
+        confirmText="삭제"
+        cancelText="취소"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

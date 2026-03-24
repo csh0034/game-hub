@@ -28,4 +28,11 @@ export class InMemoryRankingStore implements RankingStore {
       entries: trimmed,
     };
   }
+
+  async deleteEntry(key: RankingKey, entryId: string): Promise<RankingEntry[]> {
+    const existing = this.rankings.get(key) ?? [];
+    const filtered = existing.filter((e) => e.id !== entryId);
+    this.rankings.set(key, filtered);
+    return filtered;
+  }
 }

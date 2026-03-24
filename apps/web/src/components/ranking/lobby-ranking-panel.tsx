@@ -13,9 +13,10 @@ const GAMES: { type: RankingGameType; label: string; difficulties: RankingDiffic
 interface LobbyRankingPanelProps {
   myNickname: string;
   socket: GameSocket | null;
+  isAdmin?: boolean;
 }
 
-export default function LobbyRankingPanel({ myNickname, socket }: LobbyRankingPanelProps) {
+export default function LobbyRankingPanel({ myNickname, socket, isAdmin }: LobbyRankingPanelProps) {
   const [gameIndex, setGameIndex] = useState(0);
   const [difficultyIndex, setDifficultyIndex] = useState(0);
 
@@ -66,6 +67,7 @@ export default function LobbyRankingPanel({ myNickname, socket }: LobbyRankingPa
           difficulty={game.difficulties[difficultyIndex]}
           myNickname={myNickname}
           socket={socket}
+          isAdmin={isAdmin}
         />
       </div>
     </div>

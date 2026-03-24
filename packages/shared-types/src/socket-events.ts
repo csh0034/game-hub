@@ -53,6 +53,7 @@ export interface ClientToServerEvents {
 
   // Ranking
   "ranking:get": (key: RankingKey, callback: (entries: RankingEntry[]) => void) => void;
+  "ranking:delete": (key: RankingKey, entryId: string, callback: (result: { success: boolean; error?: string }) => void) => void;
 
   // System
   "system:announce": (message: string, callback: (result: { success: boolean; error?: string }) => void) => void;

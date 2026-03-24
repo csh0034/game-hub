@@ -17,6 +17,16 @@ const DIFFICULTY_CONFIGS: Record<MinesweeperDifficulty, MinesweeperDifficultyCon
   expert: { rows: 16, cols: 30, mineCount: 99, label: "고급" },
 };
 
+// 난이도별 최소 클리어 시간 (ms) — 이보다 빠른 기록은 자동화로 간주하여 랭킹 등록 거부
+const MIN_COMPLETION_TIME: Record<MinesweeperDifficulty, number> = {
+  beginner: 3000,
+  intermediate: 15000,
+  expert: 35000,
+};
+
+// reveal 간 최소 간격 (ms) — 자동화 클릭 방지
+const MIN_REVEAL_INTERVAL = 50;
+
 interface MinesweeperInternalCell {
   hasMine: boolean;
   adjacentMines: number;
@@ -39,6 +49,7 @@ export class MinesweeperEngine implements GameEngine {
   private flagCount = 0;
   private revealedCount = 0;
   private startedAt: number | null = null;
+  private lastRevealAt = 0;
 
   constructor(difficulty: MinesweeperDifficulty = "beginner") {
     this.difficulty = difficulty;
@@ -55,6 +66,7 @@ export class MinesweeperEngine implements GameEngine {
     this.flagCount = 0;
     this.revealedCount = 0;
     this.startedAt = null;
+    this.lastRevealAt = 0;
 
     this.board = Array.from({ length: this.rows }, () =>
       Array.from({ length: this.cols }, () => ({
@@ -82,9 +94,13 @@ export class MinesweeperEngine implements GameEngine {
       case "reveal": {
         if (cell.status !== "hidden") return this.toPublicState();
 
+        const now = Date.now();
+        if (now - this.lastRevealAt < MIN_REVEAL_INTERVAL) return this.toPublicState();
+        this.lastRevealAt = now;
+
         if (!this.minesPlaced) {
           this.placeMines(m.row, m.col);
-          this.startedAt = Date.now();
+          this.startedAt = now;
         }
 
         if (cell.hasMine) {
@@ -126,7 +142,9 @@ export class MinesweeperEngine implements GameEngine {
 
   getCompletionTime(): number | null {
     if (this.status !== "won" || !this.startedAt) return null;
-    return Date.now() - this.startedAt;
+    const time = Date.now() - this.startedAt;
+    if (time < MIN_COMPLETION_TIME[this.difficulty]) return null;
+    return time;
   }
 
   getDifficulty(): MinesweeperDifficulty {

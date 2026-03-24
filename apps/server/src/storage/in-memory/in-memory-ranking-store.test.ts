@@ -92,6 +92,31 @@ describe("InMemoryRankingStore", () => {
     });
   });
 
+  describe("deleteEntry", () => {
+    const key: RankingKey = "minesweeper:beginner";
+
+    it("엔트리를 삭제한다", async () => {
+      await store.addEntry(key, createEntry("1", "Alice", 5000), true);
+      await store.addEntry(key, createEntry("2", "Bob", 3000), true);
+
+      const result = await store.deleteEntry(key, "1");
+      expect(result).toHaveLength(1);
+      expect(result[0].nickname).toBe("Bob");
+    });
+
+    it("존재하지 않는 엔트리 삭제 시 기존 목록을 반환한다", async () => {
+      await store.addEntry(key, createEntry("1", "Alice", 5000), true);
+
+      const result = await store.deleteEntry(key, "nonexistent");
+      expect(result).toHaveLength(1);
+    });
+
+    it("빈 키에서 삭제 시 빈 배열을 반환한다", async () => {
+      const result = await store.deleteEntry(key, "1");
+      expect(result).toEqual([]);
+    });
+  });
+
   describe("난이도별 분리", () => {
     it("같은 게임이라도 난이도가 다르면 별도 랭킹이다", async () => {
       await store.addEntry("minesweeper:beginner", createEntry("1", "A", 5000), true);

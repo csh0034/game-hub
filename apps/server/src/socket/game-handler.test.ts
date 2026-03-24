@@ -7,6 +7,7 @@ import type { RankingStore } from "../storage/index.js";
 const mockRankingStore: RankingStore = {
   getRankings: vi.fn().mockResolvedValue([]),
   addEntry: vi.fn().mockResolvedValue({ rank: null, entries: [] }),
+  deleteEntry: vi.fn().mockResolvedValue([]),
 };
 
 vi.mock("../games/gomoku-timer.js", () => ({
@@ -202,6 +203,40 @@ describe("setupGameHandler", () => {
       hostSocket._trigger("game:rematch");
 
       expect(io._toEmit).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("ranking:delete", () => {
+    it("관리자가 랭킹을 삭제하면 ranking:updated를 브로드캐스트한다", async () => {
+      const adminSocket = createMockSocket("admin-1", "admin");
+      setupGameHandler(io as unknown as GameServer, adminSocket as unknown as GameSocket, gameManager, mockRankingStore);
+
+      const callback = vi.fn();
+      await adminSocket._trigger("ranking:delete", "minesweeper:beginner", "entry-1", callback);
+
+      expect(mockRankingStore.deleteEntry).toHaveBeenCalledWith("minesweeper:beginner", "entry-1");
+      expect(callback).toHaveBeenCalledWith({ success: true });
+      expect(io.emit).toHaveBeenCalledWith("ranking:updated", { key: "minesweeper:beginner", rankings: [] });
+    });
+
+    it("비관리자는 랭킹을 삭제할 수 없다", async () => {
+      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager, mockRankingStore);
+
+      const callback = vi.fn();
+      await hostSocket._trigger("ranking:delete", "minesweeper:beginner", "entry-1", callback);
+
+      expect(mockRankingStore.deleteEntry).not.toHaveBeenCalled();
+      expect(callback).toHaveBeenCalledWith({ success: false, error: "권한이 없습니다" });
+    });
+
+    it("인증되지 않은 소켓은 삭제할 수 없다", async () => {
+      const unauthSocket = createMockSocket("unauth-1", "user", { authenticated: false });
+      setupGameHandler(io as unknown as GameServer, unauthSocket as unknown as GameSocket, gameManager, mockRankingStore);
+
+      const callback = vi.fn();
+      await unauthSocket._trigger("ranking:delete", "minesweeper:beginner", "entry-1", callback);
+
+      expect(callback).toHaveBeenCalledWith({ success: false, error: "인증이 필요합니다" });
     });
   });
 });

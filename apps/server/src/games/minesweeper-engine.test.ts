@@ -337,6 +337,54 @@ describe("MinesweeperEngine", () => {
       expect(time).not.toBeNull();
       expect(time!).toBeGreaterThanOrEqual(4000);
     });
+
+    it("최소 시간 미만이면 null을 반환한다 (치팅 방지)", () => {
+      // beginner 최소 시간: 3000ms
+      engine.initState(mockPlayers);
+      const board = createTestBoard(9, 9, [[0, 0]]);
+      engine._setBoard(board);
+      engine._setStartedAt(Date.now() - 1000); // 1초 전 시작 → 3초 미만
+
+      engine.processMove(engine.toPublicState(), "player1", { type: "reveal", row: 8, col: 8 });
+
+      expect(engine.getCompletionTime()).toBeNull();
+    });
+
+    it("중급 최소 시간 미만이면 null을 반환한다", () => {
+      const intermediateEngine = new MinesweeperEngine("intermediate");
+      intermediateEngine.initState(mockPlayers);
+      const board = createTestBoard(16, 16, [[0, 0]]);
+      intermediateEngine._setBoard(board);
+      intermediateEngine._setStartedAt(Date.now() - 5000); // 5초 → 15초 미만
+
+      // 모든 비지뢰 셀 열기
+      for (let r = 0; r < 16; r++) {
+        for (let c = 0; c < 16; c++) {
+          if (!(r === 0 && c === 0)) {
+            intermediateEngine.processMove(intermediateEngine.toPublicState(), "player1", { type: "reveal", row: r, col: c });
+          }
+        }
+      }
+
+      expect(intermediateEngine.getCompletionTime()).toBeNull();
+    });
+  });
+
+  describe("이동 속도 제한", () => {
+    it("50ms 미만 간격의 reveal은 무시된다", () => {
+      engine.initState(mockPlayers);
+      const board = createTestBoard(9, 9, [[8, 8]]);
+      engine._setBoard(board);
+      engine._setStartedAt(Date.now());
+
+      // 첫 reveal 성공
+      const s1 = engine.processMove(engine.toPublicState(), "player1", { type: "reveal", row: 0, col: 0 });
+      expect(s1.revealedCount).toBeGreaterThan(0);
+
+      // 즉시 두 번째 reveal → rate limit에 의해 무시
+      const s2 = engine.processMove(s1, "player1", { type: "reveal", row: 5, col: 5 });
+      expect(s2.revealedCount).toBe(s1.revealedCount);
+    });
   });
 
   describe("getDifficulty", () => {

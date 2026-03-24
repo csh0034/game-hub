@@ -412,6 +412,7 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
               <LobbyRankingPanel
                 myNickname={nickname ?? ""}
                 socket={socket}
+                isAdmin={isAdmin}
               />
             </aside>
           )}

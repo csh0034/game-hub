@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { ChatMessage } from "@game-hub/shared-types";
-import { setupLobbyHandler } from "./lobby-handler.js";
+import { setupChatHandler } from "./chat-handler.js";
 import { GameManager } from "../games/game-manager.js";
 import type { ChatStore } from "../storage/index.js";
 import { createMockSocket, createMockIo, type GameServer, type GameSocket } from "./socket-test-helpers.js";
@@ -53,7 +53,7 @@ describe("chat:lobby-message", () => {
     io = createMockIo({ withTo: true });
     gameManager = new GameManager();
     chatStore = createMockChatStore();
-    setupLobbyHandler(io as unknown as GameServer, socket as unknown as GameSocket, gameManager, chatStore);
+    setupChatHandler(io as unknown as GameServer, socket as unknown as GameSocket, gameManager, chatStore);
   });
 
   it("인증된 유저가 roomId 없을 때 lobby room에 브로드캐스트한다", () => {
@@ -93,7 +93,7 @@ describe("chat:lobby-message", () => {
 
   it("관리자 닉네임을 '관리자'로 치환하고 isAdmin 플래그를 설정한다", () => {
     const adminSocket = createMockSocket("socket-admin", "admin");
-    setupLobbyHandler(io as unknown as GameServer, adminSocket as unknown as GameSocket, gameManager, chatStore);
+    setupChatHandler(io as unknown as GameServer, adminSocket as unknown as GameSocket, gameManager, chatStore);
     adminSocket.data.authenticated = true;
     adminSocket.data.roomId = null;
 
@@ -136,7 +136,7 @@ describe("chat:room-message", () => {
     io = createMockIo({ withTo: true });
     gameManager = new GameManager();
     chatStore = createMockChatStore();
-    setupLobbyHandler(io as unknown as GameServer, socket as unknown as GameSocket, gameManager, chatStore);
+    setupChatHandler(io as unknown as GameServer, socket as unknown as GameSocket, gameManager, chatStore);
   });
 
   it("roomId가 있으면 해당 room에 메시지를 전송한다", () => {
@@ -165,7 +165,7 @@ describe("chat:room-message", () => {
 
   it("관리자 닉네임을 '관리자'로 치환하고 isAdmin 플래그를 설정한다", () => {
     const adminSocket = createMockSocket("socket-admin", "admin");
-    setupLobbyHandler(io as unknown as GameServer, adminSocket as unknown as GameSocket, gameManager, chatStore);
+    setupChatHandler(io as unknown as GameServer, adminSocket as unknown as GameSocket, gameManager, chatStore);
     adminSocket.data.roomId = "room-1";
 
     adminSocket._trigger("chat:room-message", "방 공지");
@@ -206,7 +206,7 @@ describe("chat:request-history", () => {
     io = createMockIo({ withTo: true });
     gameManager = new GameManager();
     chatStore = createMockChatStore();
-    setupLobbyHandler(io as unknown as GameServer, socket as unknown as GameSocket, gameManager, chatStore);
+    setupChatHandler(io as unknown as GameServer, socket as unknown as GameSocket, gameManager, chatStore);
   });
 
   it("로비 메시지 이력을 반환한다", async () => {
@@ -281,7 +281,7 @@ describe("chat:delete-message", () => {
     io = createMockIo({ withTo: true });
     gameManager = new GameManager();
     chatStore = createMockChatStore();
-    setupLobbyHandler(io as unknown as GameServer, socket as unknown as GameSocket, gameManager, chatStore);
+    setupChatHandler(io as unknown as GameServer, socket as unknown as GameSocket, gameManager, chatStore);
   });
 
   it("admin이 로비 메시지를 삭제한다", async () => {
@@ -312,7 +312,7 @@ describe("chat:delete-message", () => {
 
   it("admin이 아닌 유저는 삭제할 수 없다", () => {
     const normalSocket = createMockSocket("socket-2", "Player1");
-    setupLobbyHandler(io as unknown as GameServer, normalSocket as unknown as GameSocket, gameManager, chatStore);
+    setupChatHandler(io as unknown as GameServer, normalSocket as unknown as GameSocket, gameManager, chatStore);
 
     const callback = vi.fn();
     normalSocket._trigger("chat:delete-message", "lobby", "some-id", callback);

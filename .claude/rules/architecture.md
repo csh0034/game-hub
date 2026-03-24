@@ -57,7 +57,8 @@ game-hub/
 │   ├── catch-mind-engine.ts
 │   └── catch-mind-timer.ts   # 캐치마인드 그리기 타이머
 └── socket/
-    ├── lobby-handler.ts     # lobby:* + chat:* 이벤트 (ChatStore 사용)
+    ├── lobby-handler.ts     # lobby:* 이벤트 (방 CRUD, 관전, 강퇴)
+    ├── chat-handler.ts      # chat:* 이벤트 (ChatStore 사용)
     ├── game-handler.ts      # game:* + ranking:* 이벤트 (RankingStore 사용)
     ├── nickname-handler.ts  # player:* 이벤트 (SessionStore 사용, 재접속 지원)
     ├── request-handler.ts   # request:* 이벤트 (요청사항 CRUD, 관리자 수락/거부/완료 처리)

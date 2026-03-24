@@ -10,6 +10,7 @@ import {
   type SocketData,
 } from "@game-hub/shared-types";
 import { setupLobbyHandler } from "./socket/lobby-handler.js";
+import { setupChatHandler } from "./socket/chat-handler.js";
 import { setupGameHandler } from "./socket/game-handler.js";
 import { setupNicknameHandler } from "./socket/nickname-handler.js";
 import { setupRequestHandler } from "./socket/request-handler.js";
@@ -86,6 +87,7 @@ async function bootstrap() {
 
     setupNicknameHandler(io, socket, sessionStore, gameManager);
     setupLobbyHandler(io, socket, gameManager, chatStore);
+    setupChatHandler(io, socket, gameManager, chatStore);
     setupGameHandler(io, socket, gameManager, rankingStore);
     setupRequestHandler(io, socket, requestStore);
     setupAnnounceHandler(io, socket);

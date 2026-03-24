@@ -376,6 +376,39 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
     );
   }, [isWinner, isLoser, isDraw, myScore]);
 
+  // 관전자: 플레이어 보드만 표시 (내 보드 없음)
+  if (isSpectating) {
+    const spectatorCellSize = opponentEntries.length <= 1 ? 24
+      : opponentEntries.length <= 2 ? 20
+      : opponentEntries.length <= 4 ? 16
+      : 12;
+    const cols = Math.min(opponentEntries.length, 2);
+
+    return (
+      <div className="flex flex-col items-center gap-4 p-4">
+        {opponentEntries.length > 0 ? (
+          <div
+            className="grid gap-4"
+            style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
+          >
+            {opponentEntries.map(([id, board], i) => (
+              <OpponentCanvas
+                key={id}
+                board={board}
+                cellSize={spectatorCellSize}
+                nickname={roomPlayers.find((p) => p.id === id)?.nickname ?? `플레이어 ${i + 1}`}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="flex items-center justify-center h-64 text-muted-foreground">
+            게임 로딩 중...
+          </div>
+        )}
+      </div>
+    );
+  }
+
   if (!myBoard) {
     return (
       <div className="flex items-center justify-center h-64 text-muted-foreground">

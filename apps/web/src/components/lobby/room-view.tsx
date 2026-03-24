@@ -110,9 +110,11 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
       setKickConfirmOpen(true);
       return;
     }
-    // 관전 OFF로 전환 시 관전자 채팅도 OFF
+    // 관전 OFF로 전환 시 관전자 채팅도 OFF, ON 전환 시 기본값 ON
     if (!newOptions.spectateEnabled) {
       newOptions = { ...newOptions, spectateChatEnabled: false };
+    } else if (newOptions.spectateEnabled && !prevEnabled) {
+      newOptions = { ...newOptions, spectateChatEnabled: true };
     }
     setPendingOptions(newOptions);
     onUpdateGameOptions(newOptions);

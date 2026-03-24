@@ -1,7 +1,7 @@
 import type { Room, CreateRoomPayload, JoinRoomPayload, GameOptions } from "./lobby-types";
 import type { GameState, GameMove, GameResult, HoldemPrivateState, LiarDrawingPrivateState, CatchMindPrivateState, Card, DrawPoint, TetrisPlayerUpdate, TetrisPieceUpdate } from "./game-types";
 import type { Player } from "./player-types";
-import type { FeatureRequest, CreateRequestPayload, AcceptRequestPayload, RejectRequestPayload, ResolveRequestPayload, ChangeLabelPayload } from "./request-types";
+import type { FeatureRequest, CreateRequestPayload, AcceptRequestPayload, RejectRequestPayload, ResolveRequestPayload, StopRequestPayload, ChangeLabelPayload } from "./request-types";
 import type { RankingKey, RankingEntry } from "./ranking-types";
 
 export interface ChatMessage {
@@ -51,6 +51,7 @@ export interface ClientToServerEvents {
   "request:accept": (payload: AcceptRequestPayload, callback: (result: { success: boolean; error?: string }) => void) => void;
   "request:reject": (payload: RejectRequestPayload, callback: (result: { success: boolean; error?: string }) => void) => void;
   "request:resolve": (payload: ResolveRequestPayload, callback: (result: { success: boolean; error?: string }) => void) => void;
+  "request:stop": (payload: StopRequestPayload, callback: (result: { success: boolean; error?: string }) => void) => void;
   "request:change-label": (payload: ChangeLabelPayload, callback: (result: { success: boolean; error?: string }) => void) => void;
   "request:delete": (requestId: string, callback: (result: { success: boolean; error?: string }) => void) => void;
 
@@ -106,6 +107,7 @@ export interface ServerToClientEvents {
   "request:accepted": (request: FeatureRequest) => void;
   "request:rejected": (request: FeatureRequest) => void;
   "request:resolved": (request: FeatureRequest) => void;
+  "request:stopped": (request: FeatureRequest) => void;
   "request:label-changed": (request: FeatureRequest) => void;
   "request:deleted": (requestId: string) => void;
 

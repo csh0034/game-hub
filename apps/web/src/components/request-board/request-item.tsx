@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import type { FeatureRequest, RequestLabel } from "@game-hub/shared-types";
 import { REQUEST_LABELS } from "@game-hub/shared-types";
-import { Check, ExternalLink, Clock, Trash2, X, Play, MessageSquare } from "lucide-react";
+import { Ban, Check, ExternalLink, Clock, Trash2, X, Play, MessageSquare } from "lucide-react";
 
 const labelConfig: Record<RequestLabel, { name: string; className: string }> = {
   feature: { name: "기능 요청", className: "bg-blue-500/15 text-blue-500" },
@@ -19,6 +19,7 @@ interface RequestItemProps {
   onReject: (requestId: string) => void;
   onResolve: (requestId: string) => void;
   onChangeLabel: (requestId: string, label: RequestLabel) => void;
+  onStop: (requestId: string) => void;
   onDelete: (requestId: string) => void;
 }
 
@@ -43,9 +44,14 @@ const statusConfig = {
     border: "border-destructive/30 bg-destructive/5",
     titleClass: "text-muted-foreground line-through",
   },
+  stopped: {
+    icon: <Ban className="w-4 h-4 text-orange-500 flex-shrink-0" />,
+    border: "border-orange-500/30 bg-orange-500/5",
+    titleClass: "text-muted-foreground line-through",
+  },
 };
 
-export function RequestItem({ request, isAdmin, onAccept, onReject, onResolve, onChangeLabel, onDelete }: RequestItemProps) {
+export function RequestItem({ request, isAdmin, onAccept, onReject, onResolve, onStop, onChangeLabel, onDelete }: RequestItemProps) {
   const config = statusConfig[request.status];
   const isOpen = request.status === "open";
   const isInProgress = request.status === "in-progress";
@@ -165,6 +171,14 @@ export function RequestItem({ request, isAdmin, onAccept, onReject, onResolve, o
                 className="px-3 py-1.5 text-xs font-medium rounded-lg bg-destructive/15 text-destructive hover:bg-destructive/25 transition-colors"
               >
                 거부
+              </button>
+            )}
+            {(isOpen || isInProgress) && (
+              <button
+                onClick={() => onStop(request.id)}
+                className="px-3 py-1.5 text-xs font-medium rounded-lg bg-orange-500/15 text-orange-500 hover:bg-orange-500/25 transition-colors"
+              >
+                중단
               </button>
             )}
             <button

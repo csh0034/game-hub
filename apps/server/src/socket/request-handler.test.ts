@@ -38,6 +38,7 @@ describe("setupRequestHandler", () => {
           inProgressAt: null,
           rejectedAt: null,
           resolvedAt: null,
+          stoppedAt: null,
           adminResponse: null,
           commitHash: null,
           commitUrl: null,
@@ -371,11 +372,28 @@ describe("setupRequestHandler", () => {
       });
     });
 
-    it("빈 커밋 해시는 거부한다", () => {
+    it("커밋 해시 없이도 완료 처리가 가능하다", async () => {
       setupRequestHandler(io as unknown as GameServer, socket as unknown as GameSocket, requestStore);
-      const callback = vi.fn();
-      socket._trigger("request:resolve", { requestId: "req-1", commitHash: "" }, callback);
-      expect(callback).toHaveBeenCalledWith({ success: false, error: "커밋 해시를 입력해주세요" });
+
+      const createCallback = vi.fn();
+      socket._trigger("request:create", { title: "기능 요청", description: "설명", label: "feature" }, createCallback);
+      await vi.waitFor(() => expect(createCallback).toHaveBeenCalled());
+      const created = createCallback.mock.calls[0][0] as FeatureRequest;
+
+      const resolveCallback = vi.fn();
+      socket._trigger("request:resolve", { requestId: created.id }, resolveCallback);
+      await vi.waitFor(() => {
+        expect(resolveCallback).toHaveBeenCalledWith({ success: true });
+      });
+      expect((io as unknown as { emit: ReturnType<typeof vi.fn> }).emit).toHaveBeenCalledWith(
+        "request:resolved",
+        expect.objectContaining({
+          id: created.id,
+          status: "resolved",
+          commitHash: null,
+          commitUrl: null,
+        }),
+      );
     });
 
     it("rejected 상태의 요청은 완료할 수 없다", async () => {
@@ -396,6 +414,66 @@ describe("setupRequestHandler", () => {
       socket._trigger("request:resolve", { requestId: created.id, commitHash: "abc1234" }, resolveCallback);
       await vi.waitFor(() => {
         expect(resolveCallback).toHaveBeenCalledWith({ success: false, error: "요청 또는 진행중 상태의 항목만 완료할 수 있습니다" });
+      });
+    });
+  });
+
+  describe("request:stop", () => {
+    it("관리자가 요청을 중단한다", async () => {
+      setupRequestHandler(io as unknown as GameServer, socket as unknown as GameSocket, requestStore);
+
+      const createCallback = vi.fn();
+      socket._trigger("request:create", { title: "중복 요청", description: "설명", label: "feature" }, createCallback);
+      await vi.waitFor(() => expect(createCallback).toHaveBeenCalled());
+      const created = createCallback.mock.calls[0][0] as FeatureRequest;
+
+      const stopCallback = vi.fn();
+      socket._trigger("request:stop", { requestId: created.id, adminResponse: "중복 요청입니다" }, stopCallback);
+
+      await vi.waitFor(() => {
+        expect(stopCallback).toHaveBeenCalledWith({ success: true });
+      });
+      expect((io as unknown as { emit: ReturnType<typeof vi.fn> }).emit).toHaveBeenCalledWith(
+        "request:stopped",
+        expect.objectContaining({
+          id: created.id,
+          status: "stopped",
+          adminResponse: "중복 요청입니다",
+        }),
+      );
+    });
+
+    it("빈 중단 사유는 거부한다", () => {
+      setupRequestHandler(io as unknown as GameServer, socket as unknown as GameSocket, requestStore);
+      const callback = vi.fn();
+      socket._trigger("request:stop", { requestId: "req-1", adminResponse: "" }, callback);
+      expect(callback).toHaveBeenCalledWith({ success: false, error: "중단 사유를 입력해주세요" });
+    });
+
+    it("비관리자는 거부한다", () => {
+      const normalSocket = createMockSocket("socket-2", "NormalUser");
+      setupRequestHandler(io as unknown as GameServer, normalSocket as unknown as GameSocket, requestStore);
+      const callback = vi.fn();
+      normalSocket._trigger("request:stop", { requestId: "req-1", adminResponse: "사유" }, callback);
+      expect(callback).toHaveBeenCalledWith({ success: false, error: "권한이 없습니다" });
+    });
+
+    it("rejected 상태의 요청은 중단할 수 없다", async () => {
+      setupRequestHandler(io as unknown as GameServer, socket as unknown as GameSocket, requestStore);
+
+      const createCallback = vi.fn();
+      socket._trigger("request:create", { title: "기능 요청", description: "설명", label: "feature" }, createCallback);
+      await vi.waitFor(() => expect(createCallback).toHaveBeenCalled());
+      const created = createCallback.mock.calls[0][0] as FeatureRequest;
+
+      const rejectCallback = vi.fn();
+      socket._trigger("request:reject", { requestId: created.id, adminResponse: "사유" }, rejectCallback);
+      await vi.waitFor(() => expect(rejectCallback).toHaveBeenCalledWith({ success: true }));
+
+      const stopCallback = vi.fn();
+      socket._trigger("request:stop", { requestId: created.id, adminResponse: "중복" }, stopCallback);
+      await vi.waitFor(() => {
+        expect(stopCallback).toHaveBeenCalledWith({ success: false, error: "요청 또는 진행중 상태의 항목만 중단할 수 있습니다" });
       });
     });
   });

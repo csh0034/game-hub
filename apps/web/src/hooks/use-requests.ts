@@ -15,6 +15,7 @@ export function useRequests(socket: GameSocket | null) {
     socket.on("request:accepted", updateRequest);
     socket.on("request:rejected", updateRequest);
     socket.on("request:resolved", updateRequest);
+    socket.on("request:stopped", updateRequest);
     socket.on("request:label-changed", updateRequest);
     socket.on("request:deleted", removeRequest);
 
@@ -23,6 +24,7 @@ export function useRequests(socket: GameSocket | null) {
       socket.off("request:accepted", updateRequest);
       socket.off("request:rejected", updateRequest);
       socket.off("request:resolved", updateRequest);
+      socket.off("request:stopped", updateRequest);
       socket.off("request:label-changed", updateRequest);
       socket.off("request:deleted", removeRequest);
     };
@@ -74,13 +76,26 @@ export function useRequests(socket: GameSocket | null) {
   );
 
   const resolveRequest = useCallback(
-    (requestId: string, commitHash: string, adminResponse?: string): Promise<{ success: boolean; error?: string }> => {
+    (requestId: string, commitHash?: string, adminResponse?: string): Promise<{ success: boolean; error?: string }> => {
       return new Promise((resolve) => {
         if (!socket) {
           resolve({ success: false, error: "소켓 연결이 없습니다" });
           return;
         }
         socket.emit("request:resolve", { requestId, commitHash, adminResponse }, resolve);
+      });
+    },
+    [socket],
+  );
+
+  const stopRequest = useCallback(
+    (requestId: string, adminResponse: string): Promise<{ success: boolean; error?: string }> => {
+      return new Promise((resolve) => {
+        if (!socket) {
+          resolve({ success: false, error: "소켓 연결이 없습니다" });
+          return;
+        }
+        socket.emit("request:stop", { requestId, adminResponse }, resolve);
       });
     },
     [socket],
@@ -112,5 +127,5 @@ export function useRequests(socket: GameSocket | null) {
     [socket],
   );
 
-  return { requests, createRequest, acceptRequest, rejectRequest, resolveRequest, changeLabelRequest, deleteRequest };
+  return { requests, createRequest, acceptRequest, rejectRequest, resolveRequest, stopRequest, changeLabelRequest, deleteRequest };
 }

@@ -58,6 +58,7 @@ export function setupRequestHandler(
       inProgressAt: null,
       rejectedAt: null,
       resolvedAt: null,
+      stoppedAt: null,
       adminResponse: null,
       commitHash: null,
       commitUrl: null,
@@ -161,10 +162,6 @@ export function setupRequestHandler(
     }
 
     const { requestId, commitHash, adminResponse } = payload;
-    if (!commitHash?.trim()) {
-      callback({ success: false, error: "커밋 해시를 입력해주세요" });
-      return;
-    }
 
     const request = await requestStore.getRequest(requestId);
 
@@ -178,19 +175,62 @@ export function setupRequestHandler(
       return;
     }
 
-    const hash = commitHash.trim();
+    const hash = commitHash?.trim() || null;
     const resolved: FeatureRequest = {
       ...request,
       status: "resolved",
       resolvedAt: Date.now(),
       commitHash: hash,
-      commitUrl: GITHUB_REPO_URL ? `${GITHUB_REPO_URL}/commit/${hash}` : null,
+      commitUrl: hash && GITHUB_REPO_URL ? `${GITHUB_REPO_URL}/commit/${hash}` : null,
       adminResponse: adminResponse?.trim() || request.adminResponse,
     };
 
     await requestStore.updateRequest(resolved);
 
     io.emit("request:resolved", resolved);
+    callback({ success: true });
+  });
+
+  socket.on("request:stop", async (payload, callback) => {
+    if (!socket.data.authenticated) {
+      callback({ success: false, error: "인증이 필요합니다" });
+      return;
+    }
+
+    if (!isAdmin(socket.data.nickname)) {
+      callback({ success: false, error: "권한이 없습니다" });
+      return;
+    }
+
+    const { requestId, adminResponse } = payload;
+
+    if (!adminResponse?.trim()) {
+      callback({ success: false, error: "중단 사유를 입력해주세요" });
+      return;
+    }
+
+    const request = await requestStore.getRequest(requestId);
+
+    if (!request) {
+      callback({ success: false, error: "요청사항을 찾을 수 없습니다" });
+      return;
+    }
+
+    if (request.status !== "open" && request.status !== "in-progress") {
+      callback({ success: false, error: "요청 또는 진행중 상태의 항목만 중단할 수 있습니다" });
+      return;
+    }
+
+    const stopped: FeatureRequest = {
+      ...request,
+      status: "stopped",
+      stoppedAt: Date.now(),
+      adminResponse: adminResponse.trim(),
+    };
+
+    await requestStore.updateRequest(stopped);
+
+    io.emit("request:stopped", stopped);
     callback({ success: true });
   });
 

@@ -1,28 +1,27 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Check } from "lucide-react";
+import { Ban } from "lucide-react";
 
-interface ResolveDialogProps {
+interface StopDialogProps {
   open: boolean;
-  onConfirm: (commitHash?: string, adminResponse?: string) => void;
+  onConfirm: (adminResponse: string) => void;
   onCancel: () => void;
 }
 
-export function ResolveDialog({ open, onConfirm, onCancel }: ResolveDialogProps) {
+export function StopDialog({ open, onConfirm, onCancel }: StopDialogProps) {
   if (!open) return null;
 
-  return <ResolveDialogInner onConfirm={onConfirm} onCancel={onCancel} />;
+  return <StopDialogInner onConfirm={onConfirm} onCancel={onCancel} />;
 }
 
-function ResolveDialogInner({
+function StopDialogInner({
   onConfirm,
   onCancel,
-}: Omit<ResolveDialogProps, "open">) {
-  const [commitHash, setCommitHash] = useState("");
+}: Omit<StopDialogProps, "open">) {
   const [adminResponse, setAdminResponse] = useState("");
 
-  const handleFocus = useCallback((node: HTMLInputElement | null) => {
+  const handleFocus = useCallback((node: HTMLTextAreaElement | null) => {
     node?.focus();
   }, []);
 
@@ -36,7 +35,9 @@ function ResolveDialogInner({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onConfirm(commitHash.trim() || undefined, adminResponse.trim() || undefined);
+    if (adminResponse.trim()) {
+      onConfirm(adminResponse.trim());
+    }
   };
 
   return (
@@ -45,33 +46,22 @@ function ResolveDialogInner({
       <div className="fixed inset-0 z-50 flex items-start justify-center pt-[30vh] p-4">
         <div className="bg-card border border-border rounded-xl p-6 w-full max-w-sm shadow-2xl">
           <div className="flex items-center gap-3 mb-4">
-            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-success/15 flex items-center justify-center">
-              <Check className="w-5 h-5 text-success" />
+            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-orange-500/15 flex items-center justify-center">
+              <Ban className="w-5 h-5 text-orange-500" />
             </div>
-            <h2 className="text-lg font-bold">요청사항 완료 처리</h2>
+            <h2 className="text-lg font-bold">요청사항 중단</h2>
           </div>
 
           <form onSubmit={handleSubmit}>
             <label className="block text-sm text-muted-foreground mb-2 ml-[52px]">
-              커밋 해시 (선택)
-            </label>
-            <input
-              ref={handleFocus}
-              type="text"
-              value={commitHash}
-              onChange={(e) => setCommitHash(e.target.value)}
-              placeholder="예: a1b2c3d"
-              className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary mb-3 font-mono"
-            />
-
-            <label className="block text-sm text-muted-foreground mb-2">
-              답변 (선택)
+              중단 사유를 입력해주세요
             </label>
             <textarea
+              ref={handleFocus}
               value={adminResponse}
               onChange={(e) => setAdminResponse(e.target.value)}
-              placeholder="추가 답변이 있으면 입력해주세요"
-              rows={2}
+              placeholder="중단 사유"
+              rows={3}
               maxLength={500}
               className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary mb-4 resize-none"
             />
@@ -86,9 +76,10 @@ function ResolveDialogInner({
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 rounded-lg text-sm font-medium bg-success hover:bg-success/90 text-white transition-colors"
+                disabled={!adminResponse.trim()}
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-orange-500 hover:bg-orange-500/90 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                완료
+                중단
               </button>
             </div>
           </form>

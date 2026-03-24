@@ -29,6 +29,7 @@ const request: FeatureRequest = {
   inProgressAt: null,
   rejectedAt: null,
   resolvedAt: null,
+  stoppedAt: null,
   adminResponse: null,
   commitHash: null,
   commitUrl: null,

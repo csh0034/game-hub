@@ -14,6 +14,7 @@ import { RequestItem } from "./request-item";
 import { AcceptDialog } from "./accept-dialog";
 import { RejectDialog } from "./reject-dialog";
 import { ResolveDialog } from "./resolve-dialog";
+import { StopDialog } from "./stop-dialog";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import { toast } from "sonner";
 
@@ -22,7 +23,8 @@ interface RequestBoardProps {
   onCreateRequest: (payload: CreateRequestPayload) => Promise<{ success: boolean; error?: string }>;
   onAcceptRequest: (requestId: string, adminResponse?: string) => Promise<{ success: boolean; error?: string }>;
   onRejectRequest: (requestId: string, adminResponse: string) => Promise<{ success: boolean; error?: string }>;
-  onResolveRequest: (requestId: string, commitHash: string, adminResponse?: string) => Promise<{ success: boolean; error?: string }>;
+  onResolveRequest: (requestId: string, commitHash?: string, adminResponse?: string) => Promise<{ success: boolean; error?: string }>;
+  onStopRequest: (requestId: string, adminResponse: string) => Promise<{ success: boolean; error?: string }>;
   onChangeLabelRequest: (requestId: string, label: RequestLabel) => Promise<{ success: boolean; error?: string }>;
   onDeleteRequest: (requestId: string) => Promise<{ success: boolean; error?: string }>;
   isAdmin: boolean;
@@ -34,6 +36,7 @@ export function RequestBoard({
   onAcceptRequest,
   onRejectRequest,
   onResolveRequest,
+  onStopRequest,
   onChangeLabelRequest,
   onDeleteRequest,
   isAdmin,
@@ -45,6 +48,7 @@ export function RequestBoard({
   const [acceptTarget, setAcceptTarget] = useState<string | null>(null);
   const [rejectTarget, setRejectTarget] = useState<string | null>(null);
   const [resolveTarget, setResolveTarget] = useState<string | null>(null);
+  const [stopTarget, setStopTarget] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   const handleChangeLabel = useCallback(
@@ -117,7 +121,7 @@ export function RequestBoard({
   );
 
   const handleResolve = useCallback(
-    async (commitHash: string, adminResponse?: string) => {
+    async (commitHash?: string, adminResponse?: string) => {
       if (!resolveTarget) return;
       const result = await onResolveRequest(resolveTarget, commitHash, adminResponse);
       if (result.success) {
@@ -129,10 +133,24 @@ export function RequestBoard({
     [resolveTarget, onResolveRequest],
   );
 
+  const handleStop = useCallback(
+    async (adminResponse: string) => {
+      if (!stopTarget) return;
+      const result = await onStopRequest(stopTarget, adminResponse);
+      if (result.success) {
+        setStopTarget(null);
+      } else {
+        toast.error(result.error ?? "중단 처리에 실패했습니다");
+      }
+    },
+    [stopTarget, onStopRequest],
+  );
+
   const openRequests = requests.filter((r) => r.status === "open");
   const inProgressRequests = requests.filter((r) => r.status === "in-progress");
   const resolvedRequests = requests.filter((r) => r.status === "resolved");
   const rejectedRequests = requests.filter((r) => r.status === "rejected");
+  const stoppedRequests = requests.filter((r) => r.status === "stopped");
 
   return (
     <div className="space-y-6">
@@ -201,6 +219,7 @@ export function RequestBoard({
                 onReject={setRejectTarget}
                 onResolve={setResolveTarget}
                 onChangeLabel={handleChangeLabel}
+                onStop={setStopTarget}
                 onDelete={setDeleteTarget}
               />
             ))}
@@ -223,6 +242,7 @@ export function RequestBoard({
                 onAccept={setAcceptTarget}
                 onReject={setRejectTarget}
                 onResolve={setResolveTarget}
+                onStop={setStopTarget}
                 onChangeLabel={handleChangeLabel}
                 onDelete={setDeleteTarget}
               />
@@ -246,6 +266,7 @@ export function RequestBoard({
                 onAccept={setAcceptTarget}
                 onReject={setRejectTarget}
                 onResolve={setResolveTarget}
+                onStop={setStopTarget}
                 onChangeLabel={handleChangeLabel}
                 onDelete={setDeleteTarget}
               />
@@ -269,6 +290,31 @@ export function RequestBoard({
                 onAccept={setAcceptTarget}
                 onReject={setRejectTarget}
                 onResolve={setResolveTarget}
+                onStop={setStopTarget}
+                onChangeLabel={handleChangeLabel}
+                onDelete={setDeleteTarget}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* 중단 목록 */}
+      {stoppedRequests.length > 0 && (
+        <section>
+          <h3 className="text-sm font-medium text-muted-foreground mb-2">
+            중단 ({stoppedRequests.length})
+          </h3>
+          <div className="space-y-2">
+            {stoppedRequests.map((request) => (
+              <RequestItem
+                key={request.id}
+                request={request}
+                isAdmin={isAdmin}
+                onAccept={setAcceptTarget}
+                onReject={setRejectTarget}
+                onResolve={setResolveTarget}
+                onStop={setStopTarget}
                 onChangeLabel={handleChangeLabel}
                 onDelete={setDeleteTarget}
               />
@@ -297,6 +343,13 @@ export function RequestBoard({
         open={rejectTarget !== null}
         onConfirm={handleReject}
         onCancel={() => setRejectTarget(null)}
+      />
+
+      {/* 중단 다이얼로그 */}
+      <StopDialog
+        open={stopTarget !== null}
+        onConfirm={handleStop}
+        onCancel={() => setStopTarget(null)}
       />
 
       {/* 완료 처리 다이얼로그 */}

@@ -1,4 +1,4 @@
-export type RequestStatus = "open" | "in-progress" | "rejected" | "resolved";
+export type RequestStatus = "open" | "in-progress" | "rejected" | "resolved" | "stopped";
 
 export type RequestLabel = "feature" | "bug" | "improvement" | "new-game";
 
@@ -15,6 +15,7 @@ export interface FeatureRequest {
   inProgressAt: number | null;
   rejectedAt: number | null;
   resolvedAt: number | null;
+  stoppedAt: number | null;
   adminResponse: string | null;
   commitHash: string | null;
   commitUrl: string | null;
@@ -38,8 +39,13 @@ export interface RejectRequestPayload {
 
 export interface ResolveRequestPayload {
   requestId: string;
-  commitHash: string;
+  commitHash?: string;
   adminResponse?: string;
+}
+
+export interface StopRequestPayload {
+  requestId: string;
+  adminResponse: string;
 }
 
 export interface ChangeLabelPayload {

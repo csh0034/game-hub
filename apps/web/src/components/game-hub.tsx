@@ -66,7 +66,7 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
     useLobby(socket);
   const { lobbyMessages, roomMessages, sendLobbyMessage, sendRoomMessage, clearRoomMessages, requestLobbyHistory, requestRoomHistory, deleteMessage } =
     useChat(socket);
-  const { requests, createRequest, acceptRequest, rejectRequest, resolveRequest, changeLabelRequest, deleteRequest } = useRequests(socket);
+  const { requests, createRequest, acceptRequest, rejectRequest, resolveRequest, stopRequest, changeLabelRequest, deleteRequest } = useRequests(socket);
   const [isAdmin, setIsAdmin] = useState(false);
   const isAdminRef = useRef(false);
   const [githubRepoUrl, setGithubRepoUrl] = useState<string | undefined>();
@@ -417,6 +417,7 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
                 onAcceptRequest={acceptRequest}
                 onRejectRequest={rejectRequest}
                 onResolveRequest={resolveRequest}
+                onStopRequest={stopRequest}
                 onChangeLabelRequest={changeLabelRequest}
                 onDeleteRequest={deleteRequest}
                 isAdmin={isAdmin}

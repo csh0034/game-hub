@@ -28,7 +28,7 @@ export function RoomList({ rooms, onJoinRoom, onSpectateRoom }: RoomListProps) {
         const isPlaying = room.status === "playing";
         const spectateEnabled = room.gameOptions?.spectateEnabled;
         const spectatorsFull = room.spectators.length >= MAX_SPECTATORS;
-        const canSpectate = !isPlaying && spectateEnabled && !spectatorsFull;
+        const canSpectate = room.status === "waiting" && spectateEnabled && !spectatorsFull;
 
         return (
           <div

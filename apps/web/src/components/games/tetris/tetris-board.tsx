@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, memo, useCallback } from "react";
+import { useMemo, useState, memo, useCallback } from "react";
 import { useGame } from "@/hooks/use-game";
 import { useSocket } from "@/hooks/use-socket";
+import { useTetrisInput } from "@/hooks/use-tetris-input";
 import { useTetrisBoardStore } from "@/stores/tetris-board-store";
 import { useLobbyStore } from "@/stores/lobby-store";
 import { OpponentCanvas } from "./opponent-canvas";
@@ -14,7 +15,6 @@ import {
   calculateGhostRow,
 } from "@game-hub/shared-types";
 import type {
-  TetrisMove,
   TetrisPlayerBoard,
   TetrominoType,
   TetrisActivePiece,
@@ -242,14 +242,6 @@ function getOpponentCellSize(count: number): number {
   return 8;
 }
 
-// Phase 3-3: Throttle intervals for move types (ms)
-const THROTTLE_INTERVALS: Partial<Record<TetrisMove["type"], number>> = {
-  "move-left": 50,
-  "move-right": 50,
-  "rotate-cw": 50,
-  "rotate-ccw": 50,
-};
-
 export default function TetrisBoard({ roomId }: GameComponentProps) {
   const { socket } = useSocket();
   // useGame is still needed for socket event listening
@@ -284,22 +276,8 @@ export default function TetrisBoard({ roomId }: GameComponentProps) {
 
   const opponentCellSize = getOpponentCellSize(opponentEntries.length);
 
-  // Input throttling ref
-  const lastEmitTimeRef = useRef<Map<string, number>>(new Map());
-
-  const throttledMakeMove = useCallback((move: TetrisMove) => {
-    const throttleMs = THROTTLE_INTERVALS[move.type];
-    if (throttleMs) {
-      const now = Date.now();
-      const lastTime = lastEmitTimeRef.current.get(move.type) ?? 0;
-      if (now - lastTime < throttleMs) return;
-      lastEmitTimeRef.current.set(move.type, now);
-    }
-    makeMove(move);
-  }, [makeMove]);
-
   // Apply client-side prediction for movement/rotation
-  const applyPrediction = useCallback((moveType: TetrisMove["type"]) => {
+  const applyPrediction = useCallback((moveType: string) => {
     if (!myBoard) return;
     const version = myBoard.version;
     setPrediction((prev) => {
@@ -329,61 +307,19 @@ export default function TetrisBoard({ roomId }: GameComponentProps) {
     });
   }, [myBoard]);
 
-  // Keyboard handler
+  // DAS/ARR keyboard input
   const myStatus = myBoard?.status ?? null;
-  useEffect(() => {
-    if (myStatus !== "playing" || gameResult) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      let moveType: TetrisMove["type"] | null = null;
-
-      switch (e.key) {
-        case "ArrowLeft":
-          moveType = "move-left";
-          break;
-        case "ArrowRight":
-          moveType = "move-right";
-          break;
-        case "ArrowDown":
-          moveType = "soft-drop";
-          break;
-        case "ArrowUp":
-        case "x":
-        case "X":
-          moveType = "rotate-cw";
-          break;
-        case "z":
-        case "Z":
-          moveType = "rotate-ccw";
-          break;
-        case " ":
-          moveType = "hard-drop";
-          break;
-        case "c":
-        case "C":
-        case "Shift":
-          moveType = "hold";
-          break;
-        default:
-          return;
-      }
-
-      e.preventDefault();
-      if (moveType) {
-        // Apply prediction for predictable moves (not hard-drop/hold which change board)
-        if (moveType !== "hard-drop" && moveType !== "hold") {
-          applyPrediction(moveType);
-        } else {
-          // For hard-drop and hold, clear prediction — wait for server
-          setPrediction(null);
-        }
-        throttledMakeMove({ type: moveType });
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [myStatus, gameResult, throttledMakeMove, applyPrediction]);
+  useTetrisInput({
+    enabled: myStatus === "playing" && !gameResult,
+    onMove: useCallback((moveType) => {
+      applyPrediction(moveType);
+      makeMove({ type: moveType });
+    }, [applyPrediction, makeMove]),
+    onInstantMove: useCallback((moveType) => {
+      setPrediction(null);
+      makeMove({ type: moveType });
+    }, [makeMove]),
+  });
 
   if (!myBoard) {
     return (

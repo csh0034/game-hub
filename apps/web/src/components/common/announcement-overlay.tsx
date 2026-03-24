@@ -1,25 +1,24 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Megaphone, X } from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
 
 interface AnnouncementOverlayProps {
   message: string | null;
+  receivedAt: number | null;
   onClose: () => void;
 }
 
 export function AnnouncementOverlay({
   message,
+  receivedAt,
   onClose,
 }: AnnouncementOverlayProps) {
   const closeRef = useRef<HTMLButtonElement>(null);
-  const [receivedAt, setReceivedAt] = useState("");
 
   useEffect(() => {
     if (message) {
-      const now = new Date();
-      setReceivedAt(formatDateTime(now.getTime()));
       closeRef.current?.focus();
     }
   }, [message]);
@@ -47,7 +46,7 @@ export function AnnouncementOverlay({
               </div>
               <div>
                 <h2 className="text-xl font-bold text-indigo-400">공지사항</h2>
-                <span className="text-xs text-muted-foreground">{receivedAt}</span>
+                <span className="text-xs text-muted-foreground">{receivedAt ? formatDateTime(receivedAt) : ""}</span>
               </div>
             </div>
             <button

@@ -76,7 +76,7 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
     onConfirm: () => void;
   }>({ open: false, onConfirm: () => {} });
   const [announceOpen, setAnnounceOpen] = useState(false);
-  const [announcementMessage, setAnnouncementMessage] = useState<string | null>(
+  const [announcement, setAnnouncement] = useState<{ message: string; receivedAt: number } | null>(
     null,
   );
   const confirmResolveRef = useRef<((value: boolean) => void) | null>(null);
@@ -130,7 +130,7 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
     if (!socket) return;
     const handler = ({ message }: { message: string }) => {
       if (!isAdminRef.current) {
-        setAnnouncementMessage(message);
+        setAnnouncement({ message, receivedAt: Date.now() });
       }
     };
     socket.on("system:announcement", handler);
@@ -319,8 +319,9 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
         {confirmDialog}
         {announceDialog}
         <AnnouncementOverlay
-          message={announcementMessage}
-          onClose={() => setAnnouncementMessage(null)}
+          message={announcement?.message ?? null}
+          receivedAt={announcement?.receivedAt ?? null}
+          onClose={() => setAnnouncement(null)}
         />
       </div>
     );
@@ -426,8 +427,9 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
       <Footer githubRepoUrl={githubRepoUrl} />
       {announceDialog}
       <AnnouncementOverlay
-        message={announcementMessage}
-        onClose={() => setAnnouncementMessage(null)}
+        message={announcement?.message ?? null}
+        receivedAt={announcement?.receivedAt ?? null}
+        onClose={() => setAnnouncement(null)}
       />
     </div>
   );

@@ -39,8 +39,18 @@ function ensureTetrisFlushTimer(io: IOServer, roomId: string) {
   const timer = setInterval(() => {
     const buffer = tetrisDirtyBuffers.get(roomId);
     if (!buffer || buffer.size === 0) return;
+    const roomSockets = io.sockets.adapter.rooms.get(roomId);
+    if (!roomSockets) { buffer.clear(); return; }
+
     for (const [playerId, board] of buffer) {
-      io.to(roomId).emit("game:tetris-player-updated", { playerId, board });
+      // Send to opponents only (exclude the player whose board this is)
+      for (const socketId of roomSockets) {
+        if (socketId !== playerId) {
+          io.sockets.sockets.get(socketId)?.emit(
+            "game:tetris-player-updated", { playerId, board },
+          );
+        }
+      }
     }
     buffer.clear();
   }, 500);
@@ -207,9 +217,21 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
       const dirtyIds = tetrisEngine.getDirtyPlayers();
       for (const playerId of dirtyIds) {
         const board = tetrisEngine.toPublicStateForPlayer(playerId);
-        if (board) {
-          io.to(roomId).emit("game:tetris-player-updated", { playerId, board });
+        if (!board) continue;
+
+        // Send directly to the player themselves (immediate feedback)
+        const playerSocket = io.sockets.sockets.get(playerId);
+        if (playerSocket) {
+          playerSocket.emit("game:tetris-player-updated", { playerId, board });
         }
+
+        // Buffer for opponents (flushed by flush timer)
+        let buffer = tetrisDirtyBuffers.get(roomId);
+        if (!buffer) {
+          buffer = new Map();
+          tetrisDirtyBuffers.set(roomId, buffer);
+        }
+        buffer.set(playerId, board);
       }
       tetrisEngine.clearDirty();
 

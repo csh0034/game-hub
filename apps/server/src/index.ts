@@ -58,9 +58,6 @@ async function bootstrap() {
   try {
     const redis = await connectRedis();
     storage = createStorage(redis);
-    if ("migrateTetrisKeys" in storage.rankingStore) {
-      await (storage.rankingStore as { migrateTetrisKeys: () => Promise<void> }).migrateTetrisKeys();
-    }
     gameManager = new GameManager(storage.roomStore);
     await gameManager.loadRoomsFromStore();
     console.log("[bootstrap] Redis connected, persistence enabled");

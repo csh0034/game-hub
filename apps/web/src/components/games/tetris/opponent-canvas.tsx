@@ -13,7 +13,6 @@ const TETROMINO_HEX: Record<TetrominoType, string> = {
   L: "#f97316", // orange-500
 };
 
-const GARBAGE_COLOR = "#71717a"; // zinc-500
 const EMPTY_COLOR = "rgba(0, 0, 0, 0.15)";
 const GRID_COLOR = "rgba(128, 128, 128, 0.15)";
 

@@ -13,7 +13,7 @@ const CELL_SIZE = 36;
 const PADDING = 24;
 const BOARD_PX = CELL_SIZE * (BOARD_SIZE - 1) + PADDING * 2;
 
-export default function GomokuBoard({ roomId, isSpectating }: GameComponentProps) {
+export default function GomokuBoard({ isSpectating }: GameComponentProps) {
   const { socket } = useSocket();
   const { gameState, gameResult, makeMove } = useGame(socket);
 

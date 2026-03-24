@@ -2,7 +2,7 @@
 
 import type { Room } from "@game-hub/shared-types";
 import { GAME_CONFIGS, MAX_SPECTATORS, MINESWEEPER_DIFFICULTY_CONFIGS, TETRIS_DIFFICULTY_CONFIGS } from "@game-hub/shared-types";
-import { Users, Clock, Play, Loader2, Eye } from "lucide-react";
+import { Users, Clock, Play, Eye } from "lucide-react";
 
 interface RoomListProps {
   rooms: Room[];

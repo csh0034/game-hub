@@ -25,7 +25,7 @@ const CELL_SIZES: Record<MinesweeperDifficulty, number> = {
   expert: 26,
 };
 
-export default function MinesweeperBoard({ roomId, isSpectating }: GameComponentProps) {
+export default function MinesweeperBoard({ isSpectating }: GameComponentProps) {
   const { socket } = useSocket();
   const { gameState, makeMove } = useGame(socket);
   const gameResult = useGameStore((s) => s.gameResult);

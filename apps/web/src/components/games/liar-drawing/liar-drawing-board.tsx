@@ -14,7 +14,7 @@ import { LiarGuessPanel } from "./liar-guess-panel";
 import { RoundResult } from "./round-result";
 import { Scoreboard } from "./scoreboard";
 
-export default function LiarDrawingBoard({ roomId, isSpectating }: GameComponentProps) {
+export default function LiarDrawingBoard({ isSpectating }: GameComponentProps) {
   const { socket } = useSocket();
   const { gameState, privateState, makeMove } = useGame(socket);
   const [showHelp, setShowHelp] = useState(false);

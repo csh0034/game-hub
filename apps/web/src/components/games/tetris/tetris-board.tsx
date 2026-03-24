@@ -246,7 +246,7 @@ function getOpponentCellSize(count: number): number {
   return 8;
 }
 
-export default function TetrisBoard({ roomId, isSpectating }: GameComponentProps) {
+export default function TetrisBoard({ isSpectating }: GameComponentProps) {
   const { socket } = useSocket();
   // useGame is still needed for socket event listening
   const { gameResult, makeMove } = useGame(socket);

@@ -1,17 +1,8 @@
 import type { Player, GameState, GameMove, GameResult, LiarDrawingPublicState, LiarDrawingMove, DrawPoint } from "@game-hub/shared-types";
 import type { GameEngine } from "./engine-interface.js";
+import _WORD_BANK from "./data/liar-drawing-words.json" with { type: "json" };
 
-const WORD_BANK: Record<string, string[]> = {
-  동물: ["고양이", "코끼리", "펭귄", "문어", "기린", "토끼", "사자", "돌고래", "독수리", "거북이"],
-  음식: ["피자", "초밥", "햄버거", "떡볶이", "아이스크림", "치킨", "파스타", "김밥", "팬케이크", "타코"],
-  스포츠: ["축구", "야구", "농구", "수영", "태권도", "테니스", "스키", "볼링", "양궁", "서핑"],
-  직업: ["의사", "소방관", "요리사", "우주비행사", "경찰", "선생님", "화가", "조종사", "마술사", "탐정"],
-  탈것: ["자전거", "비행기", "잠수함", "로켓", "헬리콥터", "기차", "요트", "오토바이", "열기구", "스케이트보드"],
-  장소: ["학교", "병원", "해변", "놀이공원", "도서관", "공항", "동물원", "영화관", "캠핑장", "수족관"],
-  악기: ["피아노", "기타", "드럼", "바이올린", "트럼펫", "플루트", "하프", "첼로", "탬버린", "색소폰"],
-  날씨: ["번개", "눈사람", "무지개", "태풍", "안개", "우박", "오로라", "토네이도", "소나기", "서리"],
-};
-
+const WORD_BANK: Record<string, string[]> = _WORD_BANK;
 const CATEGORIES = Object.keys(WORD_BANK);
 
 export class LiarDrawingEngine implements GameEngine {

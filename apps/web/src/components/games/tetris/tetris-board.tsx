@@ -90,11 +90,13 @@ const PlayerBoard = memo(function PlayerBoard({
   cellSize,
   compact,
   nickname,
+  resultOverlay,
 }: {
   board: TetrisPlayerBoard;
   cellSize: number;
   compact?: boolean;
   nickname?: string;
+  resultOverlay?: React.ReactNode;
 }) {
   const previewSize = compact ? "small" as const : "normal" as const;
 
@@ -170,11 +172,12 @@ const PlayerBoard = memo(function PlayerBoard({
               );
             }),
           )}
-          {board.status === "gameover" && (
+          {board.status === "gameover" && !resultOverlay && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded">
               <span className={`text-white font-bold ${compact ? "text-xs" : "text-lg"}`}>GAME OVER</span>
             </div>
           )}
+          {resultOverlay}
         </div>
       </div>
 
@@ -227,6 +230,7 @@ const PlayerBoard = memo(function PlayerBoard({
   if (prev.cellSize !== next.cellSize) return false;
   if (prev.compact !== next.compact) return false;
   if (prev.nickname !== next.nickname) return false;
+  if (prev.resultOverlay !== next.resultOverlay) return false;
   if (prev.board.version !== next.board.version) return false;
   // Check prediction changes (activePiece/ghostRow may differ with same version)
   if (prev.board.activePiece !== next.board.activePiece) return false;
@@ -321,6 +325,55 @@ export default function TetrisBoard({ roomId }: GameComponentProps) {
     }, [makeMove]),
   });
 
+  const isSolo = mode === "solo";
+  const myScore = myBoard?.score ?? 0;
+  const isSoloGameOver = isSolo && myBoard?.status === "gameover" && gameResult != null;
+  const isWinner = !isSolo && gameResult != null && gameResult.winnerId === socket?.id;
+  const isLoser = !isSolo && gameResult != null && gameResult.winnerId !== socket?.id && gameResult.winnerId !== null;
+  const isDraw = !isSolo && gameResult != null && gameResult.winnerId === null;
+
+  const soloResultOverlay = useMemo(() => {
+    if (!isSoloGameOver || !gameResult) return undefined;
+
+    return (
+      <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded gap-2">
+        <span className="text-3xl font-bold text-red-400 drop-shadow-lg">GAME OVER</span>
+        <span className="text-sm text-white/80">
+          점수: {myScore.toLocaleString()}
+        </span>
+        {gameResult.rankingResult?.isNewRecord && (
+          <span className="text-sm text-yellow-400 font-bold">🏆 새로운 1위!</span>
+        )}
+      </div>
+    );
+  }, [isSoloGameOver, gameResult, myScore]);
+
+  const versusResultOverlay = useMemo(() => {
+    if (!isWinner && !isLoser && !isDraw) return undefined;
+
+    let title: string;
+    let titleColor: string;
+    if (isWinner) {
+      title = "WIN!";
+      titleColor = "text-yellow-400";
+    } else if (isDraw) {
+      title = "DRAW";
+      titleColor = "text-gray-300";
+    } else {
+      title = "GAME OVER";
+      titleColor = "text-red-400";
+    }
+
+    return (
+      <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded gap-2">
+        <span className={`text-3xl font-bold ${titleColor} drop-shadow-lg`}>{title}</span>
+        <span className="text-sm text-white/80">
+          점수: {myScore.toLocaleString()}
+        </span>
+      </div>
+    );
+  }, [isWinner, isLoser, isDraw, myScore]);
+
   if (!myBoard) {
     return (
       <div className="flex items-center justify-center h-64 text-muted-foreground">
@@ -328,8 +381,6 @@ export default function TetrisBoard({ roomId }: GameComponentProps) {
       </div>
     );
   }
-
-  const isSolo = mode === "solo";
 
   return (
     <div className="flex flex-col items-center gap-4 p-4">
@@ -342,6 +393,7 @@ export default function TetrisBoard({ roomId }: GameComponentProps) {
               ? { ...myBoard, activePiece: effectivePiece, ghostRow: effectiveGhostRow }
               : myBoard}
             cellSize={32}
+            resultOverlay={soloResultOverlay ?? versusResultOverlay}
           />
         </div>
 
@@ -362,22 +414,6 @@ export default function TetrisBoard({ roomId }: GameComponentProps) {
           </div>
         )}
       </div>
-
-      {/* Solo game over result */}
-      {isSolo && myBoard.status === "gameover" && gameResult && (
-        <div className="text-center">
-          <p className="text-lg font-bold text-red-500">GAME OVER</p>
-          <p className="text-sm text-muted-foreground mt-1">
-            점수: {myBoard.score.toLocaleString()}
-          </p>
-          {gameResult.rankingResult && gameResult.rankingResult.rank != null && (
-            <p className="text-sm text-muted-foreground mt-1">
-              {gameResult.rankingResult.isNewRecord ? "🏆 새로운 1위! " : ""}
-              전체 {gameResult.rankingResult.rank}위
-            </p>
-          )}
-        </div>
-      )}
 
       {/* Controls hint */}
       <div className="text-xs text-muted-foreground text-center space-x-3">

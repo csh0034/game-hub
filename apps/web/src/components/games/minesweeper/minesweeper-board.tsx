@@ -129,6 +129,12 @@ export default function MinesweeperBoard({ roomId }: GameComponentProps) {
         )}
       </div>
 
+      {/* Controls hint */}
+      <div className="text-xs text-muted-foreground text-center space-x-3">
+        <span>좌클릭 열기</span>
+        <span>우클릭 깃발</span>
+      </div>
+
       {/* Game over overlay */}
       {state.status !== "playing" && (
         <div className="text-center">

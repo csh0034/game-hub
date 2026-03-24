@@ -64,6 +64,20 @@ describe("GomokuEngine", () => {
       const state = customEngine.initState(mockPlayers);
       expect(state.turnTimeSeconds).toBe(45);
     });
+
+    it("firstColor가 host이면 방장(players[0])이 흑이다", () => {
+      const hostEngine = new GomokuEngine(30, "host");
+      const state = hostEngine.initState(mockPlayers);
+      expect(state.players.black).toBe("player1");
+      expect(state.players.white).toBe("player2");
+    });
+
+    it("firstColor가 guest이면 상대(players[1])가 흑이다", () => {
+      const guestEngine = new GomokuEngine(30, "guest");
+      const state = guestEngine.initState(mockPlayers);
+      expect(state.players.black).toBe("player2");
+      expect(state.players.white).toBe("player1");
+    });
   });
 
   describe("processMove", () => {

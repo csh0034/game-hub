@@ -20,7 +20,7 @@ const NEW_GAMES: GameType[] = ["liar-drawing", "catch-mind"];
 function getQuickStartBadges(gameType: GameType): string[] | null {
   switch (gameType) {
     case "gomoku":
-      return ["30초"];
+      return ["30초", "방장 선공"];
     case "tetris":
       return ["초급"];
     case "liar-drawing":

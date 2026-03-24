@@ -1,4 +1,4 @@
-import type { Player, GomokuState, GomokuMove, GameResult } from "@game-hub/shared-types";
+import type { Player, GomokuState, GomokuMove, GameResult, GomokuFirstColor } from "@game-hub/shared-types";
 import type { GameEngine } from "./engine-interface.js";
 
 export class GomokuEngine implements GameEngine {
@@ -6,9 +6,11 @@ export class GomokuEngine implements GameEngine {
   minPlayers = 2;
   maxPlayers = 2;
   private turnTimeSeconds: number;
+  private firstColor: GomokuFirstColor;
 
-  constructor(turnTime: number = 30) {
+  constructor(turnTime: number = 30, firstColor: GomokuFirstColor = "host") {
     this.turnTimeSeconds = turnTime;
+    this.firstColor = firstColor;
   }
 
   initState(players: Player[]): GomokuState {
@@ -16,12 +18,14 @@ export class GomokuEngine implements GameEngine {
       Array(15).fill(null)
     );
     const now = Date.now();
+    const blackPlayer = this.firstColor === "guest" ? players[1] : players[0];
+    const whitePlayer = this.firstColor === "guest" ? players[0] : players[1];
     return {
       board,
       currentTurn: "black",
       players: {
-        black: players[0].id,
-        white: players[1].id,
+        black: blackPlayer.id,
+        white: whitePlayer.id,
       },
       lastMove: null,
       moveCount: 0,

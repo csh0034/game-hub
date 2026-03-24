@@ -3,6 +3,8 @@ import type { Player } from "./player-types";
 
 export type RoomStatus = "waiting" | "playing" | "finished";
 
+export type GomokuFirstColor = "host" | "guest";
+
 export interface GameOptions {
   minesweeperDifficulty?: MinesweeperDifficulty;
   tetrisDifficulty?: TetrisDifficulty;
@@ -12,6 +14,7 @@ export interface GameOptions {
   catchMindRounds?: number;
   catchMindCharHint?: boolean;
   gomokuTurnTime?: number;
+  gomokuFirstColor?: GomokuFirstColor;
 }
 
 export interface Room {

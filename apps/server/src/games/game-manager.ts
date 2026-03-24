@@ -180,7 +180,8 @@ export class GameManager {
 
     if (room.gameType === "gomoku") {
       const turnTime = room.gameOptions?.gomokuTurnTime ?? 30;
-      const gomokuEngine = new GomokuEngine(turnTime);
+      const firstColor = room.gameOptions?.gomokuFirstColor ?? "host";
+      const gomokuEngine = new GomokuEngine(turnTime, firstColor);
       this.roomEngines.set(roomId, gomokuEngine);
       const state = gomokuEngine.initState(room.players);
       this.gameStates.set(roomId, state);

@@ -280,20 +280,40 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
           {isHost && !isPlaying ? (
             <div className="space-y-3 text-sm">
               {room.gameType === "gomoku" && (
-                <div>
-                  <label className="block text-sm font-medium mb-1.5">턴 제한시간</label>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="range"
-                      min={10}
-                      max={60}
-                      value={localOptions.gomokuTurnTime ?? 30}
-                      onChange={(e) => handleOptionChange({ ...localOptions, gomokuTurnTime: Number(e.target.value) })}
-                      className="flex-1"
-                    />
-                    <span className="text-sm font-semibold tabular-nums min-w-14 text-center text-primary bg-primary/10 rounded-md px-2 py-0.5">{localOptions.gomokuTurnTime ?? 30}초</span>
+                <>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">턴 제한시간</label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="range"
+                        min={10}
+                        max={60}
+                        value={localOptions.gomokuTurnTime ?? 30}
+                        onChange={(e) => handleOptionChange({ ...localOptions, gomokuTurnTime: Number(e.target.value) })}
+                        className="flex-1"
+                      />
+                      <span className="text-sm font-semibold tabular-nums min-w-14 text-center text-primary bg-primary/10 rounded-md px-2 py-0.5">{localOptions.gomokuTurnTime ?? 30}초</span>
+                    </div>
                   </div>
-                </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">흑돌 (선공)</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {([["host", "방장"], ["guest", "상대"]] as const).map(([key, label]) => (
+                        <button
+                          key={key}
+                          onClick={() => handleOptionChange({ ...localOptions, gomokuFirstColor: key })}
+                          className={`p-2 rounded-lg border text-sm text-center transition-colors ${
+                            (localOptions.gomokuFirstColor ?? "host") === key
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border hover:border-border/80"
+                          }`}
+                        >
+                          <div className="font-medium">{label}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
               )}
               {room.gameType === "minesweeper" && (
                 <div>
@@ -428,10 +448,16 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
           ) : (
             <div className="space-y-2 text-sm">
               {room.gameType === "gomoku" && (
-                <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
-                  <span className="text-muted-foreground">턴 제한시간</span>
-                  <span className="font-medium">{room.gameOptions?.gomokuTurnTime ?? 30}초</span>
-                </div>
+                <>
+                  <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
+                    <span className="text-muted-foreground">턴 제한시간</span>
+                    <span className="font-medium">{room.gameOptions?.gomokuTurnTime ?? 30}초</span>
+                  </div>
+                  <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
+                    <span className="text-muted-foreground">흑돌 (선공)</span>
+                    <span className="font-medium">{(room.gameOptions?.gomokuFirstColor ?? "host") === "host" ? "방장" : "상대"}</span>
+                  </div>
+                </>
               )}
               {room.gameType === "minesweeper" && room.gameOptions?.minesweeperDifficulty && (() => {
                 const diff = MINESWEEPER_DIFFICULTY_CONFIGS[room.gameOptions.minesweeperDifficulty];

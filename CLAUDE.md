@@ -41,7 +41,7 @@ pnpm --filter web lint                 # 웹 린트
 | 라이어 드로잉 (Liar Drawing) | `docs/games/liar-drawing.md` | 3~8인, 소셜 디덕션 그림 게임. 제시어를 모르는 라이어를 투표로 찾아내기 |
 | 캐치마인드 (Catch Mind) | `docs/games/catch-mind.md` | 3~8인, 출제자가 그린 그림을 보고 채팅으로 정답을 맞추는 드로잉 퀴즈 게임 |
 | 테트리스 (Tetris) | `docs/games/tetris.md` | 1~8인, 10×20 보드, 7-bag 랜덤, SRS 벽차기, T-Spin/콤보/B2B/Lock Delay, 대전 시 쓰레기 줄 공격 |
-| 오목 (Gomoku) | `docs/games/gomoku.md` | 2인, 15×15 보드, 5목 먼저 완성 시 승리. 금수 없음, 장목 허용 |
+| 오목 (Gomoku) | `docs/games/gomoku.md` | 2인, 15×15 보드, 5목 먼저 완성 시 승리. 금수 없음, 장목 허용, 흑/백 선택 가능 |
 | 지뢰찾기 (Minesweeper) | `docs/games/minesweeper.md` | 1인, 초급(9×9)/중급(16×16)/고급(16×30) 난이도. 모든 안전한 칸을 열면 승리. 첫 클릭 안전 보장 |
 | 텍사스 홀덤 (Texas Hold'em) | `docs/games/texas-holdem.md` | 2~8인, 홀카드 2장 + 커뮤니티 5장으로 최고 5장 조합 승부. 시작칩 1000, SB/BB 10/20 |
 

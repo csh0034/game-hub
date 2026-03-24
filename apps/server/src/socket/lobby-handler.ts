@@ -216,6 +216,53 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
     callback({ success: true });
   });
 
+  socket.on("lobby:kick", (targetId, callback) => {
+    const roomId = socket.data.roomId;
+    if (!roomId) return callback({ success: false, error: "방에 참가하고 있지 않습니다." });
+    const room = gameManager.getRoom(roomId);
+    if (!room) return callback({ success: false, error: "방을 찾을 수 없습니다." });
+    if (room.status !== "waiting") return callback({ success: false, error: "대기 중일 때만 내보낼 수 있습니다." });
+    if (room.hostId !== socket.id) return callback({ success: false, error: "방장만 내보낼 수 있습니다." });
+    if (targetId === socket.id) return callback({ success: false, error: "자기 자신은 내보낼 수 없습니다." });
+
+    const isTargetSpectator = room.spectators.some((s) => s.id === targetId);
+    const isTargetPlayer = room.players.some((p) => p.id === targetId);
+
+    if (!isTargetPlayer && !isTargetSpectator) {
+      return callback({ success: false, error: "대상을 찾을 수 없습니다." });
+    }
+
+    const targetSocket = io.sockets.sockets.get(targetId);
+
+    if (isTargetSpectator) {
+      gameManager.removeSpectator(roomId, targetId);
+      if (targetSocket) {
+        targetSocket.emit("lobby:kicked");
+        targetSocket.leave(roomId);
+        targetSocket.data.roomId = null;
+        targetSocket.data.isSpectator = false;
+        targetSocket.join("lobby");
+      }
+      io.to(roomId).emit("lobby:spectator-left", targetId);
+    } else {
+      gameManager.removePlayer(roomId, targetId);
+      if (targetSocket) {
+        targetSocket.emit("lobby:kicked");
+        targetSocket.leave(roomId);
+        targetSocket.data.roomId = null;
+        targetSocket.join("lobby");
+      }
+      io.to(roomId).emit("lobby:player-left", targetId);
+    }
+
+    const updatedRoom = gameManager.getRoom(roomId);
+    if (updatedRoom) {
+      io.to(roomId).emit("lobby:room-updated", updatedRoom);
+      io.emit("lobby:room-updated", updatedRoom);
+    }
+    callback({ success: true });
+  });
+
   socket.on("chat:lobby-message", (message) => {
     if (!socket.data.authenticated) return;
     if (socket.data.roomId) return;

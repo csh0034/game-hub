@@ -20,6 +20,7 @@ import {
   ChevronUp,
   Link,
   Eye,
+  X,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import RankingCard from "@/components/ranking/ranking-card";
@@ -79,17 +80,19 @@ interface RoomViewProps {
   onToggleReady: () => void;
   onUpdateGameOptions: (gameOptions: GameOptions) => void;
   onKickSpectators?: () => Promise<void>;
+  onKickPlayer?: (targetId: string) => Promise<void>;
   roomMessages: ChatMessage[];
   onSendRoomMessage: (message: string) => void;
 }
 
-export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeaveImmediate, onToggleReady, onUpdateGameOptions, onKickSpectators, roomMessages, onSendRoomMessage }: RoomViewProps) {
+export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeaveImmediate, onToggleReady, onUpdateGameOptions, onKickSpectators, onKickPlayer, roomMessages, onSendRoomMessage }: RoomViewProps) {
   const { gameState, gameResult, playerLeftInfo, startGame, requestRematch, setPlayerLeftInfo } = useGame(socket);
   const [chatOpen, setChatOpen] = useState(true);
   const [lastSeenMessageCount, setLastSeenMessageCount] = useState(roomMessages.length);
   const [pendingOptions, setPendingOptions] = useState<GameOptions | null>(null);
   const [kickConfirmOpen, setKickConfirmOpen] = useState(false);
   const [pendingKickOptions, setPendingKickOptions] = useState<GameOptions | null>(null);
+  const [kickTarget, setKickTarget] = useState<{ id: string; nickname: string } | null>(null);
   const config = GAME_CONFIGS[room.gameType];
   const isHost = socket?.id === room.hostId;
   const myPlayer = room.players.find((p) => p.id === socket?.id);
@@ -288,11 +291,22 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
                   <Crown className="w-4 h-4 text-yellow-500" />
                 )}
               </div>
-              {player.isReady ? (
-                <CheckCircle2 className="w-5 h-5 text-success" />
-              ) : (
-                <Circle className="w-5 h-5 text-muted-foreground" />
-              )}
+              <div className="flex items-center gap-2">
+                {player.isReady ? (
+                  <CheckCircle2 className="w-5 h-5 text-success" />
+                ) : (
+                  <Circle className="w-5 h-5 text-muted-foreground" />
+                )}
+                {isHost && player.id !== room.hostId && !isPlaying && (
+                  <button
+                    onClick={() => setKickTarget({ id: player.id, nickname: player.nickname })}
+                    className="text-muted-foreground hover:text-red-500 transition-colors"
+                    title="내보내기"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             </div>
           ))}
           {Array.from({ length: room.maxPlayers - room.players.length }).map(
@@ -327,6 +341,15 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
                   <span className="font-medium">{spectator.nickname}</span>
                   <span className="text-xs bg-amber-500/20 text-amber-600 px-1.5 py-0.5 rounded">관전</span>
                 </div>
+                {isHost && !isPlaying && (
+                  <button
+                    onClick={() => setKickTarget({ id: spectator.id, nickname: spectator.nickname })}
+                    className="text-muted-foreground hover:text-red-500 transition-colors"
+                    title="내보내기"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             ))}
             {Array.from({ length: MAX_SPECTATORS - room.spectators.length }).map(
@@ -718,6 +741,21 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
           setKickConfirmOpen(false);
           setPendingKickOptions(null);
         }}
+      />
+
+      <ConfirmDialog
+        open={!!kickTarget}
+        title="내보내기"
+        message={`${kickTarget?.nickname ?? ""} 님을 내보내시겠습니까?`}
+        confirmText="내보내기"
+        cancelText="취소"
+        onConfirm={async () => {
+          if (kickTarget && onKickPlayer) {
+            await onKickPlayer(kickTarget.id);
+          }
+          setKickTarget(null);
+        }}
+        onCancel={() => setKickTarget(null)}
       />
     </div>
   );

@@ -62,7 +62,7 @@ interface GameHubProps {
 
 export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
   const { socket, isConnected, playerCount, onlinePlayers } = useSocket();
-  const { rooms, currentRoom, isSpectating, createRoom, joinRoom, spectateRoom, leaveRoom, kickSpectators, toggleReady, updateGameOptions } =
+  const { rooms, currentRoom, isSpectating, createRoom, joinRoom, spectateRoom, leaveRoom, kickSpectators, kickPlayer, toggleReady, updateGameOptions } =
     useLobby(socket);
   const { lobbyMessages, roomMessages, sendLobbyMessage, sendRoomMessage, clearRoomMessages, requestLobbyHistory, requestRoomHistory, deleteMessage } =
     useChat(socket);
@@ -332,6 +332,7 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
             onToggleReady={toggleReady}
             onUpdateGameOptions={updateGameOptions}
             onKickSpectators={kickSpectators}
+            onKickPlayer={kickPlayer}
             roomMessages={roomMessages}
             onSendRoomMessage={sendRoomMessage}
           />

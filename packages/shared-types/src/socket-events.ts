@@ -25,6 +25,7 @@ export interface ClientToServerEvents {
   "lobby:update-game-options": (gameOptions: GameOptions, callback: (result: { success: boolean; error?: string }) => void) => void;
   "lobby:join-spectate": (payload: JoinRoomPayload, callback: (room: Room | null, error?: string) => void) => void;
   "lobby:kick-spectators": (callback: (result: { success: boolean; error?: string }) => void) => void;
+  "lobby:kick": (targetId: string, callback: (result: { success: boolean; error?: string }) => void) => void;
 
   // Game
   "game:move": (move: GameMove) => void;
@@ -75,6 +76,7 @@ export interface ServerToClientEvents {
   "lobby:spectator-joined": (player: Player) => void;
   "lobby:spectator-left": (playerId: string) => void;
   "lobby:spectator-kicked": () => void;
+  "lobby:kicked": () => void;
   "lobby:error": (message: string) => void;
 
   // Game

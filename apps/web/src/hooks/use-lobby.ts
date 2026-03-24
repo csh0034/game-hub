@@ -34,12 +34,20 @@ export function useLobby(socket: GameSocket | null) {
       toast.info("방장이 관전을 비활성화하여 로비로 이동합니다.");
     });
 
+    socket.on("lobby:kicked", () => {
+      setCurrentRoom(null);
+      setIsSpectating(false);
+      resetGame();
+      toast.info("방장에 의해 내보내졌습니다.");
+    });
+
     return () => {
       socket.off("lobby:room-created");
       socket.off("lobby:room-updated");
       socket.off("lobby:room-removed");
       socket.off("lobby:error");
       socket.off("lobby:spectator-kicked");
+      socket.off("lobby:kicked");
     };
   }, [socket, setRooms, addRoom, updateRoom, removeRoom, setCurrentRoom, setIsSpectating, resetGame]);
 
@@ -108,6 +116,19 @@ export function useLobby(socket: GameSocket | null) {
     });
   }, [socket]);
 
+  const kickPlayer = useCallback(
+    (targetId: string): Promise<void> => {
+      return new Promise((resolve, reject) => {
+        if (!socket) return reject("Not connected");
+        socket.emit("lobby:kick", targetId, (result) => {
+          if (!result.success) return reject(result.error);
+          resolve();
+        });
+      });
+    },
+    [socket]
+  );
+
   const toggleReady = useCallback(() => {
     if (!socket) return;
     socket.emit("lobby:toggle-ready");
@@ -129,5 +150,5 @@ export function useLobby(socket: GameSocket | null) {
     [socket]
   );
 
-  return { rooms, currentRoom, isSpectating, createRoom, joinRoom, spectateRoom, leaveRoom, kickSpectators, toggleReady, updateGameOptions };
+  return { rooms, currentRoom, isSpectating, createRoom, joinRoom, spectateRoom, leaveRoom, kickSpectators, kickPlayer, toggleReady, updateGameOptions };
 }

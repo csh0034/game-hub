@@ -2,7 +2,7 @@
 
 import type { Room } from "@game-hub/shared-types";
 import { GAME_CONFIGS, MAX_SPECTATORS, MINESWEEPER_DIFFICULTY_CONFIGS, TETRIS_DIFFICULTY_CONFIGS } from "@game-hub/shared-types";
-import { Users, Clock, Play, Eye } from "lucide-react";
+import { Users, Clock, Play, Eye, MessageCircle, MessageCircleOff } from "lucide-react";
 
 interface RoomListProps {
   rooms: Room[];
@@ -58,6 +58,11 @@ export function RoomList({ rooms, onJoinRoom, onSpectateRoom }: RoomListProps) {
                     <span className="flex items-center gap-1">
                       <Eye className="w-3 h-3" />
                       {room.spectators.length}/{MAX_SPECTATORS}
+                      {room.gameOptions?.spectateChatEnabled ? (
+                        <MessageCircle className="w-3 h-3 text-amber-500" />
+                      ) : (
+                        <MessageCircleOff className="w-3 h-3 text-muted-foreground/50" />
+                      )}
                     </span>
                   )}
                   <span className="flex items-center gap-1">

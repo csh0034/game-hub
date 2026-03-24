@@ -110,6 +110,10 @@ game-hub/
     └── utils.ts
 ```
 
+### 날짜/시간 표시 형식
+
+UI에서 날짜·시간을 표시할 때는 `lib/utils.ts`의 `formatDateTime`을 사용한다. 형식: `YYYY-MM-DD HH:mm:ss` (예: `2026-03-24 15:42:09`). 직접 `toLocaleString` 등을 호출하지 않는다.
+
 ### 라우팅
 
 - `/` → `/lobby` 리다이렉트. 모든 라우트는 `<GameHub />` 컴포넌트를 렌더하며, `activeTab` prop으로 탭을 결정한다.

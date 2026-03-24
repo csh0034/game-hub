@@ -18,6 +18,7 @@ import { RoomView } from "@/components/lobby/room-view";
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import { AnnounceDialog } from "@/components/common/announce-dialog";
+import { AnnouncementOverlay } from "@/components/common/announcement-overlay";
 import { RequestBoard } from "@/components/request-board/request-board";
 import LobbyRankingPanel from "@/components/ranking/lobby-ranking-panel";
 
@@ -75,6 +76,9 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
     onConfirm: () => void;
   }>({ open: false, onConfirm: () => {} });
   const [announceOpen, setAnnounceOpen] = useState(false);
+  const [announcementMessage, setAnnouncementMessage] = useState<string | null>(
+    null,
+  );
   const confirmResolveRef = useRef<((value: boolean) => void) | null>(null);
 
   const nickname = useSyncExternalStore(
@@ -126,10 +130,7 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
     if (!socket) return;
     const handler = ({ message }: { message: string }) => {
       if (!isAdminRef.current) {
-        toast("📢 공지", {
-          description: message,
-          duration: 5000,
-        });
+        setAnnouncementMessage(message);
       }
     };
     socket.on("system:announcement", handler);
@@ -317,6 +318,10 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
         <Footer githubRepoUrl={githubRepoUrl} />
         {confirmDialog}
         {announceDialog}
+        <AnnouncementOverlay
+          message={announcementMessage}
+          onClose={() => setAnnouncementMessage(null)}
+        />
       </div>
     );
   }
@@ -420,6 +425,10 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
       </main>
       <Footer githubRepoUrl={githubRepoUrl} />
       {announceDialog}
+      <AnnouncementOverlay
+        message={announcementMessage}
+        onClose={() => setAnnouncementMessage(null)}
+      />
     </div>
   );
 }

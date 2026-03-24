@@ -766,6 +766,9 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
     if (!roomId) return;
     if (socket.data.isSpectator) return;
 
+    const currentRoom = gameManager.getRoom(roomId);
+    if (!currentRoom || currentRoom.hostId !== socket.id) return;
+
     clearGomokuTimer(roomId);
     clearTetrisTicker(roomId);
     cleanupTetrisFlush(roomId);

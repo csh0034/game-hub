@@ -173,7 +173,7 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
               </span>
             )}
           </div>
-          {!isSpectating && (
+          {isHost && (
             <button
               onClick={requestRematch}
               className={`flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium transition-colors ${gameResult ? "visible" : "invisible"}`}

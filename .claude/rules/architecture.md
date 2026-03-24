@@ -128,6 +128,10 @@ game-hub/
 
 서버는 로비/방별 최근 50개 채팅 메시지를 Redis에 보관한다. 클라이언트는 로비/방 입장 시 `chat:request-history` 이벤트로 이력을 요청한다.
 
+### 클라이언트 소켓 emit 디바운싱
+
+슬라이더(`type="range"`) 등 연속 입력이 발생하는 UI에서 소켓 emit을 할 때는 **300ms 디바운싱**을 적용한다. `useLobby` 훅의 `updateGameOptions`가 대표적 예시이며, 새로운 연속 입력 기반 emit을 추가할 때도 동일한 패턴(`useRef` + `clearTimeout` + `setTimeout`)을 따른다.
+
 ## 게임 추가 흐름
 
 1. `shared-types/src/game-types.ts` — GameType 및 상태/이동 타입 추가

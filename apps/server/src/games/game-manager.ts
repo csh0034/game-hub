@@ -1,4 +1,5 @@
 import type { Room, CreateRoomPayload, GameOptions } from "@game-hub/shared-types";
+import { MAX_SPECTATORS } from "@game-hub/shared-types";
 import type { Player, GameType, GameState, GameMove, GameResult } from "@game-hub/shared-types";
 import { GomokuEngine } from "./gomoku-engine.js";
 import { HoldemEngine } from "./holdem-engine.js";
@@ -33,6 +34,7 @@ export class GameManager {
     for (const room of rooms) {
       room.status = "waiting";
       room.players = [];
+      room.spectators = [];
       this.rooms.set(room.id, room);
       // Sync back the cleaned-up room
       this.persistRoom(room);
@@ -49,6 +51,7 @@ export class GameManager {
       gameType: payload.gameType,
       hostId: host.id,
       players: [host],
+      spectators: [],
       maxPlayers: engine.maxPlayers,
       status: "waiting",
       createdAt: Date.now(),
@@ -227,9 +230,15 @@ export class GameManager {
     const room = this.rooms.get(roomId);
     if (!room) return null;
     const player = room.players.find((p) => p.id === oldId);
-    if (!player) return null;
-    player.id = newId;
-    if (room.hostId === oldId) room.hostId = newId;
+    const spectator = room.spectators.find((p) => p.id === oldId);
+    if (!player && !spectator) return null;
+    if (player) {
+      player.id = newId;
+      if (room.hostId === oldId) room.hostId = newId;
+    }
+    if (spectator) {
+      spectator.id = newId;
+    }
     this.persistRoom(room);
     return room;
   }
@@ -244,6 +253,42 @@ export class GameManager {
 
   setGameState(roomId: string, state: GameState): void {
     this.gameStates.set(roomId, state);
+  }
+
+  addSpectator(roomId: string, player: Player): Room | null {
+    const room = this.rooms.get(roomId);
+    if (!room) return null;
+    if (room.status !== "waiting") return null;
+    if (!room.gameOptions?.spectateEnabled) return null;
+    if (room.spectators.length >= MAX_SPECTATORS) return null;
+    if (room.players.some((p) => p.id === player.id)) return null;
+    if (room.spectators.some((p) => p.id === player.id)) return null;
+    room.spectators.push(player);
+    this.persistRoom(room);
+    return room;
+  }
+
+  removeSpectator(roomId: string, playerId: string): Room | null {
+    const room = this.rooms.get(roomId);
+    if (!room) return null;
+    room.spectators = room.spectators.filter((p) => p.id !== playerId);
+    this.persistRoom(room);
+    return room;
+  }
+
+  removeAllSpectators(roomId: string): string[] {
+    const room = this.rooms.get(roomId);
+    if (!room) return [];
+    const removedIds = room.spectators.map((p) => p.id);
+    room.spectators = [];
+    this.persistRoom(room);
+    return removedIds;
+  }
+
+  isSpectator(roomId: string, playerId: string): boolean {
+    const room = this.rooms.get(roomId);
+    if (!room) return false;
+    return room.spectators.some((p) => p.id === playerId);
   }
 
   getRooms(): Room[] {

@@ -62,7 +62,7 @@ interface GameHubProps {
 
 export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
   const { socket, isConnected, playerCount, onlinePlayers } = useSocket();
-  const { rooms, currentRoom, createRoom, joinRoom, leaveRoom, toggleReady, updateGameOptions } =
+  const { rooms, currentRoom, isSpectating, createRoom, joinRoom, spectateRoom, leaveRoom, kickSpectators, toggleReady, updateGameOptions } =
     useLobby(socket);
   const { lobbyMessages, roomMessages, sendLobbyMessage, sendRoomMessage, clearRoomMessages, requestLobbyHistory, requestRoomHistory, deleteMessage } =
     useChat(socket);
@@ -115,15 +115,23 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
           requestRoomHistory();
           history.replaceState(null, "", "/room/" + pending);
         })
-        .catch((error: string) => {
-          toast.error(error);
-          history.replaceState(null, "", "/lobby");
+        .catch(() => {
+          // 플레이어 참가 실패 → 관전 시도
+          spectateRoom(pending)
+            .then(() => {
+              requestRoomHistory();
+              history.replaceState(null, "", "/room/" + pending);
+            })
+            .catch(() => {
+              toast.error("방에 참가할 수 없습니다.");
+              history.replaceState(null, "", "/lobby");
+            });
         })
         .finally(() => {
           useLobbyStore.getState().setPendingRoomId(null);
         });
     });
-  }, [socket, isConnected, nickname, requestLobbyHistory, joinRoom, clearRoomMessages, requestRoomHistory]);
+  }, [socket, isConnected, nickname, requestLobbyHistory, joinRoom, spectateRoom, clearRoomMessages, requestRoomHistory]);
 
   // 관리자 공지 수신 (관리자 본인은 제외)
   useEffect(() => {
@@ -185,11 +193,11 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
 
   const handleLeaveRoom = useCallback(async () => {
     if (!currentRoom) return;
-    if (isGameInProgress()) {
+    if (!isSpectating && isGameInProgress()) {
       if (!(await showConfirm())) return;
     }
     doLeaveRoom();
-  }, [currentRoom, isGameInProgress, doLeaveRoom, showConfirm]);
+  }, [currentRoom, isSpectating, isGameInProgress, doLeaveRoom, showConfirm]);
 
   const handleGoHome = useCallback(() => {
     handleLeaveRoom();
@@ -259,6 +267,17 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
     [joinRoom, clearRoomMessages, requestRoomHistory]
   );
 
+  const wrappedSpectateRoom = useCallback(
+    async (roomId: string) => {
+      clearRoomMessages();
+      const room = await spectateRoom(roomId);
+      requestRoomHistory();
+      history.pushState(null, "", "/room/" + room.id);
+      return room;
+    },
+    [spectateRoom, clearRoomMessages, requestRoomHistory]
+  );
+
   // SSR / hydration 전: 빈 화면 (닉네임 폼 플래시 방지)
   if (nickname === undefined) {
     return null;
@@ -307,10 +326,12 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
             room={currentRoom}
             socket={socket}
             nickname={nickname}
+            isSpectating={isSpectating}
             onLeave={handleLeaveRoom}
             onLeaveImmediate={doLeaveRoom}
             onToggleReady={toggleReady}
             onUpdateGameOptions={updateGameOptions}
+            onKickSpectators={kickSpectators}
             roomMessages={roomMessages}
             onSendRoomMessage={sendRoomMessage}
           />
@@ -386,7 +407,7 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
 
                 <section>
                   <h2 className="text-2xl font-bold mb-4">방 목록</h2>
-                  <RoomList rooms={rooms} onJoinRoom={wrappedJoinRoom} />
+                  <RoomList rooms={rooms} onJoinRoom={wrappedJoinRoom} onSpectateRoom={wrappedSpectateRoom} />
                 </section>
               </>
             ) : (

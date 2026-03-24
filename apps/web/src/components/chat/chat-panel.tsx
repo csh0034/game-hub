@@ -153,12 +153,14 @@ export function ChatPanel({
                     <span className="text-muted-foreground text-xs mr-1">
                       {formatDateTime(msg.timestamp)}
                     </span>
+                    {msg.isSpectator && <span className="text-xs text-amber-500 mr-1">[관전]</span>}
                     <span className={`font-semibold ${msg.isAdmin ? "text-red-400" : "text-sky-400"}`}>
                       {msg.nickname}
                     </span>
                   </>
                 ) : (
                   <>
+                    {msg.isSpectator && <span className="text-xs text-amber-500 mr-1">[관전]</span>}
                     <span className={`font-semibold ${msg.isAdmin ? "text-red-400" : ""}`}>
                       {msg.nickname}
                     </span>

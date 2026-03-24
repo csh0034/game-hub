@@ -9,6 +9,7 @@ function createRoom(id: string): Room {
     gameType: "gomoku",
     hostId: "host-1",
     players: [{ id: "host-1", nickname: "Host", isReady: true }],
+    spectators: [],
     maxPlayers: 2,
     status: "waiting",
     createdAt: Date.now(),

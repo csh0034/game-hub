@@ -246,7 +246,7 @@ function getOpponentCellSize(count: number): number {
   return 8;
 }
 
-export default function TetrisBoard({ roomId }: GameComponentProps) {
+export default function TetrisBoard({ roomId, isSpectating }: GameComponentProps) {
   const { socket } = useSocket();
   // useGame is still needed for socket event listening
   const { gameResult, makeMove } = useGame(socket);
@@ -314,7 +314,7 @@ export default function TetrisBoard({ roomId }: GameComponentProps) {
   // DAS/ARR keyboard input
   const myStatus = myBoard?.status ?? null;
   useTetrisInput({
-    enabled: myStatus === "playing" && !gameResult,
+    enabled: myStatus === "playing" && !gameResult && !isSpectating,
     onMove: useCallback((moveType) => {
       applyPrediction(moveType);
       makeMove({ type: moveType });

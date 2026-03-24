@@ -2,6 +2,7 @@
 
 import { useEffect, useCallback } from "react";
 import { useGameStore } from "@/stores/game-store";
+import { useLobbyStore } from "@/stores/lobby-store";
 import type { RoundResult } from "@/stores/game-store";
 import type { GameSocket } from "@/lib/socket";
 import { useTetrisBoardStore } from "@/stores/tetris-board-store";
@@ -85,6 +86,7 @@ export function useGame(socket: GameSocket | null) {
   const makeMove = useCallback(
     (move: GameMove) => {
       if (!socket) return;
+      if (useLobbyStore.getState().isSpectating) return;
       socket.emit("game:move", move);
     },
     [socket]

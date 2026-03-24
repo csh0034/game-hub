@@ -17,6 +17,7 @@ import type {
   RankingKey,
   RankingEntry,
 } from "@game-hub/shared-types";
+import type { Room } from "@game-hub/shared-types";
 import type { GameManager } from "../games/game-manager.js";
 import type { RankingStore } from "../storage/index.js";
 import { startGomokuTimer, clearGomokuTimer } from "../games/gomoku-timer.js";
@@ -124,6 +125,7 @@ function advanceCatchMindRound(io: IOServer, roomId: string, gameManager: GameMa
     if (drawerSocket) {
       drawerSocket.emit("game:private-state", { keyword: cmEngine.getKeyword()! });
     }
+    sendPrivateStateToSpectators(io, room, gameManager);
     // Auto-advance to drawing after 3 seconds
     startCatchMindTimer(roomId, 3000, () => {
       const currentState = gameManager.getGameState(roomId) as CatchMindPublicState | null;
@@ -184,6 +186,54 @@ async function submitRanking(
     isNewRecord: rank === 1,
   };
   io.emit("ranking:updated", { key, rankings: entries });
+}
+
+function sendPrivateStateToSpectators(io: IOServer, room: Room, gameManager: GameManager) {
+  if (room.spectators.length === 0) return;
+
+  if (room.gameType === "liar-drawing") {
+    const liarEngine = gameManager.getLiarDrawingEngine(room.id);
+    if (liarEngine) {
+      for (const spectator of room.spectators) {
+        const spectatorSocket = io.sockets.sockets.get(spectator.id);
+        if (spectatorSocket) {
+          spectatorSocket.emit("game:private-state", {
+            role: "spectator",
+            keyword: liarEngine.getKeyword(),
+            liarId: liarEngine.getLiarId() ?? undefined,
+          });
+        }
+      }
+    }
+  }
+
+  if (room.gameType === "catch-mind") {
+    const cmEngine = gameManager.getCatchMindEngine(room.id);
+    if (cmEngine) {
+      for (const spectator of room.spectators) {
+        const spectatorSocket = io.sockets.sockets.get(spectator.id);
+        if (spectatorSocket) {
+          spectatorSocket.emit("game:private-state", { keyword: cmEngine.getKeyword()! });
+        }
+      }
+    }
+  }
+
+  if (room.gameType === "texas-holdem") {
+    const holdemEngine = gameManager.getHoldemEngine(room.id);
+    if (holdemEngine) {
+      const allHoleCards: Record<string, ReturnType<typeof holdemEngine.getHoleCards>> = {};
+      for (const player of room.players) {
+        allHoleCards[player.id] = holdemEngine.getHoleCards(player.id);
+      }
+      for (const spectator of room.spectators) {
+        const spectatorSocket = io.sockets.sockets.get(spectator.id);
+        if (spectatorSocket) {
+          spectatorSocket.emit("game:private-state", { allHoleCards });
+        }
+      }
+    }
+  }
 }
 
 export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: GameManager, rankingStore: RankingStore) {
@@ -341,6 +391,7 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
           });
         }
       }
+      sendPrivateStateToSpectators(io, room, gameManager);
       // Auto-advance to drawing after 5 seconds
       startLiarDrawingTimer(roomId, 5000, () => {
         const currentState = gameManager.getGameState(roomId) as LiarDrawingPublicState | null;
@@ -461,11 +512,15 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
         }
       }
     }
+
+    // Send private state to spectators (they see all info)
+    sendPrivateStateToSpectators(io, room, gameManager);
   });
 
   socket.on("game:draw-points", (points: DrawPoint[]) => {
     const roomId = socket.data.roomId;
     if (!roomId) return;
+    if (socket.data.isSpectator) return;
     const room = gameManager.getRoom(roomId);
     if (!room) return;
 
@@ -497,6 +552,7 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
   socket.on("game:move", async (move) => {
     const roomId = socket.data.roomId;
     if (!roomId) return;
+    if (socket.data.isSpectator) return;
 
     // Ignore client-side tick moves for tetris — server handles ticks
     const room = gameManager.getRoom(roomId);
@@ -625,6 +681,12 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
                   playerSocket.emit("game:private-state", { holeCards });
                 }
               }
+
+              // Send all hole cards to spectators
+              const updatedRoom = gameManager.getRoom(roomId);
+              if (updatedRoom) {
+                sendPrivateStateToSpectators(io, updatedRoom, gameManager);
+              }
             }, nextRoundIn);
 
             holdemRoundTimers.set(roomId, timer);
@@ -702,6 +764,7 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
   socket.on("game:rematch", () => {
     const roomId = socket.data.roomId;
     if (!roomId) return;
+    if (socket.data.isSpectator) return;
 
     clearGomokuTimer(roomId);
     clearTetrisTicker(roomId);

@@ -13,7 +13,7 @@ const CELL_SIZE = 36;
 const PADDING = 24;
 const BOARD_PX = CELL_SIZE * (BOARD_SIZE - 1) + PADDING * 2;
 
-export default function GomokuBoard({ roomId }: GameComponentProps) {
+export default function GomokuBoard({ roomId, isSpectating }: GameComponentProps) {
   const { socket } = useSocket();
   const { gameState, gameResult, makeMove } = useGame(socket);
 
@@ -38,6 +38,7 @@ export default function GomokuBoard({ roomId }: GameComponentProps) {
   const isMyTurn = state.players[state.currentTurn] === socket?.id;
 
   const handleClick = (row: number, col: number) => {
+    if (isSpectating) return;
     if (gameResult) return;
     if (!isMyTurn) return;
     if (state.board[row][col] !== null) return;

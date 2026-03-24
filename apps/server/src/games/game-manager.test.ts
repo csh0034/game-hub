@@ -261,4 +261,85 @@ describe("GameManager", () => {
       expect(gm.resetRoom("invalid")).toBeNull();
     });
   });
+
+  describe("관전자 관리", () => {
+    const spectator: Player = { id: "spec-1", nickname: "Spectator", isReady: false };
+    const spectator2: Player = { id: "spec-2", nickname: "Spectator2", isReady: false };
+
+    it("관전 허용된 방에 관전자를 추가한다", () => {
+      const room = gm.createRoom({ ...gomokuPayload, gameOptions: { spectateEnabled: true } }, host);
+      const result = gm.addSpectator(room.id, spectator);
+      expect(result).not.toBeNull();
+      expect(result!.spectators).toHaveLength(1);
+      expect(result!.spectators[0].id).toBe("spec-1");
+    });
+
+    it("관전 미허용 방에는 관전자를 추가할 수 없다", () => {
+      const room = gm.createRoom(gomokuPayload, host);
+      expect(gm.addSpectator(room.id, spectator)).toBeNull();
+    });
+
+    it("playing 상태에서는 관전자를 추가할 수 없다", () => {
+      const h: Player = { id: "host-p", nickname: "Host", isReady: true };
+      const g: Player = { id: "guest-p", nickname: "Guest", isReady: true };
+      const room = gm.createRoom({ ...gomokuPayload, gameOptions: { spectateEnabled: true } }, h);
+      gm.joinRoom(room.id, g);
+      gm.startGame(room.id);
+      expect(gm.addSpectator(room.id, spectator)).toBeNull();
+    });
+
+    it("최대 4명까지 관전자를 추가할 수 있다", () => {
+      const room = gm.createRoom({ ...gomokuPayload, gameOptions: { spectateEnabled: true } }, host);
+      for (let i = 0; i < 4; i++) {
+        gm.addSpectator(room.id, { id: `spec-${i}`, nickname: `Spec${i}`, isReady: false });
+      }
+      expect(gm.addSpectator(room.id, { id: "spec-5", nickname: "Spec5", isReady: false })).toBeNull();
+    });
+
+    it("이미 플레이어인 사용자는 관전자로 추가할 수 없다", () => {
+      const room = gm.createRoom({ ...gomokuPayload, gameOptions: { spectateEnabled: true } }, host);
+      expect(gm.addSpectator(room.id, host)).toBeNull();
+    });
+
+    it("관전자를 제거한다", () => {
+      const room = gm.createRoom({ ...gomokuPayload, gameOptions: { spectateEnabled: true } }, host);
+      gm.addSpectator(room.id, spectator);
+      const result = gm.removeSpectator(room.id, spectator.id);
+      expect(result).not.toBeNull();
+      expect(result!.spectators).toHaveLength(0);
+    });
+
+    it("모든 관전자를 제거하고 ID 목록을 반환한다", () => {
+      const room = gm.createRoom({ ...gomokuPayload, gameOptions: { spectateEnabled: true } }, host);
+      gm.addSpectator(room.id, spectator);
+      gm.addSpectator(room.id, spectator2);
+      const removed = gm.removeAllSpectators(room.id);
+      expect(removed).toEqual(["spec-1", "spec-2"]);
+      expect(gm.getRoom(room.id)!.spectators).toHaveLength(0);
+    });
+
+    it("isSpectator로 관전자 여부를 확인한다", () => {
+      const room = gm.createRoom({ ...gomokuPayload, gameOptions: { spectateEnabled: true } }, host);
+      gm.addSpectator(room.id, spectator);
+      expect(gm.isSpectator(room.id, spectator.id)).toBe(true);
+      expect(gm.isSpectator(room.id, host.id)).toBe(false);
+    });
+
+    it("resetRoom 시 관전자가 유지된다", () => {
+      const room = gm.createRoom({ ...gomokuPayload, gameOptions: { spectateEnabled: true } }, host);
+      gm.addSpectator(room.id, spectator);
+      gm.joinRoom(room.id, guest);
+      gm.startGame(room.id);
+      const reset = gm.resetRoom(room.id);
+      expect(reset!.spectators).toHaveLength(1);
+    });
+
+    it("replacePlayerId로 관전자 ID를 교체한다", () => {
+      const room = gm.createRoom({ ...gomokuPayload, gameOptions: { spectateEnabled: true } }, host);
+      gm.addSpectator(room.id, spectator);
+      const result = gm.replacePlayerId(room.id, spectator.id, "new-spec-1");
+      expect(result).not.toBeNull();
+      expect(result!.spectators[0].id).toBe("new-spec-1");
+    });
+  });
 });

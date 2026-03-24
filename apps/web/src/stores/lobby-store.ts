@@ -5,9 +5,11 @@ interface LobbyStore {
   rooms: Room[];
   currentRoom: Room | null;
   pendingRoomId: string | null;
+  isSpectating: boolean;
   setRooms: (rooms: Room[]) => void;
   setCurrentRoom: (room: Room | null) => void;
   setPendingRoomId: (roomId: string | null) => void;
+  setIsSpectating: (value: boolean) => void;
   addRoom: (room: Room) => void;
   updateRoom: (room: Room) => void;
   removeRoom: (roomId: string) => void;
@@ -17,9 +19,11 @@ export const useLobbyStore = create<LobbyStore>((set) => ({
   rooms: [],
   currentRoom: null,
   pendingRoomId: null,
+  isSpectating: false,
   setRooms: (rooms) => set({ rooms }),
   setCurrentRoom: (room) => set({ currentRoom: room }),
   setPendingRoomId: (roomId) => set({ pendingRoomId: roomId }),
+  setIsSpectating: (value) => set({ isSpectating: value }),
   addRoom: (room) =>
     set((state) => ({
       rooms: state.rooms.some((r) => r.id === room.id)

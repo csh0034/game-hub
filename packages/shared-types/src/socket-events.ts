@@ -11,6 +11,7 @@ export interface ChatMessage {
   message: string;
   timestamp: number;
   isAdmin?: boolean;
+  isSpectator?: boolean;
 }
 
 // Client → Server
@@ -22,6 +23,8 @@ export interface ClientToServerEvents {
   "lobby:get-rooms": (callback: (rooms: Room[]) => void) => void;
   "lobby:toggle-ready": () => void;
   "lobby:update-game-options": (gameOptions: GameOptions, callback: (result: { success: boolean; error?: string }) => void) => void;
+  "lobby:join-spectate": (payload: JoinRoomPayload, callback: (room: Room | null, error?: string) => void) => void;
+  "lobby:kick-spectators": (callback: (result: { success: boolean; error?: string }) => void) => void;
 
   // Game
   "game:move": (move: GameMove) => void;
@@ -68,6 +71,9 @@ export interface ServerToClientEvents {
   "lobby:rooms-list": (rooms: Room[]) => void;
   "lobby:player-joined": (player: Player) => void;
   "lobby:player-left": (playerId: string) => void;
+  "lobby:spectator-joined": (player: Player) => void;
+  "lobby:spectator-left": (playerId: string) => void;
+  "lobby:spectator-kicked": () => void;
   "lobby:error": (message: string) => void;
 
   // Game
@@ -122,4 +128,5 @@ export interface SocketData {
   roomId: string | null;
   authenticated: boolean;
   authenticatedAt: number | null;
+  isSpectator?: boolean;
 }

@@ -25,7 +25,7 @@ const CELL_SIZES: Record<MinesweeperDifficulty, number> = {
   expert: 26,
 };
 
-export default function MinesweeperBoard({ roomId }: GameComponentProps) {
+export default function MinesweeperBoard({ roomId, isSpectating }: GameComponentProps) {
   const { socket } = useSocket();
   const { gameState, makeMove } = useGame(socket);
   const gameResult = useGameStore((s) => s.gameResult);
@@ -44,17 +44,19 @@ export default function MinesweeperBoard({ roomId }: GameComponentProps) {
 
   const handleReveal = useCallback(
     (row: number, col: number) => {
+      if (isSpectating) return;
       if (!state || state.status !== "playing") return;
       if (state.board[row][col].status !== "hidden") return;
       const move: MinesweeperMove = { type: "reveal", row, col };
       makeMove(move);
     },
-    [state, makeMove],
+    [isSpectating, state, makeMove],
   );
 
   const handleContextMenu = useCallback(
     (e: React.MouseEvent, row: number, col: number) => {
       e.preventDefault();
+      if (isSpectating) return;
       if (!state || state.status !== "playing") return;
       const cell = state.board[row][col];
       if (cell.status === "revealed") return;
@@ -66,7 +68,7 @@ export default function MinesweeperBoard({ roomId }: GameComponentProps) {
       };
       makeMove(move);
     },
-    [state, makeMove],
+    [isSpectating, state, makeMove],
   );
 
   if (!state) return null;

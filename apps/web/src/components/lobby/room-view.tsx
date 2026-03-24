@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState, useCallback } from "react";
 import type { Room, ChatMessage, GameOptions, MinesweeperDifficulty, TetrisDifficulty } from "@game-hub/shared-types";
-import { GAME_CONFIGS, MINESWEEPER_DIFFICULTY_CONFIGS, TETRIS_DIFFICULTY_CONFIGS } from "@game-hub/shared-types";
+import { GAME_CONFIGS, MAX_SPECTATORS, MINESWEEPER_DIFFICULTY_CONFIGS, TETRIS_DIFFICULTY_CONFIGS } from "@game-hub/shared-types";
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { useGame } from "@/hooks/use-game";
 import { GameRenderer } from "@/lib/game-registry";
@@ -19,7 +19,9 @@ import {
   ChevronDown,
   ChevronUp,
   Link,
+  Eye,
 } from "lucide-react";
+import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import RankingCard from "@/components/ranking/ranking-card";
 import type { RankingGameType, RankingDifficulty } from "@game-hub/shared-types";
 
@@ -71,31 +73,47 @@ interface RoomViewProps {
   room: Room;
   socket: GameSocket | null;
   nickname: string;
+  isSpectating?: boolean;
   onLeave: () => void;
   onLeaveImmediate: () => void;
   onToggleReady: () => void;
   onUpdateGameOptions: (gameOptions: GameOptions) => void;
+  onKickSpectators?: () => Promise<void>;
   roomMessages: ChatMessage[];
   onSendRoomMessage: (message: string) => void;
 }
 
-export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, onToggleReady, onUpdateGameOptions, roomMessages, onSendRoomMessage }: RoomViewProps) {
+export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeaveImmediate, onToggleReady, onUpdateGameOptions, onKickSpectators, roomMessages, onSendRoomMessage }: RoomViewProps) {
   const { gameState, gameResult, playerLeftInfo, startGame, requestRematch, setPlayerLeftInfo } = useGame(socket);
   const [chatOpen, setChatOpen] = useState(true);
   const [lastSeenMessageCount, setLastSeenMessageCount] = useState(roomMessages.length);
   const [pendingOptions, setPendingOptions] = useState<GameOptions | null>(null);
+  const [kickConfirmOpen, setKickConfirmOpen] = useState(false);
+  const [pendingKickOptions, setPendingKickOptions] = useState<GameOptions | null>(null);
   const config = GAME_CONFIGS[room.gameType];
   const isHost = socket?.id === room.hostId;
   const myPlayer = room.players.find((p) => p.id === socket?.id);
   const isPlaying = room.status === "playing" || !!gameState;
+  const spectateChatEnabled = room.gameOptions?.spectateChatEnabled ?? false;
 
   // 방장: 로컬 pending 값 우선, 아니면 서버 값 사용
   const localOptions = (isHost && pendingOptions) ? pendingOptions : (room.gameOptions ?? {});
 
   const handleOptionChange = useCallback((newOptions: GameOptions) => {
+    // 관전 ON → OFF 전환 시 관전자가 있으면 확인 다이얼로그
+    const prevEnabled = (pendingOptions ?? room.gameOptions ?? {}).spectateEnabled;
+    if (prevEnabled && !newOptions.spectateEnabled && room.spectators.length > 0) {
+      setPendingKickOptions(newOptions);
+      setKickConfirmOpen(true);
+      return;
+    }
+    // 관전 OFF로 전환 시 관전자 채팅도 OFF
+    if (!newOptions.spectateEnabled) {
+      newOptions = { ...newOptions, spectateChatEnabled: false };
+    }
     setPendingOptions(newOptions);
     onUpdateGameOptions(newOptions);
-  }, [onUpdateGameOptions]);
+  }, [onUpdateGameOptions, pendingOptions, room.gameOptions, room.spectators.length]);
 
   // 채팅 열린 상태에서 메시지 수 동기화
   if (chatOpen && lastSeenMessageCount !== roomMessages.length) {
@@ -143,15 +161,28 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
             <span className="text-sm bg-secondary px-2 py-0.5 rounded text-muted-foreground">
               {config.name}
             </span>
+            {isSpectating && (
+              <span className="text-xs bg-amber-500/20 text-amber-600 px-2 py-0.5 rounded flex items-center gap-1">
+                <Eye className="w-3 h-3" /> 관전 중
+              </span>
+            )}
           </div>
-          <button
-            onClick={requestRematch}
-            className={`flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium transition-colors ${gameResult ? "visible" : "invisible"}`}
-          >
-            <RotateCcw className="w-4 h-4" />
-            다시하기
-          </button>
+          {!isSpectating && (
+            <button
+              onClick={requestRematch}
+              className={`flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium transition-colors ${gameResult ? "visible" : "invisible"}`}
+            >
+              <RotateCcw className="w-4 h-4" />
+              다시하기
+            </button>
+          )}
         </div>
+
+        {isSpectating && (room.gameType === "texas-holdem" || room.gameType === "liar-drawing" || room.gameType === "catch-mind") && (
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-2 text-sm text-amber-600">
+            관전자 모드: 모든 정보가 공개됩니다
+          </div>
+        )}
 
         <Suspense
           fallback={
@@ -160,7 +191,7 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
             </div>
           }
         >
-          <GameRenderer gameType={room.gameType} roomId={room.id} />
+          <GameRenderer gameType={room.gameType} roomId={room.id} isSpectating={isSpectating} />
         </Suspense>
 
         {room.gameType !== "catch-mind" && (
@@ -181,9 +212,10 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
                 <ChatPanel
                   messages={roomMessages}
                   onSendMessage={onSendRoomMessage}
-                  placeholder="게임 채팅..."
+                  placeholder={isSpectating && !spectateChatEnabled ? "관전자 채팅이 허용되지 않습니다" : "게임 채팅..."}
                   myNickname={nickname}
                   showNewMessageButton
+                  disabled={isSpectating && !spectateChatEnabled}
                 />
               </div>
             )}
@@ -274,9 +306,43 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
         </div>
       </div>
 
-      {(room.gameOptions || room.gameType === "gomoku") && (
+      {room.gameOptions?.spectateEnabled && (
         <div className="bg-card border border-border rounded-xl p-6">
-          <h2 className="text-lg font-semibold mb-3">게임 옵션</h2>
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <Eye className="w-5 h-5 text-amber-500" />
+            관전자 ({room.spectators.length}/{MAX_SPECTATORS})
+          </h2>
+          <div className="space-y-3">
+            {room.spectators.map((spectator) => (
+              <div
+                key={spectator.id}
+                className="flex items-center justify-between bg-amber-500/5 rounded-lg px-4 py-3"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center text-xs font-bold text-white">
+                    {spectator.nickname.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="font-medium">{spectator.nickname}</span>
+                  <span className="text-xs bg-amber-500/20 text-amber-600 px-1.5 py-0.5 rounded">관전</span>
+                </div>
+              </div>
+            ))}
+            {Array.from({ length: MAX_SPECTATORS - room.spectators.length }).map(
+              (_, i) => (
+                <div
+                  key={`empty-spectator-${i}`}
+                  className="flex items-center bg-secondary/20 rounded-lg px-4 py-3 border border-dashed border-border"
+                >
+                  <span className="text-sm text-muted-foreground">관전 대기...</span>
+                </div>
+              )
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="bg-card border border-border rounded-xl p-6">
+        <h2 className="text-lg font-semibold mb-3">게임 옵션</h2>
           {isHost && !isPlaying ? (
             <div className="space-y-3 text-sm">
               {room.gameType === "gomoku" && (
@@ -444,6 +510,46 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
                   </div>
                 </div>
               )}
+              <div className="border-t border-border pt-3 mt-3">
+                <label className="block text-sm font-medium mb-1.5">관전 허용</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleOptionChange({ ...localOptions, spectateEnabled: true })}
+                    className={`py-2 rounded-lg text-sm font-medium border transition-colors ${localOptions.spectateEnabled ? "border-primary bg-primary/15 text-primary" : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:bg-primary/5"}`}
+                  >
+                    ON
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleOptionChange({ ...localOptions, spectateEnabled: false })}
+                    className={`py-2 rounded-lg text-sm font-medium border transition-colors ${!localOptions.spectateEnabled ? "border-primary bg-primary/15 text-primary" : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:bg-primary/5"}`}
+                  >
+                    OFF
+                  </button>
+                </div>
+              </div>
+              {localOptions.spectateEnabled && (
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">관전자 채팅</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleOptionChange({ ...localOptions, spectateChatEnabled: true })}
+                      className={`py-2 rounded-lg text-sm font-medium border transition-colors ${localOptions.spectateChatEnabled ? "border-primary bg-primary/15 text-primary" : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:bg-primary/5"}`}
+                    >
+                      ON
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleOptionChange({ ...localOptions, spectateChatEnabled: false })}
+                      className={`py-2 rounded-lg text-sm font-medium border transition-colors ${!localOptions.spectateChatEnabled ? "border-primary bg-primary/15 text-primary" : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:bg-primary/5"}`}
+                    >
+                      OFF
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="space-y-2 text-sm">
@@ -513,10 +619,19 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
                   </div>
                 </>
               )}
+              <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
+                <span className="text-muted-foreground">관전 허용</span>
+                <span className="font-medium">{room.gameOptions?.spectateEnabled ? "ON" : "OFF"}</span>
+              </div>
+              {room.gameOptions?.spectateEnabled && (
+                <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
+                  <span className="text-muted-foreground">관전자 채팅</span>
+                  <span className="font-medium">{room.gameOptions?.spectateChatEnabled ? "ON" : "OFF"}</span>
+                </div>
+              )}
             </div>
           )}
         </div>
-      )}
 
       {(room.gameType === "minesweeper" || (room.gameType === "tetris" && room.players.length <= 1)) && (
         <RankingCard
@@ -535,16 +650,22 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
         <ChatPanel
           messages={roomMessages}
           onSendMessage={onSendRoomMessage}
-          placeholder="방 채팅..."
+          placeholder={isSpectating && !spectateChatEnabled ? "관전자 채팅이 허용되지 않습니다" : "방 채팅..."}
           myNickname={nickname}
           showNewMessageButton
           newMessageButtonBottom="bottom-20"
+          disabled={isSpectating && !spectateChatEnabled}
         />
       </div>
 
       <div className="sticky bottom-0 z-10 bg-background pt-4 pb-2">
         <div className="flex gap-3">
-          {isHost ? (
+          {isSpectating ? (
+            <div className="flex-1 flex items-center justify-center gap-2 bg-amber-500/10 text-amber-600 py-3 rounded-lg font-medium">
+              <Eye className="w-5 h-5" />
+              관전 대기 중
+            </div>
+          ) : isHost ? (
             <button
               onClick={startGame}
               disabled={room.players.length < config.minPlayers || !room.players.filter((p) => p.id !== room.hostId).every((p) => p.isReady)}
@@ -568,6 +689,30 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={kickConfirmOpen}
+        title="관전자 내보내기"
+        message="관전자를 모두 내보내시겠습니까?"
+        confirmText="내보내기"
+        cancelText="취소"
+        onConfirm={async () => {
+          setKickConfirmOpen(false);
+          if (onKickSpectators) {
+            await onKickSpectators();
+          }
+          if (pendingKickOptions) {
+            const opts = { ...pendingKickOptions, spectateChatEnabled: false };
+            setPendingOptions(opts);
+            onUpdateGameOptions(opts);
+            setPendingKickOptions(null);
+          }
+        }}
+        onCancel={() => {
+          setKickConfirmOpen(false);
+          setPendingKickOptions(null);
+        }}
+      />
     </div>
   );
 }

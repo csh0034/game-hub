@@ -128,7 +128,8 @@ export interface HoldemPublicState {
 }
 
 export interface HoldemPrivateState {
-  holeCards: Card[];
+  holeCards?: Card[];
+  allHoleCards?: Record<string, Card[]>;
 }
 
 export interface HoldemMove {
@@ -314,8 +315,9 @@ export interface LiarDrawingPublicState {
 }
 
 export interface LiarDrawingPrivateState {
-  role: "citizen" | "liar";
+  role: "citizen" | "liar" | "spectator";
   keyword: string | null;
+  liarId?: string;
 }
 
 export interface LiarDrawingMove {

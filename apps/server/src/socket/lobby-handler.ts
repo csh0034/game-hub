@@ -36,6 +36,20 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
   function cleanupPreviousRoom() {
     const prevRoomId = socket.data.roomId;
     if (!prevRoomId) return;
+
+    if (socket.data.isSpectator) {
+      const prevRoom = gameManager.removeSpectator(prevRoomId, socket.id!);
+      socket.leave(prevRoomId);
+      socket.data.roomId = null;
+      socket.data.isSpectator = false;
+      if (prevRoom) {
+        io.to(prevRoomId).emit("lobby:spectator-left", socket.id!);
+        io.to(prevRoomId).emit("lobby:room-updated", prevRoom);
+        io.emit("lobby:room-updated", prevRoom);
+      }
+      return;
+    }
+
     emitPlayerLeftIfPlaying(prevRoomId);
     clearGomokuTimer(prevRoomId);
     clearTetrisTicker(prevRoomId);
@@ -101,6 +115,21 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
   socket.on("lobby:leave-room", () => {
     const roomId = socket.data.roomId;
     if (!roomId) return;
+
+    if (socket.data.isSpectator) {
+      const room = gameManager.removeSpectator(roomId, socket.id!);
+      socket.leave(roomId);
+      socket.data.roomId = null;
+      socket.data.isSpectator = false;
+      if (room) {
+        io.to(roomId).emit("lobby:spectator-left", socket.id!);
+        io.to(roomId).emit("lobby:room-updated", room);
+        io.emit("lobby:room-updated", room);
+      }
+      socket.join("lobby");
+      return;
+    }
+
     emitPlayerLeftIfPlaying(roomId);
     clearGomokuTimer(roomId);
     clearTetrisTicker(roomId);
@@ -132,10 +161,59 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
   socket.on("lobby:toggle-ready", () => {
     const roomId = socket.data.roomId;
     if (!roomId) return;
+    if (socket.data.isSpectator) return;
     const room = gameManager.toggleReady(roomId, socket.id!);
     if (room) {
       io.to(roomId).emit("lobby:room-updated", room);
     }
+  });
+
+  socket.on("lobby:join-spectate", (payload, callback) => {
+    cleanupPreviousRoom();
+    socket.leave("lobby");
+    const player = {
+      id: socket.id!,
+      nickname: socket.data.nickname,
+      isReady: false,
+    };
+    const room = gameManager.addSpectator(payload.roomId, player);
+    if (!room) {
+      callback(null, "관전할 수 없습니다.");
+      socket.join("lobby");
+      return;
+    }
+    socket.join(room.id);
+    socket.data.roomId = room.id;
+    socket.data.isSpectator = true;
+    callback(room);
+    io.to(room.id).emit("lobby:spectator-joined", player);
+    io.emit("lobby:room-updated", room);
+  });
+
+  socket.on("lobby:kick-spectators", (callback) => {
+    const roomId = socket.data.roomId;
+    if (!roomId) return callback({ success: false, error: "방에 참가하고 있지 않습니다." });
+    const room = gameManager.getRoom(roomId);
+    if (!room) return callback({ success: false, error: "방을 찾을 수 없습니다." });
+    if (room.hostId !== socket.id) return callback({ success: false, error: "방장만 관전자를 내보낼 수 있습니다." });
+
+    const removedIds = gameManager.removeAllSpectators(roomId);
+    for (const spectatorId of removedIds) {
+      const spectatorSocket = io.sockets.sockets.get(spectatorId);
+      if (spectatorSocket) {
+        spectatorSocket.emit("lobby:spectator-kicked");
+        spectatorSocket.leave(roomId);
+        spectatorSocket.data.roomId = null;
+        spectatorSocket.data.isSpectator = false;
+        spectatorSocket.join("lobby");
+      }
+    }
+    const updatedRoom = gameManager.getRoom(roomId);
+    if (updatedRoom) {
+      io.to(roomId).emit("lobby:room-updated", updatedRoom);
+      io.emit("lobby:room-updated", updatedRoom);
+    }
+    callback({ success: true });
   });
 
   socket.on("chat:lobby-message", (message) => {
@@ -158,8 +236,28 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
     const roomId = socket.data.roomId;
     if (!roomId) return;
 
-    // Catch-mind: intercept chat messages during drawing phase
     const room = gameManager.getRoom(roomId);
+
+    // 관전자 채팅 차단: spectateChatEnabled가 OFF이면 메시지 차단
+    if (socket.data.isSpectator) {
+      if (!room?.gameOptions?.spectateChatEnabled) return;
+
+      const admin = isAdmin(socket.data.nickname);
+      const chatMsg: ChatMessage = {
+        id: crypto.randomUUID(),
+        playerId: socket.id!,
+        nickname: admin ? "관리자" : socket.data.nickname,
+        message: message.slice(0, 500),
+        timestamp: Date.now(),
+        isAdmin: admin || undefined,
+        isSpectator: true,
+      };
+      chatStore.pushRoomMessage(roomId, chatMsg);
+      io.to(roomId).emit("chat:room-message", chatMsg);
+      return;
+    }
+
+    // Catch-mind: intercept chat messages during drawing phase
     if (room?.gameType === "catch-mind" && room.status === "playing") {
       const cmEngine = gameManager.getCatchMindEngine(roomId);
       const cmState = gameManager.getGameState(roomId) as CatchMindPublicState | null;

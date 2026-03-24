@@ -15,7 +15,7 @@ import { ActionButtons } from "./action-buttons";
 import { HandRankPanel } from "./hand-rank-panel";
 import { RoundResultOverlay } from "./round-result-overlay";
 
-export default function HoldemTable({ roomId: _roomId }: GameComponentProps) {
+export default function HoldemTable({ roomId: _roomId, isSpectating }: GameComponentProps) {
   const { socket } = useSocket();
   const { gameState, privateState: rawPrivateState, roundResult, makeMove } = useGame(socket);
   const privateState = rawPrivateState as HoldemPrivateState | null;
@@ -55,7 +55,7 @@ export default function HoldemTable({ roomId: _roomId }: GameComponentProps) {
   return (
     <div className="flex gap-6 justify-center">
       {/* Left panel - Hand rank */}
-      {privateState && (
+      {privateState?.holeCards && (
         <HandRankPanel
           holeCards={privateState.holeCards}
           communityCards={state.communityCards}
@@ -135,7 +135,16 @@ export default function HoldemTable({ roomId: _roomId }: GameComponentProps) {
                 totalPlayers={state.players.length}
                 myIndex={myIndex}
                 index={i}
-                privateState={player.id === socket?.id ? privateState : null}
+                privateState={(() => {
+                  if (player.id === socket?.id && privateState?.holeCards) {
+                    return { holeCards: privateState.holeCards };
+                  }
+                  const spectatorCards = isSpectating ? privateState?.allHoleCards?.[player.id] : undefined;
+                  if (spectatorCards) {
+                    return { holeCards: spectatorCards };
+                  }
+                  return null;
+                })()}
                 showdownCards={state.showdownCards}
                 isWinner={!!state.winners?.some((w) => w.playerId === player.id)}
                 cardAnimation={state.showdownCards?.[player.id] ? "flip" : state.phase === "preflop" ? "deal" : "none"}
@@ -154,7 +163,7 @@ export default function HoldemTable({ roomId: _roomId }: GameComponentProps) {
         </div>
 
         {/* Action buttons */}
-        {isMyTurn && state.phase !== "showdown" && myPlayer && !myPlayer.folded && (
+        {!isSpectating && isMyTurn && state.phase !== "showdown" && myPlayer && !myPlayer.folded && (
           <ActionButtons
             key={state.currentPlayerIndex}
             state={state}

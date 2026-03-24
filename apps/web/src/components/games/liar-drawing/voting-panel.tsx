@@ -8,9 +8,10 @@ interface VotingPanelProps {
   state: LiarDrawingPublicState;
   myId: string;
   onVote: (targetPlayerId: string) => void;
+  isSpectating?: boolean;
 }
 
-export function VotingPanel({ state, myId, onVote }: VotingPanelProps) {
+export function VotingPanel({ state, myId, onVote, isSpectating }: VotingPanelProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const hasVoted = state.votedPlayerIds.includes(myId);
 
@@ -66,7 +67,9 @@ export function VotingPanel({ state, myId, onVote }: VotingPanelProps) {
         })}
       </div>
 
-      {!hasVoted ? (
+      {isSpectating ? (
+        <div className="text-sm text-muted-foreground">관전 중입니다</div>
+      ) : !hasVoted ? (
         <button
           onClick={handleVote}
           disabled={!selectedId}

@@ -14,7 +14,7 @@ import { RoundResult } from "./round-result";
 import { Scoreboard } from "./scoreboard";
 import { CatchMindChat } from "./catch-mind-chat";
 
-export default function CatchMindBoard({ roomId: _roomId }: GameComponentProps) {
+export default function CatchMindBoard({ roomId: _roomId, isSpectating }: GameComponentProps) {
   const { socket } = useSocket();
   const { gameState, privateState } = useGame(socket);
   const roomMessages = useChatStore((s) => s.roomMessages);
@@ -60,7 +60,8 @@ export default function CatchMindBoard({ roomId: _roomId }: GameComponentProps) 
             state={state}
             socket={socket}
             myId={myId}
-            keyword={isDrawer ? (cmPrivateState?.keyword ?? null) : null}
+            keyword={isDrawer || isSpectating ? (cmPrivateState?.keyword ?? null) : null}
+            isSpectating={isSpectating}
           />
         );
       case "round-result":

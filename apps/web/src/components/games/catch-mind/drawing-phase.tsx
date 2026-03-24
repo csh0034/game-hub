@@ -11,9 +11,10 @@ interface DrawingPhaseProps {
   socket: GameSocket;
   myId: string;
   keyword: string | null;
+  isSpectating?: boolean;
 }
 
-export function DrawingPhase({ state, socket, myId, keyword }: DrawingPhaseProps) {
+export function DrawingPhase({ state, socket, myId, keyword, isSpectating }: DrawingPhaseProps) {
   const isDrawer = state.drawerId === myId;
   const drawer = state.players.find((p) => p.id === state.drawerId);
 
@@ -27,7 +28,7 @@ export function DrawingPhase({ state, socket, myId, keyword }: DrawingPhaseProps
         <TurnTimer turnStartedAt={state.turnStartedAt} drawTimeSeconds={state.drawTimeSeconds} />
       </div>
 
-      {isDrawer ? (
+      {isDrawer || (isSpectating && keyword) ? (
         <div className="text-sm">
           제시어: <span className="font-bold text-primary">{keyword}</span>
         </div>
@@ -41,7 +42,7 @@ export function DrawingPhase({ state, socket, myId, keyword }: DrawingPhaseProps
         </div>
       )}
 
-      <DrawingArea state={state} socket={socket} isDrawer={isDrawer} />
+      <DrawingArea state={state} socket={socket} isDrawer={isDrawer && !isSpectating} />
     </div>
   );
 }

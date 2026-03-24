@@ -3,6 +3,7 @@ import type { GameType } from "@game-hub/shared-types";
 
 export interface GameComponentProps {
   roomId: string;
+  isSpectating?: boolean;
 }
 
 const GAME_COMPONENTS: Record<GameType, React.LazyExoticComponent<ComponentType<GameComponentProps>>> = {
@@ -25,19 +26,19 @@ const GomokuGame = GAME_COMPONENTS["gomoku"];
 const MinesweeperGame = GAME_COMPONENTS["minesweeper"];
 const HoldemGame = GAME_COMPONENTS["texas-holdem"];
 
-export function GameRenderer({ gameType, roomId }: { gameType: GameType; roomId: string }) {
+export function GameRenderer({ gameType, roomId, isSpectating }: { gameType: GameType; roomId: string; isSpectating?: boolean }) {
   switch (gameType) {
     case "liar-drawing":
-      return <LiarDrawingGame roomId={roomId} />;
+      return <LiarDrawingGame roomId={roomId} isSpectating={isSpectating} />;
     case "catch-mind":
-      return <CatchMindGame roomId={roomId} />;
+      return <CatchMindGame roomId={roomId} isSpectating={isSpectating} />;
     case "tetris":
-      return <TetrisGame roomId={roomId} />;
+      return <TetrisGame roomId={roomId} isSpectating={isSpectating} />;
     case "gomoku":
-      return <GomokuGame roomId={roomId} />;
+      return <GomokuGame roomId={roomId} isSpectating={isSpectating} />;
     case "minesweeper":
-      return <MinesweeperGame roomId={roomId} />;
+      return <MinesweeperGame roomId={roomId} isSpectating={isSpectating} />;
     case "texas-holdem":
-      return <HoldemGame roomId={roomId} />;
+      return <HoldemGame roomId={roomId} isSpectating={isSpectating} />;
   }
 }

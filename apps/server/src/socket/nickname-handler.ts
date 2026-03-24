@@ -55,6 +55,7 @@ export function setupNicknameHandler(
           if (room) {
             socket.join(oldRoomId);
             socket.data.roomId = oldRoomId;
+            socket.data.isSpectator = prev.data.isSpectator || false;
             io.to(oldRoomId).emit("lobby:room-updated", room);
             io.emit("lobby:room-updated", room);
           }

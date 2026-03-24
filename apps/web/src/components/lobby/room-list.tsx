@@ -1,15 +1,16 @@
 "use client";
 
 import type { Room } from "@game-hub/shared-types";
-import { GAME_CONFIGS, MINESWEEPER_DIFFICULTY_CONFIGS, TETRIS_DIFFICULTY_CONFIGS } from "@game-hub/shared-types";
-import { Users, Clock, Play, Loader2 } from "lucide-react";
+import { GAME_CONFIGS, MAX_SPECTATORS, MINESWEEPER_DIFFICULTY_CONFIGS, TETRIS_DIFFICULTY_CONFIGS } from "@game-hub/shared-types";
+import { Users, Clock, Play, Loader2, Eye } from "lucide-react";
 
 interface RoomListProps {
   rooms: Room[];
   onJoinRoom: (roomId: string) => Promise<Room>;
+  onSpectateRoom?: (roomId: string) => Promise<Room>;
 }
 
-export function RoomList({ rooms, onJoinRoom }: RoomListProps) {
+export function RoomList({ rooms, onJoinRoom, onSpectateRoom }: RoomListProps) {
   if (rooms.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground border border-border rounded-xl">
@@ -25,6 +26,9 @@ export function RoomList({ rooms, onJoinRoom }: RoomListProps) {
         const config = GAME_CONFIGS[room.gameType];
         const isFull = room.players.length >= room.maxPlayers;
         const isPlaying = room.status === "playing";
+        const spectateEnabled = room.gameOptions?.spectateEnabled;
+        const spectatorsFull = room.spectators.length >= MAX_SPECTATORS;
+        const canSpectate = !isPlaying && spectateEnabled && !spectatorsFull;
 
         return (
           <div
@@ -50,6 +54,12 @@ export function RoomList({ rooms, onJoinRoom }: RoomListProps) {
                     <Users className="w-3 h-3" />
                     {room.players.length}/{room.maxPlayers}
                   </span>
+                  {spectateEnabled && (
+                    <span className="flex items-center gap-1">
+                      <Eye className="w-3 h-3" />
+                      {room.spectators.length}/{MAX_SPECTATORS}
+                    </span>
+                  )}
                   <span className="flex items-center gap-1">
                     <Clock className="w-3 h-3" />
                     {formatTime(room.createdAt)}
@@ -67,13 +77,24 @@ export function RoomList({ rooms, onJoinRoom }: RoomListProps) {
               </div>
             </div>
 
-            <button
-              onClick={() => onJoinRoom(room.id)}
-              disabled={isFull || isPlaying}
-              className="bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:cursor-not-allowed"
-            >
-              {isFull ? "만원" : isPlaying ? "진행 중" : "참가"}
-            </button>
+            <div className="flex items-center gap-2">
+              {canSpectate && onSpectateRoom && (
+                <button
+                  onClick={() => onSpectateRoom(room.id)}
+                  className="border border-border hover:bg-secondary text-foreground px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  관전
+                </button>
+              )}
+              <button
+                onClick={() => onJoinRoom(room.id)}
+                disabled={isFull || isPlaying}
+                className="bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:cursor-not-allowed"
+              >
+                {isFull ? "만원" : isPlaying ? "진행 중" : "참가"}
+              </button>
+            </div>
           </div>
         );
       })}

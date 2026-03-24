@@ -11,9 +11,10 @@ interface DrawingPhaseProps {
   socket: GameSocket;
   myId: string;
   keyword: string | null;
+  isSpectating?: boolean;
 }
 
-export function DrawingPhase({ state, socket, myId, keyword }: DrawingPhaseProps) {
+export function DrawingPhase({ state, socket, myId, keyword, isSpectating }: DrawingPhaseProps) {
   const currentDrawerId = state.drawOrder[state.currentDrawerIndex];
   const isMyTurn = currentDrawerId === myId;
   const currentDrawer = state.players.find((p) => p.id === currentDrawerId);
@@ -50,7 +51,7 @@ export function DrawingPhase({ state, socket, myId, keyword }: DrawingPhaseProps
         state={state}
         socket={socket}
         myId={myId}
-        isMyTurn={isMyTurn}
+        isMyTurn={isMyTurn && !isSpectating}
         currentDrawerId={currentDrawerId}
       />
 

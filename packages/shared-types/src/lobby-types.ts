@@ -15,7 +15,11 @@ export interface GameOptions {
   catchMindCharHint?: boolean;
   gomokuTurnTime?: number;
   gomokuFirstColor?: GomokuFirstColor;
+  spectateEnabled?: boolean;
+  spectateChatEnabled?: boolean;
 }
+
+export const MAX_SPECTATORS = 4;
 
 export interface Room {
   id: string;
@@ -23,6 +27,7 @@ export interface Room {
   gameType: GameType;
   hostId: string;
   players: Player[];
+  spectators: Player[];
   maxPlayers: number;
   status: RoomStatus;
   createdAt: number;

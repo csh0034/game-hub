@@ -14,7 +14,7 @@ import { LiarGuessPanel } from "./liar-guess-panel";
 import { RoundResult } from "./round-result";
 import { Scoreboard } from "./scoreboard";
 
-export default function LiarDrawingBoard({ roomId }: GameComponentProps) {
+export default function LiarDrawingBoard({ roomId, isSpectating }: GameComponentProps) {
   const { socket } = useSocket();
   const { gameState, privateState, makeMove } = useGame(socket);
   const [showHelp, setShowHelp] = useState(false);
@@ -40,13 +40,14 @@ export default function LiarDrawingBoard({ roomId }: GameComponentProps) {
           />
         );
       case "drawing":
-        return <DrawingPhase state={state} socket={socket} myId={myId} keyword={liarPrivateState?.keyword ?? null} />;
+        return <DrawingPhase state={state} socket={socket} myId={myId} keyword={liarPrivateState?.keyword ?? null} isSpectating={isSpectating} />;
       case "voting":
         return (
           <VotingPanel
             state={state}
             myId={myId}
             onVote={(targetPlayerId) => makeMove({ type: "vote", targetPlayerId })}
+            isSpectating={isSpectating}
           />
         );
       case "liar-guess":
@@ -76,6 +77,18 @@ export default function LiarDrawingBoard({ roomId }: GameComponentProps) {
             <HelpCircle className="w-5 h-5" />
           </button>
         </div>
+        {isSpectating && liarPrivateState && (
+          <div className="mb-2 px-3 py-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-sm">
+            <span className="text-muted-foreground">라이어: </span>
+            <span className="font-bold text-yellow-400">{state.players.find((p) => p.id === liarPrivateState.liarId)?.nickname ?? "?"}</span>
+            {liarPrivateState.keyword && (
+              <>
+                <span className="text-muted-foreground ml-3">제시어: </span>
+                <span className="font-bold text-primary">{liarPrivateState.keyword}</span>
+              </>
+            )}
+          </div>
+        )}
         {renderPhase()}
       </div>
       <Scoreboard state={state} myId={myId} />

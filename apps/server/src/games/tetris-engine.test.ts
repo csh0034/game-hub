@@ -507,8 +507,8 @@ describe("TetrisEngine", () => {
       const expertEngine = new TetrisEngine("expert");
       const state = expertEngine.initState(mockPlayers);
       expect(state.difficulty).toBe("expert");
-      // expert: base 400, startLevel 5, interval = max(400 - 4*50, 100) = 200
-      expect(state.dropInterval).toBe(200);
+      // expert: base 400, startLevel 5, interval = max(400 - 0*50, 100) = 400
+      expect(state.dropInterval).toBe(400);
       expect(state.players["player1"].level).toBe(5);
     });
   });

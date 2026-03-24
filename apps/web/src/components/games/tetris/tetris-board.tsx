@@ -16,6 +16,7 @@ import {
 } from "@game-hub/shared-types";
 import type {
   TetrisPlayerBoard,
+  TetrisDifficulty,
   TetrominoType,
   TetrisActivePiece,
 } from "@game-hub/shared-types";
@@ -91,12 +92,14 @@ const PlayerBoard = memo(function PlayerBoard({
   compact,
   nickname,
   resultOverlay,
+  dropInterval,
 }: {
   board: TetrisPlayerBoard;
   cellSize: number;
   compact?: boolean;
   nickname?: string;
   resultOverlay?: React.ReactNode;
+  dropInterval?: number;
 }) {
   const previewSize = compact ? "small" as const : "normal" as const;
 
@@ -198,6 +201,12 @@ const PlayerBoard = memo(function PlayerBoard({
             <div className={`${textSm} text-muted-foreground`}>LEVEL</div>
             <div className={`${textLg} font-bold font-mono`}>{board.level}</div>
           </div>
+          {dropInterval != null && (
+            <div>
+              <div className={`${textSm} text-muted-foreground`}>SPEED</div>
+              <div className={`${textLg} font-bold font-mono`}>{(dropInterval / 1000).toFixed(2)}s</div>
+            </div>
+          )}
           <div>
             <div className={`${textSm} text-muted-foreground`}>LINES</div>
             <div className={`${textLg} font-bold font-mono`}>{board.linesCleared}</div>
@@ -231,12 +240,24 @@ const PlayerBoard = memo(function PlayerBoard({
   if (prev.compact !== next.compact) return false;
   if (prev.nickname !== next.nickname) return false;
   if (prev.resultOverlay !== next.resultOverlay) return false;
+  if (prev.dropInterval !== next.dropInterval) return false;
   if (prev.board.version !== next.board.version) return false;
   // Check prediction changes (activePiece/ghostRow may differ with same version)
   if (prev.board.activePiece !== next.board.activePiece) return false;
   if (prev.board.ghostRow !== next.board.ghostRow) return false;
   return true;
 });
+
+const DIFFICULTY_CONFIGS = {
+  beginner: { baseInterval: 800, startLevel: 1 },
+  intermediate: { baseInterval: 600, startLevel: 1 },
+  expert: { baseInterval: 400, startLevel: 5 },
+} as const;
+
+function calculateDropInterval(difficulty: TetrisDifficulty, maxLevel: number): number {
+  const config = DIFFICULTY_CONFIGS[difficulty];
+  return Math.max(config.baseInterval - (maxLevel - config.startLevel) * 50, 100);
+}
 
 function getOpponentCellSize(count: number): number {
   if (count <= 1) return 16;
@@ -257,6 +278,7 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
   const myBoard = useTetrisBoardStore((s) => s.myBoard);
   const opponentBoards = useTetrisBoardStore((s) => s.opponentBoards);
   const mode = useTetrisBoardStore((s) => s.mode);
+  const difficulty = useTetrisBoardStore((s) => s.difficulty);
 
   // Client-side prediction for own board
   const [prediction, setPrediction] = useState<{ piece: TetrisActivePiece; version: number } | null>(null);
@@ -279,6 +301,15 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
   }, [opponentBoards]);
 
   const opponentCellSize = getOpponentCellSize(opponentEntries.length);
+
+  const currentDropInterval = useMemo(() => {
+    if (!difficulty) return null;
+    let maxLevel = myBoard?.level ?? 0;
+    for (const board of Object.values(opponentBoards)) {
+      if (board.level > maxLevel) maxLevel = board.level;
+    }
+    return calculateDropInterval(difficulty, maxLevel);
+  }, [difficulty, myBoard?.level, opponentBoards]);
 
   // Apply client-side prediction for movement/rotation
   const applyPrediction = useCallback((moveType: string) => {
@@ -429,6 +460,7 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
               : myBoard}
             cellSize={32}
             resultOverlay={soloResultOverlay ?? versusResultOverlay}
+            dropInterval={currentDropInterval ?? undefined}
           />
         </div>
 

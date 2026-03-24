@@ -600,7 +600,7 @@ export class TetrisEngine implements GameEngine {
     for (const ps of this.playerStates.values()) {
       if (ps.level > maxLevel) maxLevel = ps.level;
     }
-    return Math.max(this.baseInterval - (maxLevel - 1) * DROP_SPEED_DECREASE, MIN_DROP_INTERVAL);
+    return Math.max(this.baseInterval - (maxLevel - this.startLevel) * DROP_SPEED_DECREASE, MIN_DROP_INTERVAL);
   }
 
   tickAll(): TetrisPublicState {

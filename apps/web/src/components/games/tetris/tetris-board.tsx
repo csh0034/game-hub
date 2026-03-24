@@ -427,6 +427,22 @@ export default function TetrisBoard({ roomId }: GameComponentProps) {
         )}
       </div>
 
+      {/* Solo game over result */}
+      {isSolo && myBoard.status === "gameover" && gameResult && (
+        <div className="text-center">
+          <p className="text-lg font-bold text-red-500">GAME OVER</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            점수: {myBoard.score.toLocaleString()}
+          </p>
+          {gameResult.rankingResult && gameResult.rankingResult.rank != null && (
+            <p className="text-sm text-muted-foreground mt-1">
+              {gameResult.rankingResult.isNewRecord ? "🏆 새로운 1위! " : ""}
+              전체 {gameResult.rankingResult.rank}위
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Controls hint */}
       <div className="text-xs text-muted-foreground text-center space-x-3">
         <span>&larr; &rarr; 이동</span>

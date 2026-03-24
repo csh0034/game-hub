@@ -6,6 +6,7 @@ import { useSocket } from "@/hooks/use-socket";
 import type { MinesweeperPublicState, MinesweeperMove, MinesweeperDifficulty } from "@game-hub/shared-types";
 import { MINESWEEPER_DIFFICULTY_CONFIGS } from "@game-hub/shared-types";
 import type { GameComponentProps } from "@/lib/game-registry";
+import { useGameStore } from "@/stores/game-store";
 
 const NUMBER_COLORS: Record<number, string> = {
   1: "text-blue-600",
@@ -27,6 +28,7 @@ const CELL_SIZES: Record<MinesweeperDifficulty, number> = {
 export default function MinesweeperBoard({ roomId }: GameComponentProps) {
   const { socket } = useSocket();
   const { gameState, makeMove } = useGame(socket);
+  const gameResult = useGameStore((s) => s.gameResult);
   const [elapsed, setElapsed] = useState(0);
 
   const state = gameState as MinesweeperPublicState | null;
@@ -86,11 +88,7 @@ export default function MinesweeperBoard({ roomId }: GameComponentProps) {
           <span className="text-base">🚩</span>
           {String(remainingMines).padStart(3, "0")}
         </div>
-        <div className="text-sm text-muted-foreground">
-          {state.status === "playing" && "게임 진행 중"}
-          {state.status === "won" && "승리!"}
-          {state.status === "lost" && "게임 오버"}
-        </div>
+        <div />
         <div className="flex items-center gap-1.5 text-lg font-mono font-bold bg-gray-900 text-red-500 px-3 py-1 rounded">
           <span className="text-base">⏱</span>
           {String(elapsed).padStart(3, "0")}
@@ -146,6 +144,12 @@ export default function MinesweeperBoard({ roomId }: GameComponentProps) {
           <p className="text-sm text-muted-foreground mt-1">
             시간: {elapsed}초
           </p>
+          {gameResult?.rankingResult && gameResult.rankingResult.rank != null && (
+            <p className="text-sm text-muted-foreground mt-1">
+              {gameResult.rankingResult.isNewRecord ? "🏆 새로운 1위! " : ""}
+              전체 {gameResult.rankingResult.rank}위
+            </p>
+          )}
         </div>
       )}
     </div>

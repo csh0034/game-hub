@@ -144,34 +144,14 @@ export function RoomView({ room, socket, nickname, onLeave, onLeaveImmediate, on
               {config.name}
             </span>
           </div>
-          {gameResult && (
-            <button
-              onClick={requestRematch}
-              className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-            >
-              <RotateCcw className="w-4 h-4" />
-              다시하기
-            </button>
-          )}
+          <button
+            onClick={requestRematch}
+            className={`flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium transition-colors ${gameResult ? "visible" : "invisible"}`}
+          >
+            <RotateCcw className="w-4 h-4" />
+            다시하기
+          </button>
         </div>
-
-        {gameResult && (
-          <div className="bg-card border border-primary/30 rounded-lg p-4 text-center">
-            <p className="text-lg font-bold">
-              {gameResult.winnerId
-                ? gameResult.winnerId === socket?.id
-                  ? "승리 하였습니다."
-                  : "패배 하였습니다."
-                : gameResult.reason}
-            </p>
-            {gameResult.rankingResult && gameResult.rankingResult.rank != null && (
-              <p className="text-sm text-muted-foreground mt-1">
-                {gameResult.rankingResult.isNewRecord ? "🏆 새로운 1위! " : ""}
-                전체 {gameResult.rankingResult.rank}위
-              </p>
-            )}
-          </div>
-        )}
 
         <Suspense
           fallback={

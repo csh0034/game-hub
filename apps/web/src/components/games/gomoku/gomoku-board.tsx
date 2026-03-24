@@ -165,6 +165,22 @@ export default function GomokuBoard({ roomId }: GameComponentProps) {
         수: {state.moveCount} · 경과 {String(Math.floor(elapsedTime / 60)).padStart(2, "0")}:{String(elapsedTime % 60).padStart(2, "0")}
       </p>
 
+      {gameResult && (
+        <div className="text-center">
+          <p className={`text-lg font-bold ${
+            gameResult.winnerId === socket?.id ? "text-green-600" :
+            gameResult.winnerId === null ? "text-yellow-600" : "text-red-600"
+          }`}>
+            {gameResult.winnerId === socket?.id
+              ? "승리!"
+              : gameResult.winnerId === null
+                ? "무승부"
+                : "패배"}
+          </p>
+          <p className="text-sm text-muted-foreground mt-1">{gameResult.reason}</p>
+        </div>
+      )}
+
       <GameHelpDialog open={showHelp} onClose={() => setShowHelp(false)} title="오목">
         <div>
           <h3 className="text-foreground font-semibold mb-1">게임 방법</h3>

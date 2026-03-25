@@ -22,7 +22,7 @@ function getQuickStartBadges(gameType: GameType): string[] | null {
     case "gomoku":
       return ["30초", "방장 선공"];
     case "tetris":
-      return ["초급"];
+      return ["클래식", "초급"];
     case "liar-drawing":
       return ["60초", "3라운드"];
     case "catch-mind":

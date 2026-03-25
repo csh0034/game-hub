@@ -309,7 +309,7 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
         room.status = "finished";
 
         // Submit tetris solo ranking
-        if (tetrisEngine.getMode() === "solo") {
+        if (tetrisEngine.isSolo()) {
           const playerId = room.players[0]?.id;
           if (playerId) {
             const playerSocket = io.sockets.sockets.get(playerId);
@@ -704,7 +704,7 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
           }
         } else if (room?.gameType === "tetris") {
           const tetrisEngine = gameManager.getTetrisEngine(roomId);
-          if (tetrisEngine && tetrisEngine.getMode() === "solo") {
+          if (tetrisEngine && tetrisEngine.isSolo()) {
             await submitRanking(io, rankingStore, "tetris", tetrisEngine.getDifficulty(), socket.data.nickname, tetrisEngine.getPlayerScore(socket.id!), result.result);
           }
         }

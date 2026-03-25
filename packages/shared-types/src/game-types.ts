@@ -224,12 +224,9 @@ export interface TetrisPlayerBoard {
   version: number;
 }
 
-export type TetrisMode = "solo" | "versus";
-
 export interface TetrisPublicState {
   players: Record<string, TetrisPlayerBoard>;
   difficulty: TetrisDifficulty;
-  mode: TetrisMode;
   dropInterval: number;
 }
 

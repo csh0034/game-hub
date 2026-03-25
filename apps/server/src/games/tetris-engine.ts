@@ -6,7 +6,7 @@ import type {
   TetrisPublicState,
   TetrisMove,
   TetrisDifficulty,
-  TetrisMode,
+
   GameResult,
   GameState,
   GameMove,
@@ -125,7 +125,7 @@ export class TetrisEngine implements GameEngine {
   private playerStates: Map<string, PlayerInternalState> = new Map();
   private playerIds: string[] = [];
   private difficulty: TetrisDifficulty;
-  private mode: TetrisMode = "solo";
+
   private baseInterval: number;
   private startLevel: number;
   private dirtyPlayers: Set<string> = new Set();
@@ -140,7 +140,7 @@ export class TetrisEngine implements GameEngine {
 
   initState(players: Player[]): TetrisPublicState {
     this.playerIds = players.map((p) => p.id);
-    this.mode = players.length === 1 ? "solo" : "versus";
+
     this.playerStates.clear();
 
     for (const player of players) {
@@ -217,7 +217,7 @@ export class TetrisEngine implements GameEngine {
   }
 
   checkWin(_state: GameState): GameResult | null {
-    if (this.mode === "solo") {
+    if (this.isSolo()) {
       const ps = this.playerStates.get(this.playerIds[0]);
       if (ps && ps.status === "gameover") {
         return { winnerId: null, reason: `점수: ${ps.score}` };
@@ -249,8 +249,8 @@ export class TetrisEngine implements GameEngine {
     return this.difficulty;
   }
 
-  getMode(): TetrisMode {
-    return this.mode;
+  isSolo(): boolean {
+    return this.playerIds.length === 1;
   }
 
   // --- Internal methods ---
@@ -497,7 +497,7 @@ export class TetrisEngine implements GameEngine {
       }
 
       // Send garbage in versus mode
-      if (garbageToSend > 0 && this.mode === "versus") {
+      if (garbageToSend > 0 && !this.isSolo()) {
         for (const id of this.playerIds) {
           if (id !== currentPlayerId) {
             const opponent = this.playerStates.get(id);
@@ -624,7 +624,6 @@ export class TetrisEngine implements GameEngine {
     return {
       players,
       difficulty: this.difficulty,
-      mode: this.mode,
       dropInterval: this.calculateDropInterval(),
     };
   }

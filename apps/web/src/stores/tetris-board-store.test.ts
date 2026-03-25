@@ -25,7 +25,6 @@ function createState(myId: string): TetrisPublicState {
       [myId]: createBoard(),
       "opponent-1": createBoard(),
     },
-    mode: "battle",
     difficulty: "intermediate",
   } as TetrisPublicState;
 }
@@ -44,10 +43,9 @@ describe("useTetrisBoardStore", () => {
       expect(state.myId).toBe("me");
     });
 
-    it("mode와 difficulty를 설정한다", () => {
+    it("difficulty를 설정한다", () => {
       useTetrisBoardStore.getState().initFromState(createState("me"), "me");
       const state = useTetrisBoardStore.getState();
-      expect(state.mode).toBe("battle");
       expect(state.difficulty).toBe("intermediate");
     });
   });
@@ -106,7 +104,6 @@ describe("useTetrisBoardStore", () => {
       const state = useTetrisBoardStore.getState();
       expect(state.myBoard).toBeNull();
       expect(state.opponentBoards).toEqual({});
-      expect(state.mode).toBeNull();
       expect(state.difficulty).toBeNull();
       expect(state.myId).toBeNull();
     });

@@ -1,10 +1,9 @@
 import { create } from "zustand";
-import type { TetrisPlayerBoard, TetrisMode, TetrisDifficulty, TetrisPublicState, TetrisActivePiece } from "@game-hub/shared-types";
+import type { TetrisPlayerBoard, TetrisDifficulty, TetrisPublicState, TetrisActivePiece } from "@game-hub/shared-types";
 
 interface TetrisBoardStore {
   myBoard: TetrisPlayerBoard | null;
   opponentBoards: Record<string, TetrisPlayerBoard>;
-  mode: TetrisMode | null;
   difficulty: TetrisDifficulty | null;
   myId: string | null;
   setPlayerBoard: (playerId: string, board: TetrisPlayerBoard) => void;
@@ -16,7 +15,6 @@ interface TetrisBoardStore {
 export const useTetrisBoardStore = create<TetrisBoardStore>((set, get) => ({
   myBoard: null,
   opponentBoards: {},
-  mode: null,
   difficulty: null,
   myId: null,
 
@@ -67,7 +65,6 @@ export const useTetrisBoardStore = create<TetrisBoardStore>((set, get) => ({
     set({
       myBoard,
       opponentBoards,
-      mode: state.mode,
       difficulty: state.difficulty,
       myId,
     });
@@ -76,7 +73,6 @@ export const useTetrisBoardStore = create<TetrisBoardStore>((set, get) => ({
   reset: () => set({
     myBoard: null,
     opponentBoards: {},
-    mode: null,
     difficulty: null,
     myId: null,
   }),

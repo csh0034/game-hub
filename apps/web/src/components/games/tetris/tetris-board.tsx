@@ -277,7 +277,6 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
   // Tetris board store: fine-grained per-player subscriptions
   const myBoard = useTetrisBoardStore((s) => s.myBoard);
   const opponentBoards = useTetrisBoardStore((s) => s.opponentBoards);
-  const mode = useTetrisBoardStore((s) => s.mode);
   const difficulty = useTetrisBoardStore((s) => s.difficulty);
 
   // Client-side prediction for own board
@@ -356,7 +355,7 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
     }, [makeMove]),
   });
 
-  const isSolo = mode === "solo";
+  const isSolo = Object.keys(opponentBoards).length === 0;
   const myScore = myBoard?.score ?? 0;
   const isSoloGameOver = isSolo && myBoard?.status === "gameover" && gameResult != null;
   const isWinner = !isSolo && gameResult != null && gameResult.winnerId === socket?.id;

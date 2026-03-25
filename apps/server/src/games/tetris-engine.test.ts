@@ -30,14 +30,12 @@ describe("TetrisEngine", () => {
   describe("initState", () => {
     it("솔로 모드로 초기화한다", () => {
       const state = engine.initState(mockPlayers);
-      expect(state.mode).toBe("solo");
       expect(state.difficulty).toBe("beginner");
       expect(Object.keys(state.players)).toHaveLength(1);
     });
 
     it("대전 모드로 초기화한다", () => {
       const state = engine.initState(mockVersusPlayers);
-      expect(state.mode).toBe("versus");
       expect(Object.keys(state.players)).toHaveLength(2);
     });
 
@@ -700,15 +698,15 @@ describe("TetrisEngine", () => {
     });
   });
 
-  describe("getMode", () => {
-    it("1인 플레이 시 solo를 반환한다", () => {
+  describe("isSolo", () => {
+    it("1인 플레이 시 true를 반환한다", () => {
       engine.initState(mockPlayers);
-      expect(engine.getMode()).toBe("solo");
+      expect(engine.isSolo()).toBe(true);
     });
 
-    it("2인 이상 플레이 시 versus를 반환한다", () => {
+    it("2인 이상 플레이 시 false를 반환한다", () => {
       engine.initState(mockVersusPlayers);
-      expect(engine.getMode()).toBe("versus");
+      expect(engine.isSolo()).toBe(false);
     });
   });
 });

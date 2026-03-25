@@ -223,7 +223,6 @@ describe("Tetris 8-player E2E", () => {
       expect(state).toBeDefined();
       expect(state.players).toBeDefined();
       expect(Object.keys(state.players)).toHaveLength(NUM_PLAYERS);
-      expect(state.mode).toBe("versus");
       expect(state.difficulty).toBe("beginner");
 
       // Check each player has a valid TetrisPlayerBoard

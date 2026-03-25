@@ -16,8 +16,6 @@ import {
   Play,
   RotateCcw,
   MessageCircle,
-  ChevronDown,
-  ChevronUp,
   Link,
   Eye,
   Users,
@@ -90,8 +88,6 @@ interface RoomViewProps {
 
 export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeaveImmediate, onToggleReady, onUpdateGameOptions, onUpdateRoomName, onKickSpectators, onKickPlayer, roomMessages, onSendRoomMessage }: RoomViewProps) {
   const { gameState, gameResult, playerLeftInfo, startGame, requestRematch, setPlayerLeftInfo } = useGame(socket);
-  const [chatOpen, setChatOpen] = useState(true);
-  const [lastSeenMessageCount, setLastSeenMessageCount] = useState(roomMessages.length);
   const [pendingOptions, setPendingOptions] = useState<GameOptions | null>(null);
   const [kickConfirmOpen, setKickConfirmOpen] = useState(false);
   const [pendingKickOptions, setPendingKickOptions] = useState<GameOptions | null>(null);
@@ -140,12 +136,6 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
     onUpdateGameOptions(newOptions);
   }, [onUpdateGameOptions, pendingOptions, room.gameOptions, room.spectators.length]);
 
-  // 채팅 열린 상태에서 메시지 수 동기화
-  if (chatOpen && lastSeenMessageCount !== roomMessages.length) {
-    setLastSeenMessageCount(roomMessages.length);
-  }
-
-  const hasUnread = !chatOpen && roomMessages.length > lastSeenMessageCount;
 
   const handlePlayerLeftDismiss = useCallback(() => {
     setPlayerLeftInfo(null);
@@ -156,12 +146,6 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
     onLeaveImmediate();
   }, [setPlayerLeftInfo, onLeaveImmediate]);
 
-  const handleChatToggle = useCallback(() => {
-    setChatOpen((prev) => {
-      if (!prev) setLastSeenMessageCount(roomMessages.length);
-      return !prev;
-    });
-  }, [roomMessages.length]);
 
   if (isPlaying && gameState) {
     return (
@@ -221,28 +205,19 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
 
         {room.gameType !== "catch-mind" && (
           <div className="mt-4">
-            <button
-              onClick={handleChatToggle}
-              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-2"
-            >
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
               <MessageCircle className="w-4 h-4" />
               채팅
-              {hasUnread && !chatOpen && (
-                <span className="w-2 h-2 bg-red-500 rounded-full" />
-              )}
-              {chatOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-            </button>
-            {chatOpen && (
-              <div className="h-[300px]">
-                <ChatPanel
-                  messages={roomMessages}
-                  onSendMessage={onSendRoomMessage}
-                  placeholder={isSpectating && !spectateChatEnabled ? "관전자 채팅이 허용되지 않습니다" : "게임 채팅..."}
-                  myNickname={nickname}
-                  disabled={isSpectating && !spectateChatEnabled}
-                />
-              </div>
-            )}
+            </div>
+            <div className="h-[300px]">
+              <ChatPanel
+                messages={roomMessages}
+                onSendMessage={onSendRoomMessage}
+                placeholder={isSpectating && !spectateChatEnabled ? "관전자 채팅이 허용되지 않습니다" : "게임 채팅..."}
+                myNickname={nickname}
+                disabled={isSpectating && !spectateChatEnabled}
+              />
+            </div>
           </div>
         )}
       </div>

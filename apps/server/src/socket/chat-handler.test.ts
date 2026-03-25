@@ -1,9 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { ChatMessage } from "@game-hub/shared-types";
+import type { ChatMessage, CatchMindPublicState } from "@game-hub/shared-types";
 import { setupChatHandler } from "./chat-handler.js";
 import { GameManager } from "../games/game-manager.js";
 import type { ChatStore } from "../storage/index.js";
 import { createMockSocket, createMockIo, type GameServer, type GameSocket } from "./socket-test-helpers.js";
+
+vi.mock("../games/catch-mind-timer.js", () => ({
+  clearCatchMindTimer: vi.fn(),
+  startCatchMindTimer: vi.fn(),
+}));
+
+vi.mock("./game-handler.js", () => ({
+  startCatchMindNextRound: vi.fn(),
+}));
 
 function createMockChatStore(): ChatStore {
   const lobbyMessages: ChatMessage[] = [];
@@ -329,5 +338,193 @@ describe("chat:delete-message", () => {
     await vi.waitFor(() => {
       expect(callback).toHaveBeenCalledWith({ success: false, error: "메시지를 찾을 수 없습니다." });
     });
+  });
+});
+
+describe("chat:room-message — spectator chat", () => {
+  let socket: ReturnType<typeof createMockSocket>;
+  let io: ReturnType<typeof createMockIo>;
+  let gameManager: GameManager;
+  let chatStore: ChatStore;
+
+  beforeEach(() => {
+    socket = createMockSocket("spectator-1", "Spectator1");
+    io = createMockIo({ withTo: true });
+    gameManager = new GameManager();
+    chatStore = createMockChatStore();
+
+    // 방을 만들고 관전자로 설정
+    const host = { id: "host-1", nickname: "Host", isReady: false };
+    const room = gameManager.createRoom({ name: "테스트방", gameType: "gomoku" }, host);
+    socket.data.roomId = room.id;
+    socket.data.isSpectator = true;
+    gameManager.addSpectator(room.id, { id: "spectator-1", nickname: "Spectator1", isReady: false });
+    // spectateEnabled를 켜서 관전자 입장이 가능하도록 설정
+    gameManager.updateGameOptions(room.id, "host-1", { spectateEnabled: true, spectateChatEnabled: true });
+
+    setupChatHandler(io as unknown as GameServer, socket as unknown as GameSocket, gameManager, chatStore);
+  });
+
+  it("관전자가 spectateChatEnabled=true일 때 메시지를 전송한다", () => {
+    socket._trigger("chat:room-message", "관전자 메시지");
+
+    expect(io.to).toHaveBeenCalledWith(socket.data.roomId);
+    expect(io._toEmit).toHaveBeenCalledWith(
+      "chat:room-message",
+      expect.objectContaining({
+        playerId: "spectator-1",
+        nickname: "Spectator1",
+        message: "관전자 메시지",
+        isSpectator: true,
+      }),
+    );
+  });
+
+  it("관전자가 spectateChatEnabled=false일 때 메시지가 차단된다", () => {
+    const room = gameManager.getRoom(socket.data.roomId!)!;
+    gameManager.updateGameOptions(room.id, "host-1", { spectateEnabled: true, spectateChatEnabled: false });
+
+    socket._trigger("chat:room-message", "차단될 메시지");
+
+    expect(io._toEmit).not.toHaveBeenCalled();
+  });
+
+  it("관전자 메시지에 isSpectator 플래그가 설정된다", () => {
+    socket._trigger("chat:room-message", "관전 중");
+
+    expect(io._toEmit).toHaveBeenCalledWith(
+      "chat:room-message",
+      expect.objectContaining({
+        isSpectator: true,
+      }),
+    );
+    expect(chatStore.pushRoomMessage).toHaveBeenCalled();
+  });
+});
+
+describe("chat:room-message — catch-mind integration", () => {
+  let drawerSocket: ReturnType<typeof createMockSocket>;
+  let guesserSocket: ReturnType<typeof createMockSocket>;
+  let guesser2Socket: ReturnType<typeof createMockSocket>;
+  let io: ReturnType<typeof createMockIo>;
+  let gameManager: GameManager;
+  let chatStore: ChatStore;
+  let roomId: string;
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+
+    io = createMockIo({ withTo: true });
+    gameManager = new GameManager();
+    chatStore = createMockChatStore();
+
+    // 방 생성 및 플레이어 3명 참가
+    const host = { id: "drawer-1", nickname: "Drawer", isReady: false };
+    const room = gameManager.createRoom({ name: "캐치마인드방", gameType: "catch-mind" }, host);
+    roomId = room.id;
+
+    gameManager.joinRoom(roomId, { id: "guesser-1", nickname: "Guesser1", isReady: false });
+    gameManager.joinRoom(roomId, { id: "guesser-2", nickname: "Guesser2", isReady: false });
+
+    // 준비 상태 설정 (호스트 제외)
+    gameManager.toggleReady(roomId, "guesser-1");
+    gameManager.toggleReady(roomId, "guesser-2");
+
+    // 게임 시작
+    gameManager.startGame(roomId);
+
+    // drawing 페이즈로 전환
+    const cmEngine = gameManager.getCatchMindEngine(roomId)!;
+    const state = gameManager.getGameState(roomId) as CatchMindPublicState;
+    const drawingState = cmEngine.startDrawingPhase(state);
+    gameManager.setGameState(roomId, drawingState);
+
+    // 소켓 생성 — drawerId는 initState에서 players[0]이므로 drawer-1
+    drawerSocket = createMockSocket("drawer-1", "Drawer");
+    drawerSocket.data.roomId = roomId;
+    guesserSocket = createMockSocket("guesser-1", "Guesser1");
+    guesserSocket.data.roomId = roomId;
+    guesser2Socket = createMockSocket("guesser-2", "Guesser2");
+    guesser2Socket.data.roomId = roomId;
+
+    setupChatHandler(io as unknown as GameServer, drawerSocket as unknown as GameSocket, gameManager, chatStore);
+    setupChatHandler(io as unknown as GameServer, guesserSocket as unknown as GameSocket, gameManager, chatStore);
+    setupChatHandler(io as unknown as GameServer, guesser2Socket as unknown as GameSocket, gameManager, chatStore);
+  });
+
+  it("출제자(drawer)는 drawing 중 채팅이 차단된다", () => {
+    drawerSocket._trigger("chat:room-message", "힌트입니다");
+
+    expect(io._toEmit).not.toHaveBeenCalled();
+    expect(chatStore.pushRoomMessage).not.toHaveBeenCalled();
+  });
+
+  it("이미 정답을 맞힌 플레이어는 채팅이 차단된다", () => {
+    // 먼저 정답을 맞힌 상태로 만들기
+    const cmEngine = gameManager.getCatchMindEngine(roomId)!;
+    const keyword = cmEngine.getKeyword()!;
+
+    // guesser-1이 정답을 맞힘
+    guesserSocket._trigger("chat:room-message", keyword);
+
+    // io._toEmit 호출 초기화 (정답 맞힘에 의한 emit들)
+    vi.mocked(io._toEmit).mockClear();
+
+    // 이미 맞힌 guesser-1이 다시 채팅
+    guesserSocket._trigger("chat:room-message", "또 보내기");
+
+    expect(io._toEmit).not.toHaveBeenCalled();
+  });
+
+  it("정답을 맞히면 game:state-updated와 game:catch-mind-correct가 발송된다", () => {
+    const cmEngine = gameManager.getCatchMindEngine(roomId)!;
+    const keyword = cmEngine.getKeyword()!;
+
+    guesserSocket._trigger("chat:room-message", keyword);
+
+    expect(io._toEmit).toHaveBeenCalledWith("game:state-updated", expect.any(Object));
+    expect(io._toEmit).toHaveBeenCalledWith(
+      "game:catch-mind-correct",
+      expect.objectContaining({
+        playerId: "guesser-1",
+        nickname: "Guesser1",
+        rank: 1,
+        score: 3,
+      }),
+    );
+  });
+
+  it("오답은 일반 채팅으로 전송된다", () => {
+    guesserSocket._trigger("chat:room-message", "완전히틀린답");
+
+    expect(io._toEmit).toHaveBeenCalledWith(
+      "chat:room-message",
+      expect.objectContaining({
+        playerId: "guesser-1",
+        nickname: "Guesser1",
+        message: "완전히틀린답",
+      }),
+    );
+    expect(chatStore.pushRoomMessage).toHaveBeenCalled();
+  });
+
+  it("모든 플레이어가 맞히면 라운드가 종료된다", async () => {
+    const { clearCatchMindTimer } = await import("../games/catch-mind-timer.js");
+    const { startCatchMindNextRound } = await import("./game-handler.js");
+
+    const cmEngine = gameManager.getCatchMindEngine(roomId)!;
+    const keyword = cmEngine.getKeyword()!;
+
+    // guesser-1이 정답
+    guesserSocket._trigger("chat:room-message", keyword);
+    // guesser-2가 정답 — 모든 non-drawer 플레이어가 맞힘
+    guesser2Socket._trigger("chat:room-message", keyword);
+
+    expect(clearCatchMindTimer).toHaveBeenCalledWith(roomId);
+    expect(startCatchMindNextRound).toHaveBeenCalledWith(
+      io,
+      roomId,
+      gameManager,
+    );
   });
 });

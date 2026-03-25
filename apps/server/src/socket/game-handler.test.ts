@@ -26,9 +26,15 @@ vi.mock("../games/liar-drawing-timer.js", () => ({
   clearLiarDrawingTimer: vi.fn(),
 }));
 
+vi.mock("../games/catch-mind-timer.js", () => ({
+  startCatchMindTimer: vi.fn(),
+  clearCatchMindTimer: vi.fn(),
+}));
+
 import { startGomokuTimer, clearGomokuTimer } from "../games/gomoku-timer.js";
 import { clearTetrisTicker } from "../games/tetris-ticker.js";
 import { clearLiarDrawingTimer } from "../games/liar-drawing-timer.js";
+import { clearCatchMindTimer } from "../games/catch-mind-timer.js";
 
 function setupGomokuRoom(gameManager: GameManager) {
   const host = { id: "host-1", nickname: "Host", isReady: true };
@@ -203,6 +209,237 @@ describe("setupGameHandler", () => {
       hostSocket._trigger("game:rematch");
 
       expect(io._toEmit).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("game:draw-points", () => {
+    function setupLiarDrawingRoom(gameManager: GameManager) {
+      const host = { id: "host-1", nickname: "Host", isReady: true };
+      const guest = { id: "guest-1", nickname: "Guest", isReady: true };
+      const player3 = { id: "player-3", nickname: "Player3", isReady: true };
+      const room = gameManager.createRoom({ name: "라이어 드로잉 방", gameType: "liar-drawing" }, host);
+      gameManager.joinRoom(room.id, guest);
+      gameManager.joinRoom(room.id, player3);
+      return { room, host, guest, player3 };
+    }
+
+    function setupCatchMindRoom(gameManager: GameManager) {
+      const host = { id: "host-1", nickname: "Host", isReady: true };
+      const guest = { id: "guest-1", nickname: "Guest", isReady: true };
+      const player3 = { id: "player-3", nickname: "Player3", isReady: true };
+      const room = gameManager.createRoom({ name: "캐치마인드 방", gameType: "catch-mind" }, host);
+      gameManager.joinRoom(room.id, guest);
+      gameManager.joinRoom(room.id, player3);
+      return { room, host, guest, player3 };
+    }
+
+    it("라이어 드로잉에서 현재 드로어가 draw-points를 전송하면 브로드캐스트한다", () => {
+      const player3Socket = createMockSocket("player-3", "Player3");
+      const io = createMockIo({ withTo: true, sockets: [hostSocket, guestSocket, player3Socket] });
+      const { room } = setupLiarDrawingRoom(gameManager);
+      hostSocket.data.roomId = room.id;
+
+      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager, mockRankingStore);
+      hostSocket._trigger("game:start");
+
+      // Get the game state to find the current drawer
+      const state = gameManager.getGameState(room.id) as { phase: string; drawOrder: string[]; currentDrawerIndex: number };
+      expect(state.phase).toBe("role-reveal");
+
+      // Manually set state to drawing phase for test
+      const liarEngine = gameManager.getLiarDrawingEngine(room.id);
+      expect(liarEngine).not.toBeNull();
+      const drawingState = liarEngine!.startDrawingPhase(state as never);
+      gameManager.setGameState(room.id, drawingState);
+
+      const currentDrawerId = drawingState.drawOrder[drawingState.currentDrawerIndex];
+      const drawerSocket = createMockSocket(currentDrawerId, "Drawer");
+      drawerSocket.data.roomId = room.id;
+      setupGameHandler(io as unknown as GameServer, drawerSocket as unknown as GameSocket, gameManager, mockRankingStore);
+
+      const points = [{ x: 10, y: 20, color: "#000", size: 3, type: "draw" as const }];
+      drawerSocket._trigger("game:draw-points", points);
+
+      expect(drawerSocket._toEmit).toHaveBeenCalledWith("game:draw-points", { playerId: currentDrawerId, points });
+    });
+
+    it("라이어 드로잉에서 현재 드로어가 아닌 플레이어의 draw-points는 무시한다", () => {
+      const player3Socket = createMockSocket("player-3", "Player3");
+      const io = createMockIo({ withTo: true, sockets: [hostSocket, guestSocket, player3Socket] });
+      const { room } = setupLiarDrawingRoom(gameManager);
+      hostSocket.data.roomId = room.id;
+
+      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager, mockRankingStore);
+      hostSocket._trigger("game:start");
+
+      // Set to drawing phase
+      const liarEngine = gameManager.getLiarDrawingEngine(room.id);
+      const state = gameManager.getGameState(room.id) as never;
+      const drawingState = liarEngine!.startDrawingPhase(state);
+      gameManager.setGameState(room.id, drawingState);
+
+      const currentDrawerId = drawingState.drawOrder[drawingState.currentDrawerIndex];
+      // Use a socket that is NOT the current drawer
+      const nonDrawerId = drawingState.drawOrder.find((id: string) => id !== currentDrawerId)!;
+      const nonDrawerSocket = createMockSocket(nonDrawerId, "NonDrawer");
+      nonDrawerSocket.data.roomId = room.id;
+      setupGameHandler(io as unknown as GameServer, nonDrawerSocket as unknown as GameSocket, gameManager, mockRankingStore);
+
+      const points = [{ x: 10, y: 20, color: "#000", size: 3, type: "draw" as const }];
+      nonDrawerSocket._trigger("game:draw-points", points);
+
+      expect(nonDrawerSocket._toEmit).not.toHaveBeenCalled();
+    });
+
+    it("캐치마인드에서 드로어가 draw-points를 전송하면 브로드캐스트한다", () => {
+      const player3Socket = createMockSocket("player-3", "Player3");
+      const io = createMockIo({ withTo: true, sockets: [hostSocket, guestSocket, player3Socket] });
+      const { room } = setupCatchMindRoom(gameManager);
+      hostSocket.data.roomId = room.id;
+
+      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager, mockRankingStore);
+      hostSocket._trigger("game:start");
+
+      // Get catch-mind state and advance to drawing phase
+      const cmEngine = gameManager.getCatchMindEngine(room.id);
+      expect(cmEngine).not.toBeNull();
+      const state = gameManager.getGameState(room.id) as { phase: string; drawerId: string };
+      const drawingState = cmEngine!.startDrawingPhase(state as never);
+      gameManager.setGameState(room.id, drawingState);
+
+      const drawerSocket = createMockSocket(drawingState.drawerId, "Drawer");
+      drawerSocket.data.roomId = room.id;
+      setupGameHandler(io as unknown as GameServer, drawerSocket as unknown as GameSocket, gameManager, mockRankingStore);
+
+      const points = [{ x: 10, y: 20, color: "#000", size: 3, type: "draw" as const }];
+      drawerSocket._trigger("game:draw-points", points);
+
+      expect(drawerSocket._toEmit).toHaveBeenCalledWith("game:draw-points", { playerId: drawingState.drawerId, points });
+    });
+
+    it("관전자의 draw-points는 무시한다", () => {
+      const player3Socket = createMockSocket("player-3", "Player3");
+      const io = createMockIo({ withTo: true, sockets: [hostSocket, guestSocket, player3Socket] });
+      const { room } = setupLiarDrawingRoom(gameManager);
+
+      const spectatorSocket = createMockSocket("spectator-1", "Spectator");
+      spectatorSocket.data.roomId = room.id;
+      spectatorSocket.data.isSpectator = true;
+      setupGameHandler(io as unknown as GameServer, spectatorSocket as unknown as GameSocket, gameManager, mockRankingStore);
+
+      const points = [{ x: 10, y: 20, color: "#000", size: 3, type: "draw" as const }];
+      spectatorSocket._trigger("game:draw-points", points);
+
+      expect(spectatorSocket._toEmit).not.toHaveBeenCalled();
+    });
+
+    it("roomId가 없으면 무시한다", () => {
+      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager, mockRankingStore);
+
+      const points = [{ x: 10, y: 20, color: "#000", size: 3, type: "draw" as const }];
+      hostSocket._trigger("game:draw-points", points);
+
+      expect(hostSocket._toEmit).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("game:move — 관전자 차단", () => {
+    it("관전자의 move는 무시한다", () => {
+      const { room } = setupGomokuRoom(gameManager);
+      const spectatorSocket = createMockSocket("spectator-1", "Spectator");
+      spectatorSocket.data.roomId = room.id;
+      spectatorSocket.data.isSpectator = true;
+      setupGameHandler(io as unknown as GameServer, spectatorSocket as unknown as GameSocket, gameManager, mockRankingStore);
+
+      spectatorSocket._trigger("game:move", { row: 7, col: 7 });
+
+      expect(io._toEmit).not.toHaveBeenCalled();
+      expect(spectatorSocket.emit).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("game:move — 테트리스 tick 무시", () => {
+    function setupTetrisRoom(gameManager: GameManager) {
+      const host = { id: "host-1", nickname: "Host", isReady: true };
+      const room = gameManager.createRoom({ name: "테트리스 방", gameType: "tetris" }, host);
+      return { room, host };
+    }
+
+    it("클라이언트에서 보낸 tick 타입 move는 무시한다", () => {
+      const { room } = setupTetrisRoom(gameManager);
+      hostSocket.data.roomId = room.id;
+      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager, mockRankingStore);
+
+      hostSocket._trigger("game:start");
+      vi.clearAllMocks();
+
+      hostSocket._trigger("game:move", { type: "tick" });
+
+      // tick은 무시되므로 state-updated나 error가 발생하지 않아야 한다
+      expect(io._toEmit).not.toHaveBeenCalled();
+      expect(hostSocket.emit).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("game:rematch — 관전자 차단", () => {
+    it("관전자의 rematch는 무시한다", () => {
+      const { room } = setupGomokuRoom(gameManager);
+      hostSocket.data.roomId = room.id;
+      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager, mockRankingStore);
+      hostSocket._trigger("game:start");
+
+      const spectatorSocket = createMockSocket("spectator-1", "Spectator");
+      spectatorSocket.data.roomId = room.id;
+      spectatorSocket.data.isSpectator = true;
+      setupGameHandler(io as unknown as GameServer, spectatorSocket as unknown as GameSocket, gameManager, mockRankingStore);
+
+      vi.clearAllMocks();
+      spectatorSocket._trigger("game:rematch");
+
+      expect(io._toEmit).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("game:rematch — catch-mind 타이머 정리", () => {
+    it("rematch 시 catch-mind 타이머도 정리한다", () => {
+      const { room } = setupGomokuRoom(gameManager);
+      hostSocket.data.roomId = room.id;
+      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager, mockRankingStore);
+      hostSocket._trigger("game:start");
+      vi.clearAllMocks();
+
+      hostSocket._trigger("game:rematch");
+
+      expect(clearCatchMindTimer).toHaveBeenCalledWith(room.id);
+    });
+  });
+
+  describe("ranking:get", () => {
+    it("랭킹을 조회하고 콜백으로 반환한다", async () => {
+      const mockEntries = [
+        { id: "e1", nickname: "Player1", score: 100, date: Date.now() },
+      ];
+      (mockRankingStore.getRankings as ReturnType<typeof vi.fn>).mockResolvedValueOnce(mockEntries);
+
+      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager, mockRankingStore);
+
+      const callback = vi.fn();
+      await hostSocket._trigger("ranking:get", "minesweeper:beginner", callback);
+
+      expect(mockRankingStore.getRankings).toHaveBeenCalledWith("minesweeper:beginner");
+      expect(callback).toHaveBeenCalledWith(mockEntries);
+    });
+
+    it("빈 랭킹을 조회하면 빈 배열을 반환한다", async () => {
+      (mockRankingStore.getRankings as ReturnType<typeof vi.fn>).mockResolvedValueOnce([]);
+
+      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager, mockRankingStore);
+
+      const callback = vi.fn();
+      await hostSocket._trigger("ranking:get", "tetris:expert", callback);
+
+      expect(mockRankingStore.getRankings).toHaveBeenCalledWith("tetris:expert");
+      expect(callback).toHaveBeenCalledWith([]);
     });
   });
 

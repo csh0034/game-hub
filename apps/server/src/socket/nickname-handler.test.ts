@@ -133,4 +133,117 @@ describe("setupNicknameHandler", () => {
     });
     expect(io.emit).toHaveBeenLastCalledWith("system:player-count", { count: 0, players: [] });
   });
+
+  describe("재접속", () => {
+    let oldSocket: ReturnType<typeof createMockSocket>;
+    let newSocket: ReturnType<typeof createMockSocket>;
+
+    beforeEach(() => {
+      oldSocket = createMockSocket("old-socket", "홍길동");
+      newSocket = createMockSocket("new-socket", "NewPlayer", { authenticated: false });
+    });
+
+    it("이전 소켓이 끊어진 닉네임으로 재접속하면 성공한다", async () => {
+      // 이전 소켓의 세션을 저장하되, io.sockets.sockets에는 포함하지 않음 (disconnected)
+      await sessionStore.reserveNickname("홍길동", "old-socket");
+      await sessionStore.saveSession("old-socket", oldSocket.data);
+
+      // io에 newSocket만 포함 (oldSocket은 disconnected)
+      io = createMockIo({ sockets: [newSocket] });
+      setupNicknameHandler(io, newSocket, sessionStore, gameManager);
+
+      const callback = vi.fn();
+      newSocket._trigger("player:set-nickname", "홍길동", callback);
+
+      await vi.waitFor(() => {
+        expect(callback).toHaveBeenCalledWith({
+          success: true,
+          isAdmin: false,
+          githubRepoUrl: "https://github.com/csh0034/game-hub",
+        });
+      });
+      expect(newSocket.data.nickname).toBe("홍길동");
+      expect(newSocket.data.authenticated).toBe(true);
+    });
+
+    it("재접속 시 이전 방 멤버십이 복원된다", async () => {
+      // 방 생성 및 이전 소켓을 플레이어로 등록
+      const room = gameManager.createRoom(
+        { name: "테스트방", gameType: "gomoku", gameOptions: {} },
+        { id: "old-socket", nickname: "홍길동", isReady: false },
+      );
+      const roomId = room.id;
+
+      // 이전 소켓의 세션에 roomId 설정
+      oldSocket.data.roomId = roomId;
+      await sessionStore.reserveNickname("홍길동", "old-socket");
+      await sessionStore.saveSession("old-socket", oldSocket.data);
+
+      // io에 newSocket만 포함, withTo 활성화
+      io = createMockIo({ sockets: [newSocket], withTo: true });
+      setupNicknameHandler(io, newSocket, sessionStore, gameManager);
+
+      const callback = vi.fn();
+      newSocket._trigger("player:set-nickname", "홍길동", callback);
+
+      await vi.waitFor(() => {
+        expect(callback).toHaveBeenCalledWith({
+          success: true,
+          isAdmin: false,
+          githubRepoUrl: "https://github.com/csh0034/game-hub",
+        });
+      });
+
+      // 방에 join했는지 확인
+      expect(newSocket.join).toHaveBeenCalledWith(roomId);
+      expect(newSocket.data.roomId).toBe(roomId);
+
+      // 방 업데이트 이벤트가 브로드캐스트되었는지 확인
+      expect(io.to).toHaveBeenCalledWith(roomId);
+      expect(io._toEmit).toHaveBeenCalledWith("lobby:room-updated", expect.objectContaining({ id: roomId }));
+
+      // 방의 플레이어 ID가 교체되었는지 확인
+      const updatedRoom = gameManager.getRoom(roomId);
+      expect(updatedRoom!.players[0].id).toBe("new-socket");
+      expect(updatedRoom!.hostId).toBe("new-socket");
+    });
+
+    it("재접속 시 관전자 상태가 복원된다", async () => {
+      // 방 생성 (다른 호스트)
+      const room = gameManager.createRoom(
+        { name: "테스트방", gameType: "gomoku", gameOptions: {} },
+        { id: "host-socket", nickname: "호스트", isReady: false },
+      );
+      const roomId = room.id;
+
+      // 이전 소켓을 관전자로 등록
+      room.spectators.push({ id: "old-socket", nickname: "홍길동", isReady: false });
+
+      // 이전 소켓의 세션에 roomId와 isSpectator 설정
+      oldSocket.data.roomId = roomId;
+      oldSocket.data.isSpectator = true;
+      await sessionStore.reserveNickname("홍길동", "old-socket");
+      await sessionStore.saveSession("old-socket", oldSocket.data);
+
+      // io에 newSocket만 포함, withTo 활성화
+      io = createMockIo({ sockets: [newSocket], withTo: true });
+      setupNicknameHandler(io, newSocket, sessionStore, gameManager);
+
+      const callback = vi.fn();
+      newSocket._trigger("player:set-nickname", "홍길동", callback);
+
+      await vi.waitFor(() => {
+        expect(callback).toHaveBeenCalledWith({
+          success: true,
+          isAdmin: false,
+          githubRepoUrl: "https://github.com/csh0034/game-hub",
+        });
+      });
+
+      // 관전자 상태가 복원되었는지 확인
+      expect(newSocket.data.isSpectator).toBe(true);
+      expect(newSocket.data.roomId).toBe(roomId);
+      expect(newSocket.join).toHaveBeenCalledWith(roomId);
+    });
+  });
 });

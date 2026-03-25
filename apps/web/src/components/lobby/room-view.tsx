@@ -239,7 +239,6 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
                   onSendMessage={onSendRoomMessage}
                   placeholder={isSpectating && !spectateChatEnabled ? "관전자 채팅이 허용되지 않습니다" : "게임 채팅..."}
                   myNickname={nickname}
-                  showNewMessageButton
                   disabled={isSpectating && !spectateChatEnabled}
                 />
               </div>
@@ -779,8 +778,6 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
             onSendMessage={onSendRoomMessage}
             placeholder={isSpectating && !spectateChatEnabled ? "관전자 채팅이 허용되지 않습니다" : "방 채팅..."}
             myNickname={nickname}
-            showNewMessageButton
-            newMessageButtonBottom="bottom-20"
             disabled={isSpectating && !spectateChatEnabled}
           />
         </div>

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { ChatMessage } from "@game-hub/shared-types";
-import { Send, ChevronDown, Trash2 } from "lucide-react";
+import { Send, Trash2 } from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
 
@@ -11,12 +11,9 @@ interface ChatPanelProps {
   onSendMessage: (message: string) => void;
   placeholder?: string;
   myNickname?: string;
-  onNewMessage?: () => void;
-  showNewMessageButton?: boolean;
   isAdmin?: boolean;
   onDeleteMessage?: (messageId: string) => void;
   disabled?: boolean;
-  newMessageButtonBottom?: string;
 }
 
 
@@ -25,88 +22,22 @@ export function ChatPanel({
   onSendMessage,
   placeholder = "메시지를 입력하세요...",
   myNickname,
-  onNewMessage,
-  showNewMessageButton = false,
   isAdmin = false,
   onDeleteMessage,
   disabled = false,
-  newMessageButtonBottom = "bottom-6",
 }: ChatPanelProps) {
   const [input, setInput] = useState("");
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
-  const [lastSeenCount, setLastSeenCount] = useState(messages.length);
-  const [isNearBottom, setIsNearBottom] = useState(true);
-  const [isChatVisible, setIsChatVisible] = useState(true);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const isNearBottomRef = useRef(true);
-  const isChatVisibleRef = useRef(true);
   const isComposingRef = useRef(false);
 
-  // 메시지 감소 시 리셋 (방 이동 등)
-  if (messages.length < lastSeenCount) {
-    setLastSeenCount(messages.length);
-  }
-
-  // 채팅이 화면에 안 보이거나, 채팅 내부에서 위로 스크롤한 경우
-  const hasNewMessages = messages.length > lastSeenCount && (!isNearBottom || !isChatVisible);
-
-  const scrollToBottom = useCallback(() => {
+  // 새 메시지 시 자동 스크롤
+  useEffect(() => {
     const container = messagesContainerRef.current;
     if (container) {
-      container.scrollIntoView({ behavior: "smooth", block: "end" });
       container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
     }
-    setLastSeenCount(messages.length);
-  }, [messages.length]);
-
-  const checkNearBottom = useCallback(() => {
-    const container = messagesContainerRef.current;
-    if (!container) return;
-    const threshold = 60;
-    const nearBottom =
-      container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
-    isNearBottomRef.current = nearBottom;
-    setIsNearBottom(nearBottom);
-    if (nearBottom && isChatVisibleRef.current) {
-      setLastSeenCount(messages.length);
-    }
-  }, [messages.length]);
-
-  // 메시지 영역이 뷰포트에 보이는지 감지
-  useEffect(() => {
-    const el = messagesContainerRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        const visible = entry.isIntersecting;
-        isChatVisibleRef.current = visible;
-        setIsChatVisible(visible);
-        if (visible && isNearBottomRef.current) {
-          setLastSeenCount(messages.length);
-        }
-      },
-      { threshold: 0.1 },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [messages.length]);
-
-  // DOM 스크롤: 하단 근처이고 채팅이 뷰포트에 보일 때만 자동 스크롤
-  useEffect(() => {
-    if (isNearBottomRef.current && isChatVisibleRef.current) {
-      const container = messagesContainerRef.current;
-      if (container) {
-        container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
-      }
-    }
   }, [messages]);
-
-  // 새 메시지 알림 콜백
-  useEffect(() => {
-    if (hasNewMessages) {
-      onNewMessage?.();
-    }
-  }, [hasNewMessages, onNewMessage]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,7 +56,6 @@ export function ChatPanel({
       <div className="relative flex-1 min-h-0">
         <div
           ref={messagesContainerRef}
-          onScroll={checkNearBottom}
           className="h-full overflow-y-auto px-4 py-3 space-y-2"
         >
           {messages.length === 0 && (
@@ -187,16 +117,6 @@ export function ChatPanel({
           })}
         </div>
       </div>
-
-      {showNewMessageButton && hasNewMessages && (
-        <button
-          onClick={scrollToBottom}
-          className={`fixed ${newMessageButtonBottom} left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-primary text-primary-foreground text-sm font-medium px-4 py-2 rounded-full shadow-lg hover:bg-primary/90 transition-colors`}
-        >
-          새 메시지
-          <ChevronDown className="w-4 h-4" />
-        </button>
-      )}
 
       <form onSubmit={handleSubmit} className="flex gap-2 px-3 py-2.5 border-t border-border">
         <input

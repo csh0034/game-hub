@@ -40,6 +40,7 @@ export function ChatPanel({
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const isNearBottomRef = useRef(true);
   const isChatVisibleRef = useRef(true);
+  const isComposingRef = useRef(false);
 
   // 메시지 감소 시 리셋 (방 이동 등)
   if (messages.length < lastSeenCount) {
@@ -202,6 +203,13 @@ export function ChatPanel({
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          onCompositionStart={() => { isComposingRef.current = true; }}
+          onCompositionEnd={() => { isComposingRef.current = false; }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && isComposingRef.current) {
+              e.preventDefault();
+            }
+          }}
           placeholder={placeholder}
           maxLength={500}
           disabled={disabled}

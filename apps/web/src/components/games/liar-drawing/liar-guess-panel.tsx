@@ -52,7 +52,7 @@ export function LiarGuessPanel({ state, myId, onGuess }: LiarGuessPanelProps) {
             type="text"
             value={guess}
             onChange={(e) => setGuess(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+            onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && handleSubmit()}
             placeholder="제시어를 입력하세요"
             className="bg-secondary border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
             autoFocus

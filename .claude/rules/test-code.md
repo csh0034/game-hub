@@ -136,13 +136,22 @@ describe("lobby-store", () => {
 
 ### 커스텀 훅 테스트
 
+소켓을 인자로 받는 훅은 `createMockSocket()`으로 모킹하고, `as never`로 타입 캐스팅한다:
+
 ```typescript
-import { renderHook } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
 
 describe("useGame", () => {
-  it("게임 상태를 반환한다", () => {
-    const { result } = renderHook(() => useGame("room-1"));
-    expect(result.current.gameState).toBeDefined();
+  beforeEach(() => {
+    useGameStore.setState(useGameStore.getInitialState());
+  });
+
+  it("game:started 이벤트로 게임 상태를 설정한다", () => {
+    const socket = createMockSocket();
+    renderHook(() => useGame(socket as never));
+
+    act(() => { socket._trigger("game:started", mockState); });
+    expect(useGameStore.getState().gameState).toBe(mockState);
   });
 });
 ```
@@ -165,17 +174,34 @@ describe("isValidGameType", () => {
 
 ## 모킹 패턴
 
-### Socket.IO 클라이언트 모킹
+### 프론트엔드 Mock Socket
+
+커스텀 훅 테스트에서는 `createMockSocket()` 헬퍼를 테스트 파일 내에 정의하여 사용한다. `_trigger()`로 서버 이벤트를 시뮬레이션한다:
 
 ```typescript
-vi.mock("@/lib/socket", () => ({
-  socket: {
-    on: vi.fn(),
+type Handler = (...args: unknown[]) => void;
+
+function createMockSocket() {
+  const handlers = new Map<string, Handler[]>();
+  return {
+    on: vi.fn((event: string, handler: Handler) => {
+      if (!handlers.has(event)) handlers.set(event, []);
+      handlers.get(event)!.push(handler);
+    }),
     off: vi.fn(),
     emit: vi.fn(),
     connected: true,
-  },
-}));
+    id: "test-socket-id",
+    _trigger(event: string, ...args: unknown[]) {
+      handlers.get(event)?.forEach((h) => h(...args));
+    },
+  };
+}
+
+// 사용
+const socket = createMockSocket();
+renderHook(() => useGame(socket as never));
+act(() => { socket._trigger("game:started", mockState); });
 ```
 
 ### Zustand 스토어 모킹
@@ -189,10 +215,35 @@ vi.mock("@/stores/game-store", () => ({
 }));
 ```
 
-## 커버리지 우선순위
+## 커버리지
+
+### 우선순위
 
 1. **게임 로직 (엔진)** — 가장 높은 우선순위. 핵심 로직이므로 높은 커버리지 유지
 2. **소켓 핸들러** — 이벤트 처리 정확성 검증
 3. **Zustand 스토어** — 상태 변경 로직
 4. **커스텀 훅** — 소켓-스토어 연동
 5. **UI 컴포넌트** — 렌더링 및 사용자 상호작용
+
+### 기준
+
+서버/웹 모두 statements, branches, functions, lines **80%** 이상 (vitest.config의 `thresholds`로 강제).
+
+### 측정 제외 대상
+
+각 패키지의 `vitest.config`에 `exclude`로 정의되며, 제외 기준은 다음과 같다:
+
+**서버** (`apps/server/vitest.config.ts`):
+- 테스트 파일 (`*.test.ts`), 테스트 헬퍼 (`socket-test-helpers.ts`)
+- 진입점 (`index.ts`) — 서버 부트스트랩, 통합 테스트 영역
+- 인터페이스 정의 (`storage/interfaces/**`) — 타입만 존재, 런타임 로직 없음
+- 저장소 re-export (`redis/index.ts`, `in-memory/index.ts`) — 모듈 re-export만
+- Redis 클라이언트 (`redis-client.ts`) — 외부 연결 싱글톤
+- 엔진 인터페이스 (`engine-interface.ts`) — 타입 정의만
+
+**웹** (`apps/web/vitest.config.mts`):
+- 테스트 파일 (`*.test.{ts,tsx}`)
+- App Router 페이지 (`app/**`) — 리다이렉트/컴포넌트 렌더 위임만
+- UI 컴포넌트 (`components/**`) — 우선순위 5, 현재 테스트 대상 외
+- Socket.IO 클라이언트 (`lib/socket.ts`) — 외부 라이브러리 래퍼
+- 게임 레지스트리 (`lib/game-registry.tsx`) — lazy import 매핑만, 런타임 로직 없음

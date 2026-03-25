@@ -2,6 +2,7 @@ import { renderHook, act } from "@testing-library/react";
 import { useGame } from "./use-game";
 import { useGameStore } from "@/stores/game-store";
 import { useTetrisBoardStore } from "@/stores/tetris-board-store";
+import { useLobbyStore } from "@/stores/lobby-store";
 import type { GameState, GameResult } from "@game-hub/shared-types";
 
 type Handler = (...args: unknown[]) => void;
@@ -27,6 +28,7 @@ describe("useGame", () => {
   beforeEach(() => {
     useGameStore.setState(useGameStore.getInitialState());
     useTetrisBoardStore.setState(useTetrisBoardStore.getInitialState());
+    useLobbyStore.setState(useLobbyStore.getInitialState());
   });
 
   it("socket이 null이면 이벤트 리스너를 등록하지 않는다", () => {
@@ -156,6 +158,60 @@ describe("useGame", () => {
     // No error thrown
   });
 
+  it("game:rematch-requested 이벤트로 상태를 초기화한다", () => {
+    const socket = createMockSocket();
+    useGameStore.getState().setGameState({ board: [] } as unknown as GameState);
+    renderHook(() => useGame(socket as never));
+
+    act(() => {
+      socket._trigger("game:rematch-requested");
+    });
+
+    expect(useGameStore.getState().gameState).toBeNull();
+  });
+
+  it("game:tetris-player-updated 이벤트로 보드를 갱신한다", () => {
+    const socket = createMockSocket();
+    renderHook(() => useGame(socket as never));
+    const board = { grid: [[0, 0], [1, 0]], score: 100 };
+
+    act(() => {
+      socket._trigger("game:tetris-player-updated", { playerId: "p1", board });
+    });
+
+    // myId가 null이므로 opponentBoards에 저장된다
+    expect(useTetrisBoardStore.getState().opponentBoards["p1"]).toEqual(board);
+  });
+
+  it("game:tetris-piece-updated 이벤트로 피스를 갱신한다", () => {
+    const socket = createMockSocket();
+    // opponentBoards에 기존 보드가 있어야 피스가 갱신된다
+    useTetrisBoardStore.setState({
+      opponentBoards: { p1: { grid: [[0]], score: 0, activePiece: null, ghostRow: 0, version: 0 } as never },
+    });
+    renderHook(() => useGame(socket as never));
+    const piece = { type: "T", row: 0, col: 3, rotation: 0 };
+
+    act(() => {
+      socket._trigger("game:tetris-piece-updated", { playerId: "p1", activePiece: piece, ghostRow: 18, version: 1 });
+    });
+
+    expect(useTetrisBoardStore.getState().opponentBoards["p1"].activePiece).toEqual(piece);
+  });
+
+  it("관전 중이면 makeMove가 emit하지 않는다", () => {
+    const socket = createMockSocket();
+    useLobbyStore.setState({ isSpectating: true });
+
+    const { result } = renderHook(() => useGame(socket as never));
+
+    act(() => {
+      result.current.makeMove({ row: 0, col: 0 } as never);
+    });
+
+    expect(socket.emit).not.toHaveBeenCalledWith("game:move", expect.anything());
+  });
+
   it("언마운트 시 이벤트 리스너를 해제한다", () => {
     const socket = createMockSocket();
     const { unmount } = renderHook(() => useGame(socket as never));
@@ -168,5 +224,8 @@ describe("useGame", () => {
     expect(socket.off).toHaveBeenCalledWith("game:private-state", expect.any(Function));
     expect(socket.off).toHaveBeenCalledWith("game:player-left", expect.any(Function));
     expect(socket.off).toHaveBeenCalledWith("game:round-ended", expect.any(Function));
+    expect(socket.off).toHaveBeenCalledWith("game:tetris-player-updated", expect.any(Function));
+    expect(socket.off).toHaveBeenCalledWith("game:tetris-piece-updated", expect.any(Function));
+    expect(socket.off).toHaveBeenCalledWith("game:rematch-requested", expect.any(Function));
   });
 });

@@ -141,6 +141,216 @@ describe("useRequests", () => {
     expect(response?.error).toBe("소켓 연결이 없습니다");
   });
 
+  it("request:stopped 이벤트로 요청을 갱신한다", () => {
+    useRequestStore.setState({ requests: [createRequest()] });
+    const socket = createMockSocket();
+    renderHook(() => useRequests(socket as never));
+
+    act(() => {
+      socket._trigger("request:stopped", createRequest({ status: "stopped", adminResponse: "중복 요청" }));
+    });
+
+    expect(useRequestStore.getState().requests[0].status).toBe("stopped");
+  });
+
+  it("request:label-changed 이벤트로 라벨을 갱신한다", () => {
+    useRequestStore.setState({ requests: [createRequest()] });
+    const socket = createMockSocket();
+    renderHook(() => useRequests(socket as never));
+
+    act(() => {
+      socket._trigger("request:label-changed", createRequest({ label: "bug" }));
+    });
+
+    expect(useRequestStore.getState().requests[0].label).toBe("bug");
+  });
+
+  it("acceptRequest가 성공 결과를 반환한다", async () => {
+    const socket = createMockSocket();
+    socket.emit.mockImplementation(((event: string, _payload: unknown, callback?: (result: { success: boolean }) => void) => {
+      if (event === "request:accept" && callback) callback({ success: true });
+    }) as typeof socket.emit);
+
+    const { result } = renderHook(() => useRequests(socket as never));
+
+    let response: { success: boolean; error?: string } | undefined;
+    await act(async () => {
+      response = await result.current.acceptRequest("req-1", "수락합니다");
+    });
+
+    expect(response?.success).toBe(true);
+    expect(socket.emit).toHaveBeenCalledWith("request:accept", { requestId: "req-1", adminResponse: "수락합니다" }, expect.any(Function));
+  });
+
+  it("socket이 null이면 acceptRequest가 에러 결과를 반환한다", async () => {
+    const { result } = renderHook(() => useRequests(null));
+
+    let response: { success: boolean; error?: string } | undefined;
+    await act(async () => {
+      response = await result.current.acceptRequest("req-1");
+    });
+
+    expect(response?.success).toBe(false);
+    expect(response?.error).toBe("소켓 연결이 없습니다");
+  });
+
+  it("rejectRequest가 성공 결과를 반환한다", async () => {
+    const socket = createMockSocket();
+    socket.emit.mockImplementation(((event: string, _payload: unknown, callback?: (result: { success: boolean }) => void) => {
+      if (event === "request:reject" && callback) callback({ success: true });
+    }) as typeof socket.emit);
+
+    const { result } = renderHook(() => useRequests(socket as never));
+
+    let response: { success: boolean; error?: string } | undefined;
+    await act(async () => {
+      response = await result.current.rejectRequest("req-1", "거부 사유");
+    });
+
+    expect(response?.success).toBe(true);
+    expect(socket.emit).toHaveBeenCalledWith("request:reject", { requestId: "req-1", adminResponse: "거부 사유" }, expect.any(Function));
+  });
+
+  it("socket이 null이면 rejectRequest가 에러 결과를 반환한다", async () => {
+    const { result } = renderHook(() => useRequests(null));
+
+    let response: { success: boolean; error?: string } | undefined;
+    await act(async () => {
+      response = await result.current.rejectRequest("req-1", "거부");
+    });
+
+    expect(response?.success).toBe(false);
+  });
+
+  it("resolveRequest가 성공 결과를 반환한다", async () => {
+    const socket = createMockSocket();
+    socket.emit.mockImplementation(((event: string, _payload: unknown, callback?: (result: { success: boolean }) => void) => {
+      if (event === "request:resolve" && callback) callback({ success: true });
+    }) as typeof socket.emit);
+
+    const { result } = renderHook(() => useRequests(socket as never));
+
+    let response: { success: boolean; error?: string } | undefined;
+    await act(async () => {
+      response = await result.current.resolveRequest("req-1", "abc123", "완료");
+    });
+
+    expect(response?.success).toBe(true);
+    expect(socket.emit).toHaveBeenCalledWith("request:resolve", { requestId: "req-1", commitHash: "abc123", adminResponse: "완료" }, expect.any(Function));
+  });
+
+  it("socket이 null이면 resolveRequest가 에러 결과를 반환한다", async () => {
+    const { result } = renderHook(() => useRequests(null));
+
+    let response: { success: boolean; error?: string } | undefined;
+    await act(async () => {
+      response = await result.current.resolveRequest("req-1");
+    });
+
+    expect(response?.success).toBe(false);
+  });
+
+  it("stopRequest가 성공 결과를 반환한다", async () => {
+    const socket = createMockSocket();
+    socket.emit.mockImplementation(((event: string, _payload: unknown, callback?: (result: { success: boolean }) => void) => {
+      if (event === "request:stop" && callback) callback({ success: true });
+    }) as typeof socket.emit);
+
+    const { result } = renderHook(() => useRequests(socket as never));
+
+    let response: { success: boolean; error?: string } | undefined;
+    await act(async () => {
+      response = await result.current.stopRequest("req-1", "중복 요청");
+    });
+
+    expect(response?.success).toBe(true);
+    expect(socket.emit).toHaveBeenCalledWith("request:stop", { requestId: "req-1", adminResponse: "중복 요청" }, expect.any(Function));
+  });
+
+  it("socket이 null이면 stopRequest가 에러 결과를 반환한다", async () => {
+    const { result } = renderHook(() => useRequests(null));
+
+    let response: { success: boolean; error?: string } | undefined;
+    await act(async () => {
+      response = await result.current.stopRequest("req-1", "중단");
+    });
+
+    expect(response?.success).toBe(false);
+  });
+
+  it("changeLabelRequest가 성공 결과를 반환한다", async () => {
+    const socket = createMockSocket();
+    socket.emit.mockImplementation(((event: string, _payload: unknown, callback?: (result: { success: boolean }) => void) => {
+      if (event === "request:change-label" && callback) callback({ success: true });
+    }) as typeof socket.emit);
+
+    const { result } = renderHook(() => useRequests(socket as never));
+
+    let response: { success: boolean; error?: string } | undefined;
+    await act(async () => {
+      response = await result.current.changeLabelRequest("req-1", "bug");
+    });
+
+    expect(response?.success).toBe(true);
+    expect(socket.emit).toHaveBeenCalledWith("request:change-label", { requestId: "req-1", label: "bug" }, expect.any(Function));
+  });
+
+  it("socket이 null이면 changeLabelRequest가 에러 결과를 반환한다", async () => {
+    const { result } = renderHook(() => useRequests(null));
+
+    let response: { success: boolean; error?: string } | undefined;
+    await act(async () => {
+      response = await result.current.changeLabelRequest("req-1", "bug");
+    });
+
+    expect(response?.success).toBe(false);
+  });
+
+  it("deleteRequest가 성공 결과를 반환한다", async () => {
+    const socket = createMockSocket();
+    socket.emit.mockImplementation(((event: string, _requestId: unknown, callback?: (result: { success: boolean }) => void) => {
+      if (event === "request:delete" && callback) callback({ success: true });
+    }) as typeof socket.emit);
+
+    const { result } = renderHook(() => useRequests(socket as never));
+
+    let response: { success: boolean; error?: string } | undefined;
+    await act(async () => {
+      response = await result.current.deleteRequest("req-1");
+    });
+
+    expect(response?.success).toBe(true);
+    expect(socket.emit).toHaveBeenCalledWith("request:delete", "req-1", expect.any(Function));
+  });
+
+  it("socket이 null이면 deleteRequest가 에러 결과를 반환한다", async () => {
+    const { result } = renderHook(() => useRequests(null));
+
+    let response: { success: boolean; error?: string } | undefined;
+    await act(async () => {
+      response = await result.current.deleteRequest("req-1");
+    });
+
+    expect(response?.success).toBe(false);
+  });
+
+  it("createRequest 실패 시 에러 결과를 반환한다", async () => {
+    const socket = createMockSocket();
+    socket.emit.mockImplementation(((event: string, _payload: unknown, callback?: (request: null, error: string) => void) => {
+      if (event === "request:create" && callback) callback(null, "제목이 비어있습니다");
+    }) as typeof socket.emit);
+
+    const { result } = renderHook(() => useRequests(socket as never));
+
+    let response: { success: boolean; error?: string } | undefined;
+    await act(async () => {
+      response = await result.current.createRequest({ title: "", description: "설명", label: "feature" });
+    });
+
+    expect(response?.success).toBe(false);
+    expect(response?.error).toBe("제목이 비어있습니다");
+  });
+
   it("언마운트 시 이벤트 리스너를 해제한다", () => {
     const socket = createMockSocket();
     const { unmount } = renderHook(() => useRequests(socket as never));
@@ -151,6 +361,8 @@ describe("useRequests", () => {
     expect(socket.off).toHaveBeenCalledWith("request:accepted", expect.any(Function));
     expect(socket.off).toHaveBeenCalledWith("request:rejected", expect.any(Function));
     expect(socket.off).toHaveBeenCalledWith("request:resolved", expect.any(Function));
+    expect(socket.off).toHaveBeenCalledWith("request:stopped", expect.any(Function));
+    expect(socket.off).toHaveBeenCalledWith("request:label-changed", expect.any(Function));
     expect(socket.off).toHaveBeenCalledWith("request:deleted", expect.any(Function));
   });
 });

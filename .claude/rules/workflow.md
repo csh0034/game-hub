@@ -33,14 +33,20 @@ pnpm lint
 ### 테스트 실행
 
 ```bash
-# 서버 테스트
-pnpm --filter @game-hub/server test
+# 서버 테스트 (커버리지 포함)
+pnpm --filter @game-hub/server test:coverage
 
-# 특정 파일만 테스트
+# 웹 테스트 (커버리지 포함)
+pnpm --filter web test:coverage
+
+# 특정 파일만 테스트 (커버리지 없이)
 pnpm --filter @game-hub/server test -- <파일패턴>
+pnpm --filter web test -- <파일패턴>
 ```
 
 - 테스트가 실패하면 코드 또는 테스트를 수정하여 모두 통과시킨다.
+- 커버리지가 기준(80%) 미달 시 실패 처리된다. 테스트를 보강하여 통과시킨다.
+- 커버리지 측정 대상은 각 패키지의 `vitest.config`에 정의되어 있으며, 설정/래퍼/UI 컴포넌트 등은 제외된다. 상세는 `test-code.md`의 "커버리지" 섹션 참고.
 - 테스트 작성 시 `test-code.md` 규칙을 따른다.
 
 ## 3단계: 빌드 검증
@@ -60,5 +66,5 @@ pnpm build
 
 1. [ ] 린터 통과 (에러 0개)
 2. [ ] 변경 로직에 대한 테스트 작성 완료
-3. [ ] 모든 테스트 통과
+3. [ ] 모든 테스트 통과 + 커버리지 기준(80%) 충족
 4. [ ] 빌드 성공 (`pnpm build`)

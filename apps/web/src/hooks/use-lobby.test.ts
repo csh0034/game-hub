@@ -163,4 +163,167 @@ describe("useLobby", () => {
       act(() => result.current.createRoom({ name: "방", gameType: "gomoku" })),
     ).rejects.toBe("Not connected");
   });
+
+  it("spectateRoom이 lobby:join-spectate를 emit하고 관전 상태를 설정한다", async () => {
+    const socket = createMockSocket();
+    const room = createRoom();
+    socket.emit.mockImplementation(((event: string, _payload: unknown, callback?: (room: Room | null, error?: string) => void) => {
+      if (event === "lobby:join-spectate" && callback) callback(room);
+    }) as typeof socket.emit);
+
+    const { result } = renderHook(() => useLobby(socket as never));
+
+    await act(async () => {
+      await result.current.spectateRoom("room-1");
+    });
+
+    expect(useLobbyStore.getState().currentRoom).toEqual(room);
+    expect(useLobbyStore.getState().isSpectating).toBe(true);
+  });
+
+  it("spectateRoom 실패 시 reject한다", async () => {
+    const socket = createMockSocket();
+    socket.emit.mockImplementation(((event: string, _payload: unknown, callback?: (room: Room | null, error?: string) => void) => {
+      if (event === "lobby:join-spectate" && callback) callback(null, "관전 불가");
+    }) as typeof socket.emit);
+
+    const { result } = renderHook(() => useLobby(socket as never));
+
+    await expect(
+      act(() => result.current.spectateRoom("room-1")),
+    ).rejects.toBe("관전 불가");
+  });
+
+  it("socket이 null이면 spectateRoom이 reject한다", async () => {
+    const { result } = renderHook(() => useLobby(null));
+
+    await expect(
+      act(() => result.current.spectateRoom("room-1")),
+    ).rejects.toBe("Not connected");
+  });
+
+  it("kickSpectators가 lobby:kick-spectators를 emit한다", async () => {
+    const socket = createMockSocket();
+    socket.emit.mockImplementation(((event: string, callback?: (result: { success: boolean; error?: string }) => void) => {
+      if (event === "lobby:kick-spectators" && callback) callback({ success: true });
+    }) as typeof socket.emit);
+
+    const { result } = renderHook(() => useLobby(socket as never));
+
+    await act(async () => {
+      await result.current.kickSpectators();
+    });
+
+    expect(socket.emit).toHaveBeenCalledWith("lobby:kick-spectators", expect.any(Function));
+  });
+
+  it("kickSpectators 실패 시 reject한다", async () => {
+    const socket = createMockSocket();
+    socket.emit.mockImplementation(((event: string, callback?: (result: { success: boolean; error?: string }) => void) => {
+      if (event === "lobby:kick-spectators" && callback) callback({ success: false, error: "권한 없음" });
+    }) as typeof socket.emit);
+
+    const { result } = renderHook(() => useLobby(socket as never));
+
+    await expect(
+      act(() => result.current.kickSpectators()),
+    ).rejects.toBe("권한 없음");
+  });
+
+  it("kickPlayer가 lobby:kick을 emit한다", async () => {
+    const socket = createMockSocket();
+    socket.emit.mockImplementation(((event: string, _targetId: unknown, callback?: (result: { success: boolean; error?: string }) => void) => {
+      if (event === "lobby:kick" && callback) callback({ success: true });
+    }) as typeof socket.emit);
+
+    const { result } = renderHook(() => useLobby(socket as never));
+
+    await act(async () => {
+      await result.current.kickPlayer("player-2");
+    });
+
+    expect(socket.emit).toHaveBeenCalledWith("lobby:kick", "player-2", expect.any(Function));
+  });
+
+  it("kickPlayer 실패 시 reject한다", async () => {
+    const socket = createMockSocket();
+    socket.emit.mockImplementation(((event: string, _targetId: unknown, callback?: (result: { success: boolean; error?: string }) => void) => {
+      if (event === "lobby:kick" && callback) callback({ success: false, error: "방장만 가능" });
+    }) as typeof socket.emit);
+
+    const { result } = renderHook(() => useLobby(socket as never));
+
+    await expect(
+      act(() => result.current.kickPlayer("player-2")),
+    ).rejects.toBe("방장만 가능");
+  });
+
+  it("lobby:spectator-kicked 이벤트로 로비로 복귀한다", () => {
+    const socket = createMockSocket();
+    useLobbyStore.setState({ currentRoom: createRoom(), isSpectating: true });
+    renderHook(() => useLobby(socket as never));
+
+    act(() => {
+      socket._trigger("lobby:spectator-kicked");
+    });
+
+    expect(useLobbyStore.getState().currentRoom).toBeNull();
+    expect(useLobbyStore.getState().isSpectating).toBe(false);
+  });
+
+  it("lobby:kicked 이벤트로 로비로 복귀한다", () => {
+    const socket = createMockSocket();
+    useLobbyStore.setState({ currentRoom: createRoom() });
+    renderHook(() => useLobby(socket as never));
+
+    act(() => {
+      socket._trigger("lobby:kicked");
+    });
+
+    expect(useLobbyStore.getState().currentRoom).toBeNull();
+    expect(useLobbyStore.getState().isSpectating).toBe(false);
+  });
+
+  it("updateGameOptions가 디바운싱하여 lobby:update-game-options를 emit한다", () => {
+    vi.useFakeTimers();
+    const socket = createMockSocket();
+    const { result } = renderHook(() => useLobby(socket as never));
+
+    act(() => {
+      result.current.updateGameOptions({ difficulty: "beginner" } as never);
+    });
+
+    // 300ms 전에는 emit하지 않는다
+    expect(socket.emit).not.toHaveBeenCalledWith("lobby:update-game-options", expect.anything(), expect.any(Function));
+
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+
+    expect(socket.emit).toHaveBeenCalledWith("lobby:update-game-options", { difficulty: "beginner" }, expect.any(Function));
+    vi.useRealTimers();
+  });
+
+  it("socket이 null이면 leaveRoom이 아무 동작도 하지 않는다", () => {
+    const { result } = renderHook(() => useLobby(null));
+
+    act(() => {
+      result.current.leaveRoom();
+    });
+    // No error thrown
+  });
+
+  it("언마운트 시 이벤트 리스너를 해제한다", () => {
+    const socket = createMockSocket();
+    const { unmount } = renderHook(() => useLobby(socket as never));
+
+    unmount();
+
+    expect(socket.off).toHaveBeenCalledWith("lobby:room-created");
+    expect(socket.off).toHaveBeenCalledWith("lobby:room-updated");
+    expect(socket.off).toHaveBeenCalledWith("lobby:room-removed");
+    expect(socket.off).toHaveBeenCalledWith("lobby:error");
+    expect(socket.off).toHaveBeenCalledWith("lobby:spectator-kicked");
+    expect(socket.off).toHaveBeenCalledWith("lobby:kicked");
+  });
 });

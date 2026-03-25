@@ -246,6 +246,48 @@ describe("GameManager", () => {
     });
   });
 
+  describe("updateRoomName", () => {
+    it("방장이 대기 중인 방의 이름을 변경한다", () => {
+      const room = gm.createRoom(gomokuPayload, host);
+      const updated = gm.updateRoomName(room.id, host.id, "새로운 방 이름");
+      expect(updated).not.toBeNull();
+      expect(updated!.name).toBe("새로운 방 이름");
+    });
+
+    it("방장이 아닌 플레이어가 변경하면 null을 반환한다", () => {
+      const room = gm.createRoom(gomokuPayload, host);
+      gm.joinRoom(room.id, guest);
+      expect(gm.updateRoomName(room.id, guest.id, "변경")).toBeNull();
+    });
+
+    it("playing 상태에서는 null을 반환한다", () => {
+      const room = gm.createRoom(gomokuPayload, host);
+      gm.joinRoom(room.id, guest);
+      gm.startGame(room.id);
+      expect(gm.updateRoomName(room.id, host.id, "변경")).toBeNull();
+    });
+
+    it("존재하지 않는 방에 대해 null을 반환한다", () => {
+      expect(gm.updateRoomName("invalid", host.id, "변경")).toBeNull();
+    });
+
+    it("빈 이름(공백만)이면 null을 반환한다", () => {
+      const room = gm.createRoom(gomokuPayload, host);
+      expect(gm.updateRoomName(room.id, host.id, "   ")).toBeNull();
+    });
+
+    it("20자 초과 이름이면 null을 반환한다", () => {
+      const room = gm.createRoom(gomokuPayload, host);
+      expect(gm.updateRoomName(room.id, host.id, "가".repeat(21))).toBeNull();
+    });
+
+    it("이름 앞뒤 공백을 trim한다", () => {
+      const room = gm.createRoom(gomokuPayload, host);
+      const updated = gm.updateRoomName(room.id, host.id, "  트리밍 테스트  ");
+      expect(updated!.name).toBe("트리밍 테스트");
+    });
+  });
+
   describe("resetRoom", () => {
     it("방을 waiting 상태로 리셋한다", () => {
       const room = gm.createRoom(gomokuPayload, host);

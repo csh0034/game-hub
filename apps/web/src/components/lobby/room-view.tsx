@@ -1,8 +1,8 @@
 "use client";
 
-import { Suspense, useEffect, useState, useCallback } from "react";
+import { Suspense, useEffect, useState, useCallback, useRef } from "react";
 import type { Room, ChatMessage, GameOptions, MinesweeperDifficulty, TetrisDifficulty } from "@game-hub/shared-types";
-import { GAME_CONFIGS, MAX_SPECTATORS, MINESWEEPER_DIFFICULTY_CONFIGS, TETRIS_DIFFICULTY_CONFIGS } from "@game-hub/shared-types";
+import { GAME_CONFIGS, MAX_SPECTATORS, MAX_ROOM_NAME_LENGTH, MINESWEEPER_DIFFICULTY_CONFIGS, TETRIS_DIFFICULTY_CONFIGS } from "@game-hub/shared-types";
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { useGame } from "@/hooks/use-game";
 import { GameRenderer } from "@/lib/game-registry";
@@ -22,6 +22,7 @@ import {
   Eye,
   Users,
   X,
+  Pencil,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import RankingCard from "@/components/ranking/ranking-card";
@@ -80,13 +81,14 @@ interface RoomViewProps {
   onLeaveImmediate: () => void;
   onToggleReady: () => void;
   onUpdateGameOptions: (gameOptions: GameOptions) => void;
+  onUpdateRoomName?: (name: string) => Promise<void>;
   onKickSpectators?: () => Promise<void>;
   onKickPlayer?: (targetId: string) => Promise<void>;
   roomMessages: ChatMessage[];
   onSendRoomMessage: (message: string) => void;
 }
 
-export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeaveImmediate, onToggleReady, onUpdateGameOptions, onKickSpectators, onKickPlayer, roomMessages, onSendRoomMessage }: RoomViewProps) {
+export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeaveImmediate, onToggleReady, onUpdateGameOptions, onUpdateRoomName, onKickSpectators, onKickPlayer, roomMessages, onSendRoomMessage }: RoomViewProps) {
   const { gameState, gameResult, playerLeftInfo, startGame, requestRematch, setPlayerLeftInfo } = useGame(socket);
   const [chatOpen, setChatOpen] = useState(true);
   const [lastSeenMessageCount, setLastSeenMessageCount] = useState(roomMessages.length);
@@ -94,8 +96,25 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
   const [kickConfirmOpen, setKickConfirmOpen] = useState(false);
   const [pendingKickOptions, setPendingKickOptions] = useState<GameOptions | null>(null);
   const [kickTarget, setKickTarget] = useState<{ id: string; nickname: string } | null>(null);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editName, setEditName] = useState("");
+  const editInputRef = useRef<HTMLInputElement>(null);
   const config = GAME_CONFIGS[room.gameType];
   const isHost = socket?.id === room.hostId;
+
+  const handleSubmitName = useCallback(() => {
+    const trimmed = editName.trim();
+    if (trimmed.length === 0 || trimmed === room.name) {
+      setIsEditingName(false);
+      return;
+    }
+    onUpdateRoomName?.(trimmed).catch(() => {});
+    setIsEditingName(false);
+  }, [editName, room.name, onUpdateRoomName]);
+
+  const handleCancelEdit = useCallback(() => {
+    setIsEditingName(false);
+  }, []);
   const myPlayer = room.players.find((p) => p.id === socket?.id);
   const isPlaying = room.status === "playing" || !!gameState;
   const spectateChatEnabled = room.gameOptions?.spectateChatEnabled ?? true;
@@ -242,8 +261,34 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold">{room.name}</h1>
+        <div className="flex-1 min-w-0">
+          {isHost && !isSpectating ? (
+            isEditingName ? (
+              <input
+                ref={editInputRef}
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSubmitName();
+                  if (e.key === "Escape") handleCancelEdit();
+                }}
+                onBlur={handleSubmitName}
+                maxLength={MAX_ROOM_NAME_LENGTH}
+                autoFocus
+                className="text-2xl font-bold bg-transparent border-b-2 border-primary outline-none w-full"
+              />
+            ) : (
+              <h1
+                className="text-2xl font-bold cursor-pointer hover:text-primary/80 group flex items-center gap-1 truncate"
+                onClick={() => { setIsEditingName(true); setEditName(room.name); }}
+              >
+                <span className="truncate">{room.name}</span>
+                <Pencil className="w-4 h-4 shrink-0 opacity-0 group-hover:opacity-50 transition-opacity" />
+              </h1>
+            )
+          ) : (
+            <h1 className="text-2xl font-bold truncate">{room.name}</h1>
+          )}
           <p className="text-sm text-muted-foreground">
             {config.icon} {config.name} · 대기 중
           </p>

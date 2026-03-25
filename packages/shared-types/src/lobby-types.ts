@@ -21,6 +21,7 @@ export interface GameOptions {
 }
 
 export const MAX_SPECTATORS = 4;
+export const MAX_ROOM_NAME_LENGTH = 20;
 
 export interface Room {
   id: string;

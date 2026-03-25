@@ -544,6 +544,66 @@ describe("setupLobbyHandler — lobby:update-game-options", () => {
   });
 });
 
+describe("setupLobbyHandler — lobby:update-room-name", () => {
+  let socket1: ReturnType<typeof createMockSocket>;
+  let socket2: ReturnType<typeof createMockSocket>;
+  let io: ReturnType<typeof createMockIo>;
+  let gameManager: GameManager;
+  let chatStore: InMemoryChatStore;
+
+  beforeEach(() => {
+    socket1 = createMockSocket("socket-1", "Player1");
+    socket2 = createMockSocket("socket-2", "Player2");
+    io = createMockIo({ withTo: true });
+    gameManager = new GameManager();
+    chatStore = new InMemoryChatStore();
+  });
+
+  it("방장이 방 이름을 변경한다", () => {
+    setupLobbyHandler(io as unknown as GameServer, socket1 as unknown as GameSocket, gameManager, chatStore);
+
+    const createCallback = vi.fn();
+    socket1._trigger("lobby:create-room", { gameType: "gomoku", name: "Test Room" }, createCallback);
+    const room = createCallback.mock.calls[0][0];
+    socket1.data.roomId = room.id;
+
+    const callback = vi.fn();
+    socket1._trigger("lobby:update-room-name", "새 방이름", callback);
+
+    expect(callback).toHaveBeenCalledWith({ success: true });
+    const updatedRoom = gameManager.getRoom(room.id);
+    expect(updatedRoom!.name).toBe("새 방이름");
+  });
+
+  it("방에 참가하지 않은 상태에서 이름 변경 시 에러를 반환한다", () => {
+    setupLobbyHandler(io as unknown as GameServer, socket1 as unknown as GameSocket, gameManager, chatStore);
+    socket1.data.roomId = null;
+
+    const callback = vi.fn();
+    socket1._trigger("lobby:update-room-name", "새 방이름", callback);
+
+    expect(callback).toHaveBeenCalledWith({ success: false, error: "방에 참가하고 있지 않습니다." });
+  });
+
+  it("방장이 아닌 사용자가 이름 변경 시 에러를 반환한다", () => {
+    setupLobbyHandler(io as unknown as GameServer, socket1 as unknown as GameSocket, gameManager, chatStore);
+    setupLobbyHandler(io as unknown as GameServer, socket2 as unknown as GameSocket, gameManager, chatStore);
+
+    const createCallback = vi.fn();
+    socket1._trigger("lobby:create-room", { gameType: "gomoku", name: "Test Room" }, createCallback);
+    const room = createCallback.mock.calls[0][0];
+
+    const joinCallback = vi.fn();
+    socket2._trigger("lobby:join-room", { roomId: room.id }, joinCallback);
+    socket2.data.roomId = room.id;
+
+    const callback = vi.fn();
+    socket2._trigger("lobby:update-room-name", "새 방이름", callback);
+
+    expect(callback).toHaveBeenCalledWith({ success: false, error: "방 이름을 변경할 수 없습니다." });
+  });
+});
+
 describe("setupLobbyHandler — lobby:toggle-ready", () => {
   let socket1: ReturnType<typeof createMockSocket>;
   let socket2: ReturnType<typeof createMockSocket>;

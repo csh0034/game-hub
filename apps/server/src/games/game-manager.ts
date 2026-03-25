@@ -1,5 +1,5 @@
 import type { Room, CreateRoomPayload, GameOptions } from "@game-hub/shared-types";
-import { MAX_SPECTATORS } from "@game-hub/shared-types";
+import { MAX_SPECTATORS, MAX_ROOM_NAME_LENGTH } from "@game-hub/shared-types";
 import type { Player, GameType, GameState, GameMove, GameResult } from "@game-hub/shared-types";
 import { GomokuEngine } from "./gomoku-engine.js";
 import { HoldemEngine } from "./holdem-engine.js";
@@ -103,6 +103,18 @@ export class GameManager {
     if (room.status !== "waiting") return null;
     if (room.hostId !== playerId) return null;
     room.gameOptions = gameOptions;
+    this.persistRoom(room);
+    return room;
+  }
+
+  updateRoomName(roomId: string, playerId: string, name: string): Room | null {
+    const room = this.rooms.get(roomId);
+    if (!room) return null;
+    if (room.status !== "waiting") return null;
+    if (room.hostId !== playerId) return null;
+    const trimmed = name.trim();
+    if (trimmed.length === 0 || trimmed.length > MAX_ROOM_NAME_LENGTH) return null;
+    room.name = trimmed;
     this.persistRoom(room);
     return room;
   }

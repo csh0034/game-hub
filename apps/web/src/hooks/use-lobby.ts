@@ -134,6 +134,19 @@ export function useLobby(socket: GameSocket | null) {
     socket.emit("lobby:toggle-ready");
   }, [socket]);
 
+  const updateRoomName = useCallback(
+    (name: string): Promise<void> => {
+      return new Promise((resolve, reject) => {
+        if (!socket) return reject("Not connected");
+        socket.emit("lobby:update-room-name", name, (result) => {
+          if (!result.success) return reject(result.error);
+          resolve();
+        });
+      });
+    },
+    [socket]
+  );
+
   const updateTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
   const updateGameOptions = useCallback(
     (gameOptions: GameOptions) => {
@@ -150,5 +163,5 @@ export function useLobby(socket: GameSocket | null) {
     [socket]
   );
 
-  return { rooms, currentRoom, isSpectating, createRoom, joinRoom, spectateRoom, leaveRoom, kickSpectators, kickPlayer, toggleReady, updateGameOptions };
+  return { rooms, currentRoom, isSpectating, createRoom, joinRoom, spectateRoom, leaveRoom, kickSpectators, kickPlayer, toggleReady, updateRoomName, updateGameOptions };
 }

@@ -23,6 +23,7 @@ export interface ClientToServerEvents {
   "lobby:get-rooms": (callback: (rooms: Room[]) => void) => void;
   "lobby:toggle-ready": () => void;
   "lobby:update-game-options": (gameOptions: GameOptions, callback: (result: { success: boolean; error?: string }) => void) => void;
+  "lobby:update-room-name": (name: string, callback: (result: { success: boolean; error?: string }) => void) => void;
   "lobby:join-spectate": (payload: JoinRoomPayload, callback: (room: Room | null, error?: string) => void) => void;
   "lobby:kick-spectators": (callback: (result: { success: boolean; error?: string }) => void) => void;
   "lobby:kick": (targetId: string, callback: (result: { success: boolean; error?: string }) => void) => void;

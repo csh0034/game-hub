@@ -753,6 +753,64 @@ describe("setupLobbyHandler — lobby:join-spectate", () => {
       expect.objectContaining({ id: "socket-2", nickname: "Player2" }),
     );
   });
+
+  it("게임 중 관전 입장 시 현재 게임 상태를 전송한다", () => {
+    const socket3 = createMockSocket("socket-3", "Player3");
+    setupLobbyHandler(io as unknown as GameServer, socket1 as unknown as GameSocket, gameManager, chatStore);
+    setupLobbyHandler(io as unknown as GameServer, socket2 as unknown as GameSocket, gameManager, chatStore);
+    setupLobbyHandler(io as unknown as GameServer, socket3 as unknown as GameSocket, gameManager, chatStore);
+
+    const createCallback = vi.fn();
+    socket1._trigger("lobby:create-room", { gameType: "gomoku", name: "Test Room" }, createCallback);
+    const room = createCallback.mock.calls[0][0];
+
+    gameManager.updateGameOptions(room.id, "socket-1", { spectateEnabled: true, spectateInGameEnabled: true });
+
+    // socket2 참가 후 게임 시작
+    const joinCallback = vi.fn();
+    socket2._trigger("lobby:join-room", { roomId: room.id }, joinCallback);
+    socket2.data.roomId = room.id;
+    socket1._trigger("lobby:toggle-ready");
+    socket2._trigger("lobby:toggle-ready");
+    gameManager.startGame(room.id);
+
+    // socket3 게임 중 관전 입장
+    const spectateCallback = vi.fn();
+    socket3._trigger("lobby:join-spectate", { roomId: room.id }, spectateCallback);
+
+    expect(spectateCallback).toHaveBeenCalledTimes(1);
+    const joinedRoom = spectateCallback.mock.calls[0][0];
+    expect(joinedRoom).not.toBeNull();
+    expect(joinedRoom.spectators).toHaveLength(1);
+    expect(socket3.emit).toHaveBeenCalledWith("game:started", expect.anything());
+  });
+
+  it("playing 상태에서 spectateInGameEnabled가 OFF면 관전 입장이 거부된다", () => {
+    setupLobbyHandler(io as unknown as GameServer, socket1 as unknown as GameSocket, gameManager, chatStore);
+    setupLobbyHandler(io as unknown as GameServer, socket2 as unknown as GameSocket, gameManager, chatStore);
+
+    const createCallback = vi.fn();
+    socket1._trigger("lobby:create-room", { gameType: "gomoku", name: "Test Room" }, createCallback);
+    const room = createCallback.mock.calls[0][0];
+
+    gameManager.updateGameOptions(room.id, "socket-1", { spectateEnabled: true });
+
+    // socket2 참가 후 게임 시작
+    const joinCallback = vi.fn();
+    socket2._trigger("lobby:join-room", { roomId: room.id }, joinCallback);
+    socket2.data.roomId = room.id;
+    socket1._trigger("lobby:toggle-ready");
+    socket2._trigger("lobby:toggle-ready");
+    gameManager.startGame(room.id);
+
+    // 게임 중 관전 시도 (spectateInGameEnabled OFF)
+    const socket3 = createMockSocket("socket-3", "Player3");
+    setupLobbyHandler(io as unknown as GameServer, socket3 as unknown as GameSocket, gameManager, chatStore);
+    const spectateCallback = vi.fn();
+    socket3._trigger("lobby:join-spectate", { roomId: room.id }, spectateCallback);
+
+    expect(spectateCallback).toHaveBeenCalledWith(null, "관전할 수 없습니다.");
+  });
 });
 
 describe("setupLobbyHandler — lobby:kick-spectators", () => {

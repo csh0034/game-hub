@@ -128,9 +128,9 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
     }
     // 관전 OFF로 전환 시 관전자 채팅도 OFF, ON 전환 시 기본값 ON
     if (!newOptions.spectateEnabled) {
-      newOptions = { ...newOptions, spectateChatEnabled: false };
+      newOptions = { ...newOptions, spectateChatEnabled: false, spectateInGameEnabled: false };
     } else if (newOptions.spectateEnabled && !prevEnabled) {
-      newOptions = { ...newOptions, spectateChatEnabled: true };
+      newOptions = { ...newOptions, spectateChatEnabled: true, spectateInGameEnabled: true };
     }
     setPendingOptions(newOptions);
     onUpdateGameOptions(newOptions);
@@ -602,6 +602,7 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
                 </div>
               </div>
               {localOptions.spectateEnabled && (
+                <>
                 <div>
                   <label className="block text-sm font-medium mb-1.5">관전자 채팅</label>
                   <div className="grid grid-cols-2 gap-2">
@@ -621,6 +622,26 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
                     </button>
                   </div>
                 </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">게임 중 관전</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleOptionChange({ ...localOptions, spectateInGameEnabled: true })}
+                      className={`py-2 rounded-lg text-sm font-medium border transition-colors ${localOptions.spectateInGameEnabled ? "border-primary bg-primary/15 text-primary" : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:bg-primary/5"}`}
+                    >
+                      ON
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleOptionChange({ ...localOptions, spectateInGameEnabled: false })}
+                      className={`py-2 rounded-lg text-sm font-medium border transition-colors ${!localOptions.spectateInGameEnabled ? "border-primary bg-primary/15 text-primary" : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:bg-primary/5"}`}
+                    >
+                      OFF
+                    </button>
+                  </div>
+                </div>
+                </>
               )}
             </div>
           ) : (
@@ -703,10 +724,16 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
                 <span className="font-medium">{room.gameOptions?.spectateEnabled ? "ON" : "OFF"}</span>
               </div>
               {room.gameOptions?.spectateEnabled && (
-                <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
-                  <span className="text-muted-foreground">관전자 채팅</span>
-                  <span className="font-medium">{room.gameOptions?.spectateChatEnabled ? "ON" : "OFF"}</span>
-                </div>
+                <>
+                  <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
+                    <span className="text-muted-foreground">관전자 채팅</span>
+                    <span className="font-medium">{room.gameOptions?.spectateChatEnabled ? "ON" : "OFF"}</span>
+                  </div>
+                  <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
+                    <span className="text-muted-foreground">게임 중 관전</span>
+                    <span className="font-medium">{room.gameOptions?.spectateInGameEnabled ? "ON" : "OFF"}</span>
+                  </div>
+                </>
               )}
             </div>
           )}
@@ -783,7 +810,7 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
             await onKickSpectators();
           }
           if (pendingKickOptions) {
-            const opts = { ...pendingKickOptions, spectateChatEnabled: false };
+            const opts = { ...pendingKickOptions, spectateChatEnabled: false, spectateInGameEnabled: false };
             setPendingOptions(opts);
             onUpdateGameOptions(opts);
             setPendingKickOptions(null);

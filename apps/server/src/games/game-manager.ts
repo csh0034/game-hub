@@ -271,7 +271,8 @@ export class GameManager {
   addSpectator(roomId: string, player: Player): Room | null {
     const room = this.rooms.get(roomId);
     if (!room) return null;
-    if (room.status !== "waiting") return null;
+    if (room.status === "finished") return null;
+    if (room.status === "playing" && !room.gameOptions?.spectateInGameEnabled) return null;
     if (!room.gameOptions?.spectateEnabled) return null;
     if (room.spectators.length >= MAX_SPECTATORS) return null;
     if (room.players.some((p) => p.id === player.id)) return null;

@@ -193,6 +193,13 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
     callback(room);
     io.to(room.id).emit("lobby:spectator-joined", player);
     io.emit("lobby:room-updated", room);
+    // 게임 중 관전 입장 시 현재 게임 상태 전송
+    if (room.status === "playing") {
+      const gameState = gameManager.getGameState(room.id);
+      if (gameState) {
+        socket.emit("game:started", gameState);
+      }
+    }
   });
 
   socket.on("lobby:kick-spectators", (callback) => {

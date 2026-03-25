@@ -28,7 +28,8 @@ export function RoomList({ rooms, onJoinRoom, onSpectateRoom }: RoomListProps) {
         const isPlaying = room.status === "playing";
         const spectateEnabled = room.gameOptions?.spectateEnabled;
         const spectatorsFull = room.spectators.length >= MAX_SPECTATORS;
-        const canSpectate = room.status === "waiting" && spectateEnabled && !spectatorsFull;
+        const spectateInGameEnabled = room.gameOptions?.spectateInGameEnabled;
+        const canSpectate = spectateEnabled && !spectatorsFull && (room.status === "waiting" || (room.status === "playing" && spectateInGameEnabled));
 
         return (
           <div
@@ -62,6 +63,9 @@ export function RoomList({ rooms, onJoinRoom, onSpectateRoom }: RoomListProps) {
                         <MessageCircle className="w-3 h-3 text-amber-500" />
                       ) : (
                         <MessageCircleOff className="w-3 h-3 text-muted-foreground/50" />
+                      )}
+                      {spectateInGameEnabled && (
+                        <Play className="w-3 h-3 text-green-500" />
                       )}
                     </span>
                   )}

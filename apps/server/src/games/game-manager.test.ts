@@ -321,12 +321,35 @@ describe("GameManager", () => {
       expect(gm.addSpectator(room.id, spectator)).toBeNull();
     });
 
-    it("playing 상태에서는 관전자를 추가할 수 없다", () => {
+    it("playing 상태에서 spectateInGameEnabled가 OFF면 관전자를 추가할 수 없다", () => {
       const h: Player = { id: "host-p", nickname: "Host", isReady: true };
       const g: Player = { id: "guest-p", nickname: "Guest", isReady: true };
       const room = gm.createRoom({ ...gomokuPayload, gameOptions: { spectateEnabled: true } }, h);
       gm.joinRoom(room.id, g);
       gm.startGame(room.id);
+      expect(gm.addSpectator(room.id, spectator)).toBeNull();
+    });
+
+    it("playing 상태에서 spectateInGameEnabled가 ON이면 관전자를 추가할 수 있다", () => {
+      const h: Player = { id: "host-p", nickname: "Host", isReady: true };
+      const g: Player = { id: "guest-p", nickname: "Guest", isReady: true };
+      const room = gm.createRoom({ ...gomokuPayload, gameOptions: { spectateEnabled: true, spectateInGameEnabled: true } }, h);
+      gm.joinRoom(room.id, g);
+      gm.startGame(room.id);
+      const result = gm.addSpectator(room.id, spectator);
+      expect(result).not.toBeNull();
+      expect(result!.spectators).toHaveLength(1);
+    });
+
+    it("finished 상태에서는 spectateInGameEnabled와 무관하게 관전자를 추가할 수 없다", () => {
+      const h: Player = { id: "host-p", nickname: "Host", isReady: true };
+      const g: Player = { id: "guest-p", nickname: "Guest", isReady: true };
+      const room = gm.createRoom({ ...gomokuPayload, gameOptions: { spectateEnabled: true, spectateInGameEnabled: true } }, h);
+      gm.joinRoom(room.id, g);
+      gm.startGame(room.id);
+      // finished 상태로 변경
+      const current = gm.getRoom(room.id)!;
+      current.status = "finished";
       expect(gm.addSpectator(room.id, spectator)).toBeNull();
     });
 

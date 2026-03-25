@@ -18,6 +18,7 @@ export interface GameOptions {
   gomokuFirstColor?: GomokuFirstColor;
   spectateEnabled?: boolean;
   spectateChatEnabled?: boolean;
+  spectateInGameEnabled?: boolean;
 }
 
 export const MAX_SPECTATORS = 4;

@@ -1,4 +1,4 @@
-import type { GameType, MinesweeperDifficulty, TetrisDifficulty } from "./game-types";
+import type { GameType, MinesweeperDifficulty, TetrisDifficulty, TetrisGameMode } from "./game-types";
 import type { Player } from "./player-types";
 
 export type RoomStatus = "waiting" | "playing" | "finished";
@@ -8,6 +8,7 @@ export type GomokuFirstColor = "host" | "guest";
 export interface GameOptions {
   minesweeperDifficulty?: MinesweeperDifficulty;
   tetrisDifficulty?: TetrisDifficulty;
+  tetrisMode?: TetrisGameMode;
   liarDrawingTime?: number;
   liarDrawingRounds?: number;
   catchMindTime?: number;

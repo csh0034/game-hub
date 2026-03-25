@@ -171,7 +171,7 @@ async function submitRanking(
   score: number,
   result: GameResult,
 ): Promise<void> {
-  const sortAsc = gameType === "minesweeper"; // lower time = better
+  const sortAsc = gameType === "minesweeper" || gameType === "tetris"; // lower time = better
   const key = `${gameType}:${difficulty}` as RankingKey;
   const entry: RankingEntry = {
     id: randomUUID(),
@@ -308,13 +308,13 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
         cleanupTetrisFlush(roomId, io);
         room.status = "finished";
 
-        // Submit tetris solo ranking
-        if (tetrisEngine.isSolo()) {
+        // Submit tetris speed-race solo ranking (time-based)
+        if (tetrisEngine.isSolo() && tetrisEngine.isSpeedRace() && result.winnerId) {
           const playerId = room.players[0]?.id;
           if (playerId) {
             const playerSocket = io.sockets.sockets.get(playerId);
             const nickname = playerSocket?.data?.nickname ?? "Unknown";
-            await submitRanking(io, rankingStore, "tetris", tetrisEngine.getDifficulty(), nickname, tetrisEngine.getPlayerScore(playerId), result);
+            await submitRanking(io, rankingStore, "tetris", tetrisEngine.getDifficulty(), nickname, tetrisEngine.getCompletionTime(), result);
           }
         }
 
@@ -704,8 +704,8 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
           }
         } else if (room?.gameType === "tetris") {
           const tetrisEngine = gameManager.getTetrisEngine(roomId);
-          if (tetrisEngine && tetrisEngine.isSolo()) {
-            await submitRanking(io, rankingStore, "tetris", tetrisEngine.getDifficulty(), socket.data.nickname, tetrisEngine.getPlayerScore(socket.id!), result.result);
+          if (tetrisEngine && tetrisEngine.isSolo() && tetrisEngine.isSpeedRace() && result.result.winnerId) {
+            await submitRanking(io, rankingStore, "tetris", tetrisEngine.getDifficulty(), socket.data.nickname, tetrisEngine.getCompletionTime(), result.result);
           }
         }
 

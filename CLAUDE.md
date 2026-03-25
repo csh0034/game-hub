@@ -40,7 +40,7 @@ pnpm --filter web lint                 # 웹 린트
 |------|------|------|
 | 라이어 드로잉 (Liar Drawing) | `docs/games/liar-drawing.md` | 3~8인, 소셜 디덕션 그림 게임. 제시어를 모르는 라이어를 투표로 찾아내기 |
 | 캐치마인드 (Catch Mind) | `docs/games/catch-mind.md` | 3~8인, 출제자가 그린 그림을 보고 채팅으로 정답을 맞추는 드로잉 퀴즈 게임 |
-| 테트리스 (Tetris) | `docs/games/tetris.md` | 1~8인, 10×20 보드, 7-bag 랜덤, SRS 벽차기, T-Spin/콤보/B2B/Lock Delay, 대전 시 쓰레기 줄 공격 |
+| 테트리스 (Tetris) | `docs/games/tetris.md` | 1~8인, 10×20 보드, 7-bag 랜덤, SRS 벽차기, T-Spin/콤보/B2B/Lock Delay, 클래식(대전 쓰레기줄)/스피드레이스(40줄 Sprint) 모드 |
 | 오목 (Gomoku) | `docs/games/gomoku.md` | 2인, 15×15 보드, 5목 먼저 완성 시 승리. 금수 없음, 장목 허용, 흑/백 선택 가능 |
 | 지뢰찾기 (Minesweeper) | `docs/games/minesweeper.md` | 1인, 초급(9×9)/중급(16×16)/고급(16×30) 난이도. 모든 안전한 칸을 열면 승리. 첫 클릭 안전 보장 |
 | 텍사스 홀덤 (Texas Hold'em) | `docs/games/texas-holdem.md` | 2~8인, 홀카드 2장 + 커뮤니티 5장으로 최고 5장 조합 승부. 시작칩 1000, SB/BB 10/20 |
@@ -56,7 +56,7 @@ pnpm --filter web lint                 # 웹 린트
 
 1인 플레이 게임(지뢰찾기, 테트리스 솔로)의 난이도별 Top 10 랭킹.
 
-- **대상 게임**: 지뢰찾기 (완료 시간, 낮을수록 좋음), 테트리스 솔로 (점수, 높을수록 좋음)
+- **대상 게임**: 지뢰찾기 (완료 시간, 낮을수록 좋음), 테트리스 스피드 레이스 솔로 (클리어 시간, 낮을수록 좋음)
 - **난이도별 분리**: 지뢰찾기 3종 + 테트리스 3종 (beginner/intermediate/expert) = 총 6개 랭킹
 - **Top 10**: 난이도당 최대 10개 엔트리 저장
 - **식별자**: 닉네임 (계정 시스템 없음)
@@ -66,7 +66,7 @@ pnpm --filter web lint                 # 웹 린트
 - **UI 위치**: 로비 (채팅 패널 하단 랭킹 카드) + 대기실 (게임 옵션 아래 랭킹 카드) + 게임 결과 (순위 표시, 1위 시 신기록 표시)
 - **실시간 갱신**: `ranking:updated` 이벤트로 로비 및 대기실의 랭킹 카드가 자동 갱신
 - **Redis 키**: `ranking:{gameType}:{difficulty}` (STRING, JSON 배열)
-- **테트리스 랭킹 조건**: 솔로 모드 (`players.length === 1`)에서만 랭킹 등록. 대전 모드는 제외
+- **테트리스 랭킹 조건**: 스피드 레이스 솔로 모드에서 40줄 클리어 시에만 랭킹 등록 (시간 기반, 낮을수록 좋음). 클래식 모드 및 대전 모드는 제외
 
 ## 요청사항 게시판
 

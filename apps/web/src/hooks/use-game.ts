@@ -31,7 +31,7 @@ export function useGame(socket: GameSocket | null) {
       setGameResult(null);
       setRoundResult(null);
       // Initialize tetris board store if it's a tetris game
-      if (state && "players" in state && "mode" in state && socket?.id) {
+      if (state && "players" in state && "gameMode" in state && socket?.id) {
         useTetrisBoardStore.getState().initFromState(state as TetrisPublicState, socket.id);
       }
     };

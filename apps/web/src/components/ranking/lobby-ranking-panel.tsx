@@ -7,7 +7,7 @@ import type { RankingGameType, RankingDifficulty } from "@game-hub/shared-types"
 
 const GAMES: { type: RankingGameType; label: string; difficulties: RankingDifficulty[] }[] = [
   { type: "minesweeper", label: "지뢰찾기", difficulties: ["beginner", "intermediate", "expert"] },
-  { type: "tetris", label: "테트리스", difficulties: ["beginner", "intermediate", "expert"] },
+  { type: "tetris", label: "테트리스 스피드", difficulties: ["beginner", "intermediate", "expert"] },
 ];
 
 interface LobbyRankingPanelProps {

@@ -7,6 +7,6 @@ export type RankingKey = `${RankingGameType}:${RankingDifficulty}`;
 export interface RankingEntry {
   id: string;
   nickname: string;
-  score: number; // minesweeper: completion time in ms (lower=better), tetris: score (higher=better)
+  score: number; // minesweeper: completion time in ms (lower=better), tetris: completion time in ms (lower=better)
   date: number;
 }

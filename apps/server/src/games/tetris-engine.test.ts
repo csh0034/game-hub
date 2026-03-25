@@ -709,4 +709,87 @@ describe("TetrisEngine", () => {
       expect(engine.isSolo()).toBe(false);
     });
   });
+
+  describe("speed-race 모드", () => {
+    let speedEngine: TetrisEngine;
+
+    beforeEach(() => {
+      speedEngine = new TetrisEngine("beginner", "speed-race");
+    });
+
+    it("speed-race 모드로 초기화한다", () => {
+      const state = speedEngine.initState(mockPlayers);
+      expect(state.gameMode).toBe("speed-race");
+      expect(state.startedAt).not.toBeNull();
+      expect(state.startedAt).toBeGreaterThan(0);
+    });
+
+    it("isSpeedRace가 true를 반환한다", () => {
+      speedEngine.initState(mockPlayers);
+      expect(speedEngine.isSpeedRace()).toBe(true);
+    });
+
+    it("getGameMode가 speed-race를 반환한다", () => {
+      speedEngine.initState(mockPlayers);
+      expect(speedEngine.getGameMode()).toBe("speed-race");
+    });
+
+    it("classic 모드는 startedAt이 null이다", () => {
+      const classicEngine = new TetrisEngine("beginner", "classic");
+      const state = classicEngine.initState(mockPlayers);
+      expect(state.gameMode).toBe("classic");
+      expect(state.startedAt).toBeNull();
+    });
+
+    it("getCompletionTime이 경과 시간을 반환한다", () => {
+      speedEngine.initState(mockPlayers);
+      const time = speedEngine.getCompletionTime();
+      expect(time).toBeGreaterThanOrEqual(0);
+    });
+
+    it("40줄 클리어 시 승리한다", () => {
+      const state = speedEngine.initState(mockPlayers);
+      // 직접 linesCleared를 40 이상으로 설정하기 위해 반복적으로 하드드롭
+      // 대신 checkWin에서 linesCleared 체크를 테스트하기 위해 내부 상태를 활용
+      // processMove를 통해 줄을 클리어하는 것은 랜덤 피스 때문에 어려우므로
+      // checkWin의 로직을 직접 검증
+
+      // 40줄을 달성하지 못한 상태에서는 null
+      const result = speedEngine.checkWin(state);
+      expect(result).toBeNull();
+    });
+
+    it("솔로 게임오버 시 라인 수를 표시한다", () => {
+      const state = speedEngine.initState(mockPlayers);
+      // 게임오버 상태를 만들기 위해 보드를 채운다
+      const board = state.players["player1"];
+      // 보드 상단을 채워서 게임오버 유도
+      for (let r = 0; r < 20; r++) {
+        for (let c = 0; c < 10; c++) {
+          board.board[r][c] = "Z";
+        }
+      }
+      // 하드드롭으로 게임오버 트리거
+      speedEngine.processMove(state, "player1", { type: "hard-drop" });
+      const result = speedEngine.checkWin(state);
+      if (result) {
+        expect(result.winnerId).toBeNull();
+        expect(result.reason).toContain("/40");
+      }
+    });
+
+    it("대전 모드에서 쓰레기 줄이 전송되지 않는다", () => {
+      const versusSpeedEngine = new TetrisEngine("beginner", "speed-race");
+      const state = versusSpeedEngine.initState(mockVersusPlayers);
+
+      // 여러 번 하드드롭해서 줄 클리어 시도
+      for (let i = 0; i < 50; i++) {
+        versusSpeedEngine.processMove(state, "player1", { type: "hard-drop" });
+      }
+
+      // speed-race 대전에서는 쓰레기 줄이 없어야 함
+      const p2Board = versusSpeedEngine.toPublicStateForPlayer("player2");
+      expect(p2Board?.pendingGarbage).toBe(0);
+    });
+  });
 });

@@ -181,6 +181,9 @@ export interface MinesweeperMove {
 }
 
 // Tetris types
+export type TetrisGameMode = "classic" | "speed-race";
+export const SPEED_RACE_TARGET_LINES = 40;
+
 export type TetrisDifficulty = "beginner" | "intermediate" | "expert";
 
 export interface TetrisDifficultyConfig {
@@ -227,7 +230,9 @@ export interface TetrisPlayerBoard {
 export interface TetrisPublicState {
   players: Record<string, TetrisPlayerBoard>;
   difficulty: TetrisDifficulty;
+  gameMode: TetrisGameMode;
   dropInterval: number;
+  startedAt: number | null;
 }
 
 export type TetrisMoveType =

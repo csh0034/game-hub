@@ -6,11 +6,13 @@ import type {
   TetrisPublicState,
   TetrisMove,
   TetrisDifficulty,
+  TetrisGameMode,
 
   GameResult,
   GameState,
   GameMove,
 } from "@game-hub/shared-types";
+import { SPEED_RACE_TARGET_LINES } from "@game-hub/shared-types";
 import type { GameEngine } from "./engine-interface.js";
 
 const VISIBLE_ROWS = 20;
@@ -125,14 +127,17 @@ export class TetrisEngine implements GameEngine {
   private playerStates: Map<string, PlayerInternalState> = new Map();
   private playerIds: string[] = [];
   private difficulty: TetrisDifficulty;
+  private gameMode: TetrisGameMode;
+  private startedAt: number | null = null;
 
   private baseInterval: number;
   private startLevel: number;
   private dirtyPlayers: Set<string> = new Set();
   private boardDirtyPlayers: Set<string> = new Set(); // players whose board (not just piece) changed
 
-  constructor(difficulty: TetrisDifficulty = "beginner") {
+  constructor(difficulty: TetrisDifficulty = "beginner", gameMode: TetrisGameMode = "classic") {
     this.difficulty = difficulty;
+    this.gameMode = gameMode;
     const configs = { beginner: { initialInterval: 800, startLevel: 1 }, intermediate: { initialInterval: 600, startLevel: 1 }, expert: { initialInterval: 400, startLevel: 5 } };
     this.baseInterval = configs[difficulty].initialInterval;
     this.startLevel = configs[difficulty].startLevel;
@@ -140,6 +145,9 @@ export class TetrisEngine implements GameEngine {
 
   initState(players: Player[]): TetrisPublicState {
     this.playerIds = players.map((p) => p.id);
+    if (this.gameMode === "speed-race") {
+      this.startedAt = Date.now();
+    }
 
     this.playerStates.clear();
 
@@ -217,6 +225,43 @@ export class TetrisEngine implements GameEngine {
   }
 
   checkWin(_state: GameState): GameResult | null {
+    // Speed race: check if any player cleared target lines
+    if (this.gameMode === "speed-race") {
+      for (const id of this.playerIds) {
+        const ps = this.playerStates.get(id);
+        if (ps && ps.linesCleared >= SPEED_RACE_TARGET_LINES) {
+          const time = this.getCompletionTime();
+          const timeStr = (time / 1000).toFixed(1);
+          return { winnerId: id, reason: `클리어 시간: ${timeStr}초` };
+        }
+      }
+
+      // Check for gameover before reaching target
+      if (this.isSolo()) {
+        const ps = this.playerStates.get(this.playerIds[0]);
+        if (ps && ps.status === "gameover") {
+          return { winnerId: null, reason: `게임 오버 (${ps.linesCleared}/${SPEED_RACE_TARGET_LINES})` };
+        }
+        return null;
+      }
+
+      // Versus speed race: last alive wins even without reaching target
+      const alive = this.playerIds.filter((id) => {
+        const ps = this.playerStates.get(id);
+        return ps && ps.status === "playing";
+      });
+
+      if (alive.length === 1) {
+        const winnerPs = this.playerStates.get(alive[0]);
+        return { winnerId: alive[0], reason: `${winnerPs?.linesCleared ?? 0}/${SPEED_RACE_TARGET_LINES}줄` };
+      }
+      if (alive.length === 0) {
+        return { winnerId: null, reason: "무승부" };
+      }
+      return null;
+    }
+
+    // Classic mode
     if (this.isSolo()) {
       const ps = this.playerStates.get(this.playerIds[0]);
       if (ps && ps.status === "gameover") {
@@ -225,7 +270,7 @@ export class TetrisEngine implements GameEngine {
       return null;
     }
 
-    // versus mode
+    // Classic versus mode
     const alive = this.playerIds.filter((id) => {
       const ps = this.playerStates.get(id);
       return ps && ps.status === "playing";
@@ -251,6 +296,18 @@ export class TetrisEngine implements GameEngine {
 
   isSolo(): boolean {
     return this.playerIds.length === 1;
+  }
+
+  isSpeedRace(): boolean {
+    return this.gameMode === "speed-race";
+  }
+
+  getGameMode(): TetrisGameMode {
+    return this.gameMode;
+  }
+
+  getCompletionTime(): number {
+    return this.startedAt ? Date.now() - this.startedAt : 0;
   }
 
   // --- Internal methods ---
@@ -496,8 +553,8 @@ export class TetrisEngine implements GameEngine {
         ps.level = newLevel;
       }
 
-      // Send garbage in versus mode
-      if (garbageToSend > 0 && !this.isSolo()) {
+      // Send garbage in classic versus mode only
+      if (garbageToSend > 0 && !this.isSolo() && this.gameMode !== "speed-race") {
         for (const id of this.playerIds) {
           if (id !== currentPlayerId) {
             const opponent = this.playerStates.get(id);
@@ -624,7 +681,9 @@ export class TetrisEngine implements GameEngine {
     return {
       players,
       difficulty: this.difficulty,
+      gameMode: this.gameMode,
       dropInterval: this.calculateDropInterval(),
+      startedAt: this.startedAt,
     };
   }
 

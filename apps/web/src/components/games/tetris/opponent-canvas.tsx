@@ -75,12 +75,14 @@ interface OpponentCanvasProps {
   board: TetrisPlayerBoard;
   cellSize: number;
   nickname?: string;
+  isSpeedRace?: boolean;
 }
 
 export const OpponentCanvas = memo(function OpponentCanvas({
   board,
   cellSize,
   nickname,
+  isSpeedRace,
 }: OpponentCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const width = BOARD_COLS * cellSize;
@@ -160,7 +162,7 @@ export const OpponentCanvas = memo(function OpponentCanvas({
       </div>
       <div className="text-center space-y-0">
         <div className="text-[10px] text-muted-foreground">
-          L{board.level} · {board.score.toLocaleString()}
+          {isSpeedRace ? `${board.linesCleared}/40` : `L${board.level} · ${board.score.toLocaleString()}`}
         </div>
       </div>
     </div>
@@ -168,5 +170,6 @@ export const OpponentCanvas = memo(function OpponentCanvas({
 }, (prev, next) => {
   if (prev.cellSize !== next.cellSize) return false;
   if (prev.nickname !== next.nickname) return false;
+  if (prev.isSpeedRace !== next.isSpeedRace) return false;
   return prev.board.version === next.board.version;
 });

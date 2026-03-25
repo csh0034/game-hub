@@ -434,25 +434,49 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
                 </div>
               )}
               {room.gameType === "tetris" && (
-                <div>
-                  <label className="block text-sm font-medium mb-1.5">난이도</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {(Object.entries(TETRIS_DIFFICULTY_CONFIGS) as [TetrisDifficulty, typeof TETRIS_DIFFICULTY_CONFIGS[TetrisDifficulty]][]).map(([key, config]) => (
-                      <button
-                        key={key}
-                        onClick={() => handleOptionChange({ ...localOptions, tetrisDifficulty: key })}
-                        className={`p-2 rounded-lg border text-sm text-center transition-colors ${
-                          (localOptions.tetrisDifficulty ?? "beginner") === key
-                            ? "border-primary bg-primary/10 text-primary"
-                            : "border-border hover:border-border/80"
-                        }`}
-                      >
-                        <div className="font-medium">{config.label}</div>
-                        <div className="text-xs text-muted-foreground mt-0.5">
-                          Lv.{config.startLevel} · {config.initialInterval}ms
-                        </div>
-                      </button>
-                    ))}
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">게임 모드</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {([
+                        { key: "classic" as const, label: "클래식", desc: "점수를 올리며 생존" },
+                        { key: "speed-race" as const, label: "스피드 레이스", desc: "40줄 클리어! 시간 도전" },
+                      ]).map(({ key, label, desc }) => (
+                        <button
+                          key={key}
+                          onClick={() => handleOptionChange({ ...localOptions, tetrisMode: key })}
+                          className={`p-2 rounded-lg border text-sm text-center transition-colors ${
+                            (localOptions.tetrisMode ?? "classic") === key
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border hover:border-border/80"
+                          }`}
+                        >
+                          <div className="font-medium">{label}</div>
+                          <div className="text-xs text-muted-foreground mt-0.5">{desc}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">난이도</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(Object.entries(TETRIS_DIFFICULTY_CONFIGS) as [TetrisDifficulty, typeof TETRIS_DIFFICULTY_CONFIGS[TetrisDifficulty]][]).map(([key, config]) => (
+                        <button
+                          key={key}
+                          onClick={() => handleOptionChange({ ...localOptions, tetrisDifficulty: key })}
+                          className={`p-2 rounded-lg border text-sm text-center transition-colors ${
+                            (localOptions.tetrisDifficulty ?? "beginner") === key
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border hover:border-border/80"
+                          }`}
+                        >
+                          <div className="font-medium">{config.label}</div>
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            Lv.{config.startLevel} · {config.initialInterval}ms
+                          </div>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
@@ -603,13 +627,20 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
                   </div>
                 );
               })()}
-              {room.gameType === "tetris" && room.gameOptions?.tetrisDifficulty && (() => {
-                const diff = TETRIS_DIFFICULTY_CONFIGS[room.gameOptions.tetrisDifficulty];
+              {room.gameType === "tetris" && (() => {
+                const diff = TETRIS_DIFFICULTY_CONFIGS[room.gameOptions?.tetrisDifficulty ?? "beginner"];
+                const mode = room.gameOptions?.tetrisMode ?? "classic";
                 return (
-                  <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
-                    <span className="text-muted-foreground">난이도</span>
-                    <span className="font-medium">{diff.label} (Lv.{diff.startLevel} · {diff.initialInterval}ms)</span>
-                  </div>
+                  <>
+                    <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
+                      <span className="text-muted-foreground">모드</span>
+                      <span className="font-medium">{mode === "speed-race" ? "스피드 레이스" : "클래식"}</span>
+                    </div>
+                    <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
+                      <span className="text-muted-foreground">난이도</span>
+                      <span className="font-medium">{diff.label} (Lv.{diff.startLevel} · {diff.initialInterval}ms)</span>
+                    </div>
+                  </>
                 );
               })()}
               {room.gameType === "liar-drawing" && (
@@ -708,7 +739,7 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
             disabled={isSpectating && !spectateChatEnabled}
           />
         </div>
-        {(room.gameType === "minesweeper" || (room.gameType === "tetris" && room.players.length <= 1)) && (
+        {(room.gameType === "minesweeper" || (room.gameType === "tetris" && room.players.length <= 1 && room.gameOptions?.tetrisMode === "speed-race")) && (
           <RankingCard
             gameType={room.gameType as RankingGameType}
             difficulty={

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, memo, useCallback } from "react";
+import { useMemo, useState, useEffect, useRef, memo, useCallback } from "react";
 import { useGame } from "@/hooks/use-game";
 import { useSocket } from "@/hooks/use-socket";
 import { useTetrisInput } from "@/hooks/use-tetris-input";
@@ -13,6 +13,7 @@ import {
   tryMove,
   tryRotate,
   calculateGhostRow,
+  SPEED_RACE_TARGET_LINES,
 } from "@game-hub/shared-types";
 import type {
   TetrisPlayerBoard,
@@ -93,6 +94,8 @@ const PlayerBoard = memo(function PlayerBoard({
   nickname,
   resultOverlay,
   dropInterval,
+  isSpeedRace,
+  elapsedTime,
 }: {
   board: TetrisPlayerBoard;
   cellSize: number;
@@ -100,6 +103,8 @@ const PlayerBoard = memo(function PlayerBoard({
   nickname?: string;
   resultOverlay?: React.ReactNode;
   dropInterval?: number;
+  isSpeedRace?: boolean;
+  elapsedTime?: number;
 }) {
   const previewSize = compact ? "small" as const : "normal" as const;
 
@@ -193,24 +198,49 @@ const PlayerBoard = memo(function PlayerBoard({
           ))}
         </div>
         <div className="space-y-1 text-center">
-          <div>
-            <div className={`${textSm} text-muted-foreground`}>SCORE</div>
-            <div className={`${textLg} font-bold font-mono`}>{board.score.toLocaleString()}</div>
-          </div>
-          <div>
-            <div className={`${textSm} text-muted-foreground`}>LEVEL</div>
-            <div className={`${textLg} font-bold font-mono`}>{board.level}</div>
-          </div>
-          {dropInterval != null && (
-            <div>
-              <div className={`${textSm} text-muted-foreground`}>SPEED</div>
-              <div className={`${textLg} font-bold font-mono`}>{(dropInterval / 1000).toFixed(2)}s</div>
-            </div>
+          {isSpeedRace ? (
+            <>
+              <div>
+                <div className={`${textSm} text-muted-foreground`}>TIME</div>
+                <div className={`${textLg} font-bold font-mono`}>{((elapsedTime ?? 0) / 1000).toFixed(1)}초</div>
+              </div>
+              <div>
+                <div className={`${textSm} text-muted-foreground`}>LINES</div>
+                <div className={`${textLg} font-bold font-mono`}>{board.linesCleared}/{SPEED_RACE_TARGET_LINES}</div>
+              </div>
+              <div className="w-full bg-secondary/50 rounded-full h-2 mt-1">
+                <div
+                  className="bg-primary h-2 rounded-full transition-all"
+                  style={{ width: `${Math.min((board.linesCleared / SPEED_RACE_TARGET_LINES) * 100, 100)}%` }}
+                />
+              </div>
+              <div>
+                <div className={`${textSm} text-muted-foreground`}>LEVEL</div>
+                <div className={`${textLg} font-bold font-mono`}>{board.level}</div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <div className={`${textSm} text-muted-foreground`}>SCORE</div>
+                <div className={`${textLg} font-bold font-mono`}>{board.score.toLocaleString()}</div>
+              </div>
+              <div>
+                <div className={`${textSm} text-muted-foreground`}>LEVEL</div>
+                <div className={`${textLg} font-bold font-mono`}>{board.level}</div>
+              </div>
+              {dropInterval != null && (
+                <div>
+                  <div className={`${textSm} text-muted-foreground`}>SPEED</div>
+                  <div className={`${textLg} font-bold font-mono`}>{(dropInterval / 1000).toFixed(2)}s</div>
+                </div>
+              )}
+              <div>
+                <div className={`${textSm} text-muted-foreground`}>LINES</div>
+                <div className={`${textLg} font-bold font-mono`}>{board.linesCleared}</div>
+              </div>
+            </>
           )}
-          <div>
-            <div className={`${textSm} text-muted-foreground`}>LINES</div>
-            <div className={`${textLg} font-bold font-mono`}>{board.linesCleared}</div>
-          </div>
           {board.pendingGarbage > 0 && (
             <div>
               <div className={`${textSm} text-red-400`}>GARBAGE</div>
@@ -241,6 +271,8 @@ const PlayerBoard = memo(function PlayerBoard({
   if (prev.nickname !== next.nickname) return false;
   if (prev.resultOverlay !== next.resultOverlay) return false;
   if (prev.dropInterval !== next.dropInterval) return false;
+  if (prev.isSpeedRace !== next.isSpeedRace) return false;
+  if (prev.elapsedTime !== next.elapsedTime) return false;
   if (prev.board.version !== next.board.version) return false;
   // Check prediction changes (activePiece/ghostRow may differ with same version)
   if (prev.board.activePiece !== next.board.activePiece) return false;
@@ -278,6 +310,29 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
   const myBoard = useTetrisBoardStore((s) => s.myBoard);
   const opponentBoards = useTetrisBoardStore((s) => s.opponentBoards);
   const difficulty = useTetrisBoardStore((s) => s.difficulty);
+  const gameMode = useTetrisBoardStore((s) => s.gameMode);
+  const startedAt = useTetrisBoardStore((s) => s.startedAt);
+
+  const isSpeedRace = gameMode === "speed-race";
+
+  // Elapsed time for speed-race mode
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const gameEndedRef = useRef(false);
+
+  useEffect(() => {
+    gameEndedRef.current = !!gameResult;
+  }, [gameResult]);
+
+  useEffect(() => {
+    if (!isSpeedRace || !startedAt) return;
+
+    const timer = setInterval(() => {
+      if (gameEndedRef.current) return;
+      setElapsedTime(Date.now() - startedAt);
+    }, 100);
+
+    return () => clearInterval(timer);
+  }, [isSpeedRace, startedAt]);
 
   // Client-side prediction for own board
   const [prediction, setPrediction] = useState<{ piece: TetrisActivePiece; version: number } | null>(null);
@@ -362,9 +417,43 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
   const isLoser = !isSolo && gameResult != null && gameResult.winnerId !== socket?.id && gameResult.winnerId !== null;
   const isDraw = !isSolo && gameResult != null && gameResult.winnerId === null;
 
-  const soloResultOverlay = useMemo(() => {
-    if (!isSoloGameOver || !gameResult) return undefined;
+  const isSoloSpeedRaceClear = isSolo && isSpeedRace && gameResult != null && gameResult.winnerId != null;
 
+  const soloResultOverlay = useMemo(() => {
+    if (!gameResult) return undefined;
+
+    // Speed race solo: 40줄 클리어 성공
+    if (isSoloSpeedRaceClear) {
+      return (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded gap-2">
+          <span className="text-3xl font-bold text-yellow-400 drop-shadow-lg">CLEAR!</span>
+          <span className="text-sm text-white/80">
+            클리어 시간: {(elapsedTime / 1000).toFixed(1)}초
+          </span>
+          {gameResult.rankingResult && gameResult.rankingResult.rank != null && (
+            <span className="text-sm text-yellow-400 font-bold">
+              {gameResult.rankingResult.isNewRecord ? "🏆 새로운 1위!" : `전체 ${gameResult.rankingResult.rank}위`}
+            </span>
+          )}
+        </div>
+      );
+    }
+
+    if (!isSoloGameOver) return undefined;
+
+    // Speed race solo: 게임오버 (40줄 미달성)
+    if (isSpeedRace) {
+      return (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded gap-2">
+          <span className="text-3xl font-bold text-red-400 drop-shadow-lg">GAME OVER</span>
+          <span className="text-sm text-white/80">
+            {myBoard?.linesCleared ?? 0}/{SPEED_RACE_TARGET_LINES}줄
+          </span>
+        </div>
+      );
+    }
+
+    // Classic solo: 기존 오버레이
     return (
       <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded gap-2">
         <span className="text-3xl font-bold text-red-400 drop-shadow-lg">GAME OVER</span>
@@ -378,7 +467,7 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
         )}
       </div>
     );
-  }, [isSoloGameOver, gameResult, myScore]);
+  }, [isSoloGameOver, isSoloSpeedRaceClear, isSpeedRace, gameResult, myScore, elapsedTime, myBoard?.linesCleared]);
 
   const versusResultOverlay = useMemo(() => {
     if (!isWinner && !isLoser && !isDraw) return undefined;
@@ -396,15 +485,17 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
       titleColor = "text-red-400";
     }
 
+    const detail = isSpeedRace
+      ? (isWinner ? `클리어 시간: ${(elapsedTime / 1000).toFixed(1)}초` : `${myBoard?.linesCleared ?? 0}/${SPEED_RACE_TARGET_LINES}줄`)
+      : `점수: ${myScore.toLocaleString()}`;
+
     return (
       <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded gap-2">
         <span className={`text-3xl font-bold ${titleColor} drop-shadow-lg`}>{title}</span>
-        <span className="text-sm text-white/80">
-          점수: {myScore.toLocaleString()}
-        </span>
+        <span className="text-sm text-white/80">{detail}</span>
       </div>
     );
-  }, [isWinner, isLoser, isDraw, myScore]);
+  }, [isWinner, isLoser, isDraw, myScore, isSpeedRace, elapsedTime, myBoard?.linesCleared]);
 
   // 관전자: 플레이어 보드만 표시 (내 보드 없음)
   if (isSpectating) {
@@ -427,6 +518,7 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
                 board={board}
                 cellSize={spectatorCellSize}
                 nickname={roomPlayers.find((p) => p.id === id)?.nickname ?? `플레이어 ${i + 1}`}
+                isSpeedRace={isSpeedRace}
               />
             ))}
           </div>
@@ -460,6 +552,8 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
             cellSize={32}
             resultOverlay={soloResultOverlay ?? versusResultOverlay}
             dropInterval={currentDropInterval ?? undefined}
+            isSpeedRace={isSpeedRace}
+            elapsedTime={elapsedTime}
           />
         </div>
 
@@ -475,6 +569,7 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
                 board={board}
                 cellSize={opponentCellSize}
                 nickname={roomPlayers.find((p) => p.id === id)?.nickname ?? `상대 ${i + 1}`}
+                isSpeedRace={isSpeedRace}
               />
             ))}
           </div>

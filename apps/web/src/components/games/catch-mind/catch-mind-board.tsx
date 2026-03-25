@@ -84,19 +84,16 @@ export default function CatchMindBoard({ roomId: _roomId, isSpectating }: GameCo
           </button>
         </div>
         {renderPhase()}
-        {state.phase === "drawing" && (
-          <div className="mt-4 h-[250px]">
-            <CatchMindChat
-              key={state.roundNumber}
-              state={state}
-              socket={socket}
-              myId={myId}
-              messages={roomMessages}
-              onSendMessage={sendRoomMessage}
-              myNickname={myNickname}
-            />
-          </div>
-        )}
+        <div className="mt-4 h-[250px]">
+          <CatchMindChat
+            state={state}
+            socket={socket}
+            myId={myId}
+            messages={roomMessages}
+            onSendMessage={sendRoomMessage}
+            myNickname={myNickname}
+          />
+        </div>
       </div>
       <Scoreboard state={state} myId={myId} />
 

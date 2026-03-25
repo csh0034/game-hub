@@ -28,7 +28,7 @@ export function VotingPanel({ state, myId, onVote, isSpectating }: VotingPanelPr
         투표 현황: {state.votedPlayerIds.length} / {state.players.length}
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+      <div className="flex flex-wrap justify-center gap-3">
         {state.players.map((player) => {
           const isMe = player.id === myId;
           const isSelected = selectedId === player.id;

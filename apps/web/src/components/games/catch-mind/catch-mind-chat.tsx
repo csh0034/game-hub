@@ -21,7 +21,8 @@ export function CatchMindChat({ state, socket, myId, messages, onSendMessage, my
   const myPlayer = state.players.find((p) => p.id === myId);
   const hasGuessed = myPlayer?.hasGuessedCorrectly ?? false;
 
-  const isDisabled = state.phase === "drawing" && (isDrawer || hasGuessed);
+  const isDrawingPhase = state.phase === "drawing";
+  const isDisabled = isDrawingPhase && (isDrawer || hasGuessed);
 
   useEffect(() => {
     const handleCorrect = (data: { playerId: string; nickname: string; rank: number; score: number }) => {
@@ -44,11 +45,13 @@ export function CatchMindChat({ state, socket, myId, messages, onSendMessage, my
 
   const allMessages = [...messages, ...systemMessages].sort((a, b) => a.timestamp - b.timestamp);
 
-  const placeholder = isDrawer
-    ? "출제자는 채팅할 수 없습니다"
-    : hasGuessed
-      ? "이미 정답을 맞추었습니다"
-      : "정답을 입력하세요...";
+  const placeholder = !isDrawingPhase
+    ? "메시지를 입력하세요..."
+    : isDrawer
+      ? "출제자는 채팅할 수 없습니다"
+      : hasGuessed
+        ? "이미 정답을 맞추었습니다"
+        : "정답을 입력하세요...";
 
   const handleSend = (message: string) => {
     if (isDisabled) return;

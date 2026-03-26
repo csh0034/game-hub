@@ -8,9 +8,9 @@
 
 ```bash
 # 변경 패키지에 맞게 실행
-pnpm --filter @game-hub/server lint    # apps/server 변경 시
+pnpm --filter server lint              # apps/server 변경 시
 pnpm --filter web lint                 # apps/web 변경 시
-pnpm --filter @game-hub/shared-types lint  # packages/shared-types 변경 시
+pnpm --filter shared-types lint        # packages/shared-types 변경 시
 
 # 여러 패키지 변경 시 전체 실행
 pnpm lint
@@ -34,13 +34,13 @@ pnpm lint
 
 ```bash
 # 서버 테스트 (커버리지 포함)
-pnpm --filter @game-hub/server test:coverage
+pnpm --filter server test:coverage
 
 # 웹 테스트 (커버리지 포함)
 pnpm --filter web test:coverage
 
 # 특정 파일만 테스트 (커버리지 없이)
-pnpm --filter @game-hub/server test -- <파일패턴>
+pnpm --filter server test -- <파일패턴>
 pnpm --filter web test -- <파일패턴>
 ```
 

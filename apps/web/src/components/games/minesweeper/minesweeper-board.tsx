@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useGame } from "@/hooks/use-game";
 import { useSocket } from "@/hooks/use-socket";
 import type { MinesweeperPublicState, MinesweeperMove, MinesweeperDifficulty } from "@game-hub/shared-types";
@@ -61,14 +61,60 @@ export default function MinesweeperBoard({ isSpectating }: GameComponentProps) {
       const cell = state.board[row][col];
       if (cell.status === "revealed") return;
 
-      const move: MinesweeperMove = {
-        type: cell.status === "flagged" ? "unflag" : "flag",
-        row,
-        col,
-      };
-      makeMove(move);
+      let moveType: MinesweeperMove["type"];
+      if (cell.status === "hidden") {
+        moveType = "flag";
+      } else if (cell.status === "flagged") {
+        moveType = "question";
+      } else if (cell.status === "questioned") {
+        moveType = "unquestion";
+      } else {
+        return;
+      }
+
+      makeMove({ type: moveType, row, col });
     },
     [isSpectating, state, makeMove],
+  );
+
+  const handleChord = useCallback(
+    (row: number, col: number) => {
+      if (isSpectating) return;
+      if (!state || state.status !== "playing") return;
+      const cell = state.board[row][col];
+      if (cell.status !== "revealed" || !cell.adjacentMines) return;
+      makeMove({ type: "chord", row, col });
+    },
+    [isSpectating, state, makeMove],
+  );
+
+  const leftDownRef = useRef(false);
+  const rightDownRef = useRef(false);
+  const [pressedCells, setPressedCells] = useState<Set<string>>(new Set());
+
+  const getChordNeighbors = useCallback(
+    (row: number, col: number): Set<string> => {
+      if (!state || state.status !== "playing") return new Set();
+      const cell = state.board[row][col];
+      if (cell.status !== "revealed" || !cell.adjacentMines) return new Set();
+
+      const result = new Set<string>();
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if (dr === 0 && dc === 0) continue;
+          const nr = row + dr;
+          const nc = col + dc;
+          if (nr >= 0 && nr < state.rows && nc >= 0 && nc < state.cols) {
+            const s = state.board[nr][nc].status;
+            if (s === "hidden" || s === "questioned") {
+              result.add(`${nr},${nc}`);
+            }
+          }
+        }
+      }
+      return result;
+    },
+    [state],
   );
 
   if (!state) return null;
@@ -105,29 +151,76 @@ export default function MinesweeperBoard({ isSpectating }: GameComponentProps) {
           gridTemplateColumns: `repeat(${state.cols}, ${cellSize}px)`,
           gridTemplateRows: `repeat(${state.rows}, ${cellSize}px)`,
         }}
+        onMouseLeave={() => {
+          setPressedCells(new Set());
+          leftDownRef.current = false;
+          rightDownRef.current = false;
+        }}
       >
         {state.board.map((row, r) =>
-          row.map((cell, c) => (
+          row.map((cell, c) => {
+            const isPressed = pressedCells.has(`${r},${c}`);
+            return (
             <button
               key={`${r}-${c}`}
               className={`flex items-center justify-center border font-bold select-none ${
                 cell.status === "revealed"
                   ? "bg-gray-200 border-gray-300"
-                  : "bg-gray-400 border-t-gray-200 border-l-gray-200 border-r-gray-500 border-b-gray-500 hover:bg-gray-350 active:bg-gray-300"
+                  : isPressed
+                    ? "bg-gray-300 border-gray-300"
+                    : "bg-gray-400 border-t-gray-200 border-l-gray-200 border-r-gray-500 border-b-gray-500 hover:bg-gray-350 active:bg-gray-300"
               }`}
               style={{ width: cellSize, height: cellSize, fontSize: cellSize > 30 ? 14 : 11 }}
-              onClick={() => handleReveal(r, c)}
-              onContextMenu={(e) => handleContextMenu(e, r, c)}
+              onMouseDown={(e) => {
+                if (e.button === 0) leftDownRef.current = true;
+                if (e.button === 2) rightDownRef.current = true;
+                if (e.button === 1) {
+                  e.preventDefault();
+                  handleChord(r, c);
+                }
+                if (leftDownRef.current && rightDownRef.current) {
+                  setPressedCells(getChordNeighbors(r, c));
+                }
+              }}
+              onMouseUp={(e) => {
+                const wasLeft = leftDownRef.current;
+                const wasRight = rightDownRef.current;
+                if (e.button === 0) leftDownRef.current = false;
+                if (e.button === 2) rightDownRef.current = false;
+
+                setPressedCells(new Set());
+
+                if ((e.button === 0 && wasRight) || (e.button === 2 && wasLeft)) {
+                  handleChord(r, c);
+                  return;
+                }
+
+                if (e.button === 0 && !wasRight) {
+                  handleReveal(r, c);
+                }
+              }}
+              onMouseEnter={() => {
+                if (leftDownRef.current && rightDownRef.current) {
+                  setPressedCells(getChordNeighbors(r, c));
+                }
+              }}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                if (leftDownRef.current) return;
+                handleContextMenu(e, r, c);
+              }}
               disabled={state.status !== "playing"}
             >
               {cell.status === "flagged" && <span style={{ fontSize: cellSize > 30 ? 16 : 12 }}>🚩</span>}
+              {cell.status === "questioned" && <span style={{ fontSize: cellSize > 30 ? 16 : 12 }}>❓</span>}
               {cell.status === "revealed" && cell.hasMine && <span style={{ fontSize: cellSize > 30 ? 16 : 12 }}>💣</span>}
               {cell.status === "revealed" && !cell.hasMine && cell.adjacentMines !== undefined && cell.adjacentMines > 0 && (
                 <span className={NUMBER_COLORS[cell.adjacentMines]}>{cell.adjacentMines}</span>
               )}
               {cell.status === "hidden" && cell.hasMine && <span style={{ fontSize: cellSize > 30 ? 16 : 12 }}>💣</span>}
             </button>
-          )),
+            );
+          }),
         )}
 
         {/* Game result overlay */}
@@ -148,7 +241,8 @@ export default function MinesweeperBoard({ isSpectating }: GameComponentProps) {
       {/* Controls hint */}
       <div className="text-xs text-muted-foreground text-center space-x-3">
         <span>좌클릭 열기</span>
-        <span>우클릭 깃발</span>
+        <span>우클릭 🚩↔❓</span>
+        <span>양클릭 주변 열기</span>
       </div>
     </div>
   );

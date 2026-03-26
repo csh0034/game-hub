@@ -153,7 +153,7 @@ export const MINESWEEPER_DIFFICULTY_CONFIGS: Record<MinesweeperDifficulty, Mines
   expert: { rows: 16, cols: 30, mineCount: 99, label: "고급" },
 };
 
-export type MinesweeperCellStatus = "hidden" | "revealed" | "flagged";
+export type MinesweeperCellStatus = "hidden" | "revealed" | "flagged" | "questioned";
 
 export interface MinesweeperPublicCell {
   status: MinesweeperCellStatus;
@@ -175,7 +175,7 @@ export interface MinesweeperPublicState {
 }
 
 export interface MinesweeperMove {
-  type: "reveal" | "flag" | "unflag";
+  type: "reveal" | "flag" | "question" | "unquestion" | "chord";
   row: number;
   col: number;
 }

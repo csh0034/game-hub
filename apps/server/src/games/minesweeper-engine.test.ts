@@ -243,10 +243,20 @@ describe("MinesweeperEngine", () => {
       expect(newState.flagCount).toBe(1);
     });
 
-    it("깃발을 제거한다", () => {
+    it("깃발을 물음표로 변경한다", () => {
       const state = engine.initState(mockPlayers);
       let s = engine.processMove(state, "player1", { type: "flag", row: 0, col: 0 });
-      s = engine.processMove(s, "player1", { type: "unflag", row: 0, col: 0 });
+      expect(s.flagCount).toBe(1);
+      s = engine.processMove(s, "player1", { type: "question", row: 0, col: 0 });
+      expect(s.board[0][0].status).toBe("questioned");
+      expect(s.flagCount).toBe(0);
+    });
+
+    it("물음표를 원래 상태로 되돌린다", () => {
+      const state = engine.initState(mockPlayers);
+      let s = engine.processMove(state, "player1", { type: "flag", row: 0, col: 0 });
+      s = engine.processMove(s, "player1", { type: "question", row: 0, col: 0 });
+      s = engine.processMove(s, "player1", { type: "unquestion", row: 0, col: 0 });
       expect(s.board[0][0].status).toBe("hidden");
       expect(s.flagCount).toBe(0);
     });
@@ -270,9 +280,42 @@ describe("MinesweeperEngine", () => {
       expect(s.flagCount).toBe(1);
     });
 
-    it("hidden 셀에 unflag는 무시된다", () => {
+    it("hidden 셀에 question은 무시된다", () => {
       const state = engine.initState(mockPlayers);
-      const s = engine.processMove(state, "player1", { type: "unflag", row: 0, col: 0 });
+      const s = engine.processMove(state, "player1", { type: "question", row: 0, col: 0 });
+      expect(s.board[0][0].status).toBe("hidden");
+    });
+
+    it("hidden 셀에 unquestion은 무시된다", () => {
+      const state = engine.initState(mockPlayers);
+      const s = engine.processMove(state, "player1", { type: "unquestion", row: 0, col: 0 });
+      expect(s.board[0][0].status).toBe("hidden");
+    });
+
+    it("questioned 셀은 reveal할 수 없다", () => {
+      const state = engine.initState(mockPlayers);
+      const board = createTestBoard(9, 9, [[8, 8]]);
+      engine._setBoard(board);
+      engine._setStartedAt(Date.now());
+
+      let s = engine.processMove(state, "player1", { type: "flag", row: 0, col: 0 });
+      s = engine.processMove(s, "player1", { type: "question", row: 0, col: 0 });
+      s = engine.processMove(s, "player1", { type: "reveal", row: 0, col: 0 });
+      expect(s.board[0][0].status).toBe("questioned");
+    });
+
+    it("우클릭 순환: hidden → flagged → questioned → hidden", () => {
+      const state = engine.initState(mockPlayers);
+      let s = engine.processMove(state, "player1", { type: "flag", row: 0, col: 0 });
+      expect(s.board[0][0].status).toBe("flagged");
+      expect(s.flagCount).toBe(1);
+
+      s = engine.processMove(s, "player1", { type: "question", row: 0, col: 0 });
+      expect(s.board[0][0].status).toBe("questioned");
+      expect(s.flagCount).toBe(0);
+
+      s = engine.processMove(s, "player1", { type: "unquestion", row: 0, col: 0 });
+      expect(s.board[0][0].status).toBe("hidden");
       expect(s.flagCount).toBe(0);
     });
   });
@@ -384,6 +427,161 @@ describe("MinesweeperEngine", () => {
       // 즉시 두 번째 reveal → rate limit에 의해 무시
       const s2 = engine.processMove(s1, "player1", { type: "reveal", row: 5, col: 5 });
       expect(s2.revealedCount).toBe(s1.revealedCount);
+    });
+  });
+
+  describe("processMove - chord", () => {
+    it("올바른 깃발 수일 때 주변 hidden 셀을 reveal한다", () => {
+      engine.initState(mockPlayers);
+      // 3x3 보드: (0,0)에 지뢰, 나머지 안전
+      // (1,1)의 adjacentMines = 1
+      const board = createTestBoard(9, 9, [[0, 0]]);
+      engine._setBoard(board);
+      engine._setStartedAt(Date.now() - 10000);
+
+      // (1,1) reveal
+      let s = engine.processMove(engine.toPublicState(), "player1", { type: "reveal", row: 1, col: 1 });
+      expect(s.board[1][1].status).toBe("revealed");
+      expect(s.board[1][1].adjacentMines).toBe(1);
+
+      // (0,0)에 깃발
+      s = engine.processMove(s, "player1", { type: "flag", row: 0, col: 0 });
+
+      // chord on (1,1)
+      s = engine.processMove(s, "player1", { type: "chord", row: 1, col: 1 });
+
+      // (0,1), (1,0) 등 주변 hidden 셀이 열려야 함
+      expect(s.board[0][1].status).toBe("revealed");
+      expect(s.board[1][0].status).toBe("revealed");
+    });
+
+    it("깃발 수 불일치 시 무동작한다", () => {
+      engine.initState(mockPlayers);
+      const board = createTestBoard(9, 9, [[0, 0]]);
+      engine._setBoard(board);
+      engine._setStartedAt(Date.now() - 10000);
+
+      let s = engine.processMove(engine.toPublicState(), "player1", { type: "reveal", row: 1, col: 1 });
+      const countBefore = s.revealedCount;
+
+      // 깃발 없이 chord
+      s = engine.processMove(s, "player1", { type: "chord", row: 1, col: 1 });
+      expect(s.revealedCount).toBe(countBefore);
+    });
+
+    it("hidden 셀에서 chord는 무동작한다", () => {
+      const state = engine.initState(mockPlayers);
+      const board = createTestBoard(9, 9, [[8, 8]]);
+      engine._setBoard(board);
+      engine._setStartedAt(Date.now());
+
+      const s = engine.processMove(state, "player1", { type: "chord", row: 0, col: 0 });
+      expect(s.revealedCount).toBe(0);
+    });
+
+    it("adjacentMines=0인 셀에서 chord는 무동작한다", () => {
+      engine.initState(mockPlayers);
+      const board = createTestBoard(9, 9, [[8, 8]]);
+      engine._setBoard(board);
+      engine._setStartedAt(Date.now() - 10000);
+
+      // (0,0) reveal → adjacentMines=0이므로 flood fill
+      let s = engine.processMove(engine.toPublicState(), "player1", { type: "reveal", row: 0, col: 0 });
+      const countBefore = s.revealedCount;
+
+      // chord on (0,0) which has adjacentMines=0
+      s = engine.processMove(s, "player1", { type: "chord", row: 0, col: 0 });
+      expect(s.revealedCount).toBe(countBefore);
+    });
+
+    it("chord로 지뢰를 밟으면 lost 상태가 된다", () => {
+      engine.initState(mockPlayers);
+      // (0,0)과 (0,2)에 지뢰 → (0,1)의 adjacentMines=2
+      // (0,0)에만 깃발을 놓고 chord하면 (0,2) 지뢰를 밟음 — 깃발 수 불일치로 무동작
+      // 대신: (0,0)에 지뢰, (0,1)에 잘못된 깃발 → (1,0)에서 chord
+      // (1,0)의 adjacentMines=1, (0,0)이 아닌 (0,1)에 깃발 → chord로 (0,0) 열림 → lost
+      const board = createTestBoard(9, 9, [[0, 0]]);
+      engine._setBoard(board);
+      engine._setStartedAt(Date.now() - 10000);
+
+      // (1,0) reveal — adjacentMines=1
+      let s = engine.processMove(engine.toPublicState(), "player1", { type: "reveal", row: 1, col: 0 });
+      // (0,1)에 잘못된 깃발 (지뢰 없는 곳)
+      s = engine.processMove(s, "player1", { type: "flag", row: 0, col: 1 });
+      // chord on (1,0) → (0,0) 지뢰 열림
+      s = engine.processMove(s, "player1", { type: "chord", row: 1, col: 0 });
+      expect(s.status).toBe("lost");
+    });
+
+    it("chord가 flagged/questioned 이웃을 건너뛴다", () => {
+      engine.initState(mockPlayers);
+      // (0,0), (0,2)에 지뢰 → (1,1)의 adjacentMines=2
+      const board = createTestBoard(9, 9, [[0, 0], [0, 2]]);
+      engine._setBoard(board);
+      engine._setStartedAt(Date.now() - 10000);
+
+      // (1,1) reveal
+      let s = engine.processMove(engine.toPublicState(), "player1", { type: "reveal", row: 1, col: 1 });
+      // (0,0)에 깃발, (0,2)에 깃발
+      s = engine.processMove(s, "player1", { type: "flag", row: 0, col: 0 });
+      s = engine.processMove(s, "player1", { type: "flag", row: 0, col: 2 });
+
+      // (0,1)에 깃발 → 물음표로 변경
+      s = engine.processMove(s, "player1", { type: "flag", row: 0, col: 1 });
+      s = engine.processMove(s, "player1", { type: "question", row: 0, col: 1 });
+
+      // chord on (1,1) — flagged 2개 == adjacentMines 2
+      s = engine.processMove(s, "player1", { type: "chord", row: 1, col: 1 });
+
+      // (0,1)은 questioned이므로 건너뜀
+      expect(s.board[0][1].status).toBe("questioned");
+      // (1,0), (1,2) 등 hidden이었던 셀은 열림
+      expect(s.board[1][0].status).toBe("revealed");
+      expect(s.board[1][2].status).toBe("revealed");
+    });
+
+    it("chord로 승리할 수 있다", () => {
+      engine.initState(mockPlayers);
+      // 지뢰 1개만: (0,0)
+      const board = createTestBoard(9, 9, [[0, 0]]);
+      engine._setBoard(board);
+      engine._setStartedAt(Date.now() - 10000);
+
+      // 대부분의 셀을 열기
+      let s = engine.processMove(engine.toPublicState(), "player1", { type: "reveal", row: 8, col: 8 });
+
+      // 아직 안 열린 non-mine 셀 중 (0,0) 주변만 남을 수 있음
+      // (0,0)에 깃발을 놓고 인접 revealed 셀에서 chord
+      s = engine.processMove(s, "player1", { type: "flag", row: 0, col: 0 });
+
+      // 남은 hidden 셀 개별 reveal 또는 chord로 모두 열기
+      for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 9; c++) {
+          if (s.board[r][c].status === "hidden") {
+            s = engine.processMove(s, "player1", { type: "reveal", row: r, col: c });
+          }
+        }
+      }
+
+      expect(s.status).toBe("won");
+    });
+
+    it("floodFill이 questioned 셀을 건너뛴다", () => {
+      engine.initState(mockPlayers);
+      // (8,8)에만 지뢰
+      const board = createTestBoard(9, 9, [[8, 8]]);
+      engine._setBoard(board);
+      engine._setStartedAt(Date.now() - 10000);
+
+      // (4,4)에 깃발 → 물음표
+      let s = engine.processMove(engine.toPublicState(), "player1", { type: "flag", row: 4, col: 4 });
+      s = engine.processMove(s, "player1", { type: "question", row: 4, col: 4 });
+
+      // (0,0) reveal → flood fill
+      s = engine.processMove(s, "player1", { type: "reveal", row: 0, col: 0 });
+
+      // (4,4)는 questioned 상태 유지
+      expect(s.board[4][4].status).toBe("questioned");
     });
   });
 

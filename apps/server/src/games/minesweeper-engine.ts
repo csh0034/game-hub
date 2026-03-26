@@ -30,7 +30,7 @@ const MIN_REVEAL_INTERVAL = 50;
 interface MinesweeperInternalCell {
   hasMine: boolean;
   adjacentMines: number;
-  status: "hidden" | "revealed" | "flagged";
+  status: "hidden" | "revealed" | "flagged" | "questioned";
 }
 
 export class MinesweeperEngine implements GameEngine {
@@ -119,10 +119,59 @@ export class MinesweeperEngine implements GameEngine {
         this.flagCount++;
         break;
       }
-      case "unflag": {
+      case "question": {
         if (cell.status !== "flagged") return this.toPublicState();
-        cell.status = "hidden";
+        cell.status = "questioned";
         this.flagCount--;
+        break;
+      }
+      case "unquestion": {
+        if (cell.status !== "questioned") return this.toPublicState();
+        cell.status = "hidden";
+        break;
+      }
+      case "chord": {
+        if (cell.status !== "revealed") return this.toPublicState();
+        if (cell.adjacentMines === 0) return this.toPublicState();
+
+        let adjacentFlags = 0;
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const nr = m.row + dr;
+            const nc = m.col + dc;
+            if (nr >= 0 && nr < this.rows && nc >= 0 && nc < this.cols) {
+              if (this.board[nr][nc].status === "flagged") adjacentFlags++;
+            }
+          }
+        }
+
+        if (adjacentFlags !== cell.adjacentMines) return this.toPublicState();
+
+        let hitMine = false;
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const nr = m.row + dr;
+            const nc = m.col + dc;
+            if (nr < 0 || nr >= this.rows || nc < 0 || nc >= this.cols) continue;
+            const neighbor = this.board[nr][nc];
+            if (neighbor.status !== "hidden") continue;
+
+            if (neighbor.hasMine) {
+              neighbor.status = "revealed";
+              hitMine = true;
+            } else {
+              this.floodFill(nr, nc);
+            }
+          }
+        }
+
+        if (hitMine) {
+          this.status = "lost";
+        } else {
+          this.checkWinCondition();
+        }
         break;
       }
     }
@@ -228,7 +277,7 @@ export class MinesweeperEngine implements GameEngine {
 
       const cell = this.board[r][c];
       if (cell.status === "revealed") continue;
-      if (cell.status === "flagged") continue;
+      if (cell.status === "flagged" || cell.status === "questioned") continue;
       if (cell.hasMine) continue;
 
       cell.status = "revealed";

@@ -24,8 +24,22 @@ const MIN_COMPLETION_TIME: Record<MinesweeperDifficulty, number> = {
   expert: 35000,
 };
 
-// reveal 간 최소 간격 (ms) — 자동화 클릭 방지
+// reveal/chord 간 최소 간격 (ms) — 자동화 클릭 방지
 const MIN_REVEAL_INTERVAL = 50;
+
+// 난이도별 최소 직접 클릭 수 (floodFill 제외, 사용자의 reveal/chord 액션 수)
+const MIN_MOVE_COUNT: Record<MinesweeperDifficulty, number> = {
+  beginner: 3,
+  intermediate: 10,
+  expert: 15,
+};
+
+// 난이도별 사고 구간 요구 (긴 멈춤이 일정 횟수 이상 있어야 인간으로 판정)
+const THINK_PAUSE: Record<MinesweeperDifficulty, { minPauses: number; pauseMs: number }> = {
+  beginner: { minPauses: 0, pauseMs: 1500 },
+  intermediate: { minPauses: 1, pauseMs: 2000 },
+  expert: { minPauses: 2, pauseMs: 2000 },
+};
 
 interface MinesweeperInternalCell {
   hasMine: boolean;
@@ -49,7 +63,10 @@ export class MinesweeperEngine implements GameEngine {
   private flagCount = 0;
   private revealedCount = 0;
   private startedAt: number | null = null;
+  private completedAt: number | null = null;
   private lastRevealAt = 0;
+  private moveTimestamps: number[] = [];
+  private moveCount = 0;
 
   constructor(difficulty: MinesweeperDifficulty = "beginner") {
     this.difficulty = difficulty;
@@ -66,7 +83,10 @@ export class MinesweeperEngine implements GameEngine {
     this.flagCount = 0;
     this.revealedCount = 0;
     this.startedAt = null;
+    this.completedAt = null;
     this.lastRevealAt = 0;
+    this.moveTimestamps = [];
+    this.moveCount = 0;
 
     this.board = Array.from({ length: this.rows }, () =>
       Array.from({ length: this.cols }, () => ({
@@ -97,6 +117,8 @@ export class MinesweeperEngine implements GameEngine {
         const now = Date.now();
         if (now - this.lastRevealAt < MIN_REVEAL_INTERVAL) return this.toPublicState();
         this.lastRevealAt = now;
+        this.moveCount++;
+        this.moveTimestamps.push(now);
 
         if (!this.minesPlaced) {
           this.placeMines(m.row, m.col);
@@ -133,6 +155,12 @@ export class MinesweeperEngine implements GameEngine {
       case "chord": {
         if (cell.status !== "revealed") return this.toPublicState();
         if (cell.adjacentMines === 0) return this.toPublicState();
+
+        const chordNow = Date.now();
+        if (chordNow - this.lastRevealAt < MIN_REVEAL_INTERVAL) return this.toPublicState();
+        this.lastRevealAt = chordNow;
+        this.moveCount++;
+        this.moveTimestamps.push(chordNow);
 
         let adjacentFlags = 0;
         for (let dr = -1; dr <= 1; dr++) {
@@ -190,10 +218,54 @@ export class MinesweeperEngine implements GameEngine {
   }
 
   getCompletionTime(): number | null {
-    if (this.status !== "won" || !this.startedAt) return null;
-    const time = Date.now() - this.startedAt;
+    if (this.status !== "won" || !this.startedAt || !this.completedAt) return null;
+    const time = this.completedAt - this.startedAt;
     if (time < MIN_COMPLETION_TIME[this.difficulty]) return null;
+
+    // 최소 클릭 수 검증
+    if (this.moveCount < MIN_MOVE_COUNT[this.difficulty]) return null;
+
+    // 봇 탐지 검증
+    const humanCheck = this.validateHumanPlay();
+    if (!humanCheck.valid) return null;
+
     return time;
+  }
+
+  private validateHumanPlay(): { valid: boolean; reason?: string } {
+    if (this.moveTimestamps.length < 5) return { valid: true };
+
+    const intervals: number[] = [];
+    for (let i = 1; i < this.moveTimestamps.length; i++) {
+      intervals.push(this.moveTimestamps[i] - this.moveTimestamps[i - 1]);
+    }
+
+    // 검증 1: 클릭 간격의 변동 계수(CV) — 너무 균일하면 봇
+    const mean = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+    if (mean > 0) {
+      const variance = intervals.reduce((a, b) => a + (b - mean) ** 2, 0) / intervals.length;
+      const stdDev = Math.sqrt(variance);
+      if (stdDev / mean < 0.05) {
+        return { valid: false, reason: "클릭 간격이 비정상적으로 균일합니다" };
+      }
+    }
+
+    // 검증 2: 최소 간격 근처 클릭 비율 — 80% 이상이 최소 간격+30ms 이내면 봇
+    const nearMinCount = intervals.filter((i) => i < MIN_REVEAL_INTERVAL + 30).length;
+    if (nearMinCount / intervals.length > 0.8) {
+      return { valid: false, reason: "대부분의 클릭이 최소 간격 근처입니다" };
+    }
+
+    // 검증 3: 사고 구간 — 난이도별 긴 멈춤 횟수 요구
+    const cfg = THINK_PAUSE[this.difficulty];
+    if (cfg.minPauses > 0) {
+      const longPauses = intervals.filter((i) => i > cfg.pauseMs).length;
+      if (longPauses < cfg.minPauses) {
+        return { valid: false, reason: "사고 구간이 부족합니다" };
+      }
+    }
+
+    return { valid: true };
   }
 
   getDifficulty(): MinesweeperDifficulty {
@@ -298,6 +370,7 @@ export class MinesweeperEngine implements GameEngine {
     const totalSafeCells = this.rows * this.cols - this.mineCount;
     if (this.revealedCount >= totalSafeCells) {
       this.status = "won";
+      this.completedAt = Date.now();
     }
   }
 

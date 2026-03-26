@@ -9,7 +9,7 @@ function createMockRedis() {
   };
 }
 
-function createEntry(id: string, score: number, nickname = "Player"): RankingEntry {
+function createEntry(id: string, score: number, nickname = `Player-${id}`): RankingEntry {
   return { id, nickname, score, date: Date.now() };
 }
 
@@ -112,6 +112,31 @@ describe("RedisRankingStore", () => {
       const result = await store.addEntry(key, newEntry, true);
 
       expect(result.rank).toBeNull();
+    });
+
+    it("같은 닉네임의 더 좋은 기록으로 갱신한다", async () => {
+      const existing = [createEntry("e1", 10000, "Alice")];
+      redis.get.mockResolvedValue(JSON.stringify(existing));
+
+      const newEntry = createEntry("e2", 5000, "Alice");
+      const result = await store.addEntry(key, newEntry, true);
+
+      expect(result.rank).toBe(1);
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].score).toBe(5000);
+    });
+
+    it("같은 닉네임의 더 나쁜 기록은 무시한다", async () => {
+      const existing = [createEntry("e1", 5000, "Alice")];
+      redis.get.mockResolvedValue(JSON.stringify(existing));
+
+      const newEntry = createEntry("e2", 10000, "Alice");
+      const result = await store.addEntry(key, newEntry, true);
+
+      expect(result.rank).toBeNull();
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].score).toBe(5000);
+      expect(redis.set).not.toHaveBeenCalled();
     });
 
     it("Redis 에러 시 rank null과 빈 배열을 반환한다", async () => {

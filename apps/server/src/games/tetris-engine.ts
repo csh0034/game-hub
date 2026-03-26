@@ -27,6 +27,13 @@ const MAX_LOCK_DELAY_RESETS = 5;
 
 const ALL_TETROMINOS: TetrominoType[] = ["I", "O", "T", "S", "Z", "J", "L"];
 
+// 난이도별 최소 클리어 시간 (ms) — 이보다 빠른 기록은 자동화로 간주하여 랭킹 등록 거부
+const MIN_COMPLETION_TIME: Record<TetrisDifficulty, number> = {
+  beginner: 20000,
+  intermediate: 15000,
+  expert: 10000,
+};
+
 // Tetromino shapes: [row, col] offsets for each rotation state
 const TETROMINO_SHAPES: Record<TetrominoType, [number, number][][]> = {
   I: [
@@ -129,6 +136,7 @@ export class TetrisEngine implements GameEngine {
   private difficulty: TetrisDifficulty;
   private gameMode: TetrisGameMode;
   private startedAt: number | null = null;
+  private completedAt: number | null = null;
 
   private baseInterval: number;
   private startLevel: number;
@@ -230,6 +238,7 @@ export class TetrisEngine implements GameEngine {
       for (const id of this.playerIds) {
         const ps = this.playerStates.get(id);
         if (ps && ps.linesCleared >= SPEED_RACE_TARGET_LINES) {
+          if (!this.completedAt) this.completedAt = Date.now();
           const time = this.getCompletionTime();
           const timeStr = (time / 1000).toFixed(1);
           return { winnerId: id, reason: `클리어 시간: ${timeStr}초` };
@@ -307,7 +316,16 @@ export class TetrisEngine implements GameEngine {
   }
 
   getCompletionTime(): number {
-    return this.startedAt ? Date.now() - this.startedAt : 0;
+    if (!this.startedAt) return 0;
+    if (this.completedAt) return this.completedAt - this.startedAt;
+    return Date.now() - this.startedAt;
+  }
+
+  getValidatedCompletionTime(): number | null {
+    if (!this.startedAt || !this.completedAt) return null;
+    const time = this.completedAt - this.startedAt;
+    if (time < MIN_COMPLETION_TIME[this.difficulty]) return null;
+    return time;
   }
 
   // --- Internal methods ---

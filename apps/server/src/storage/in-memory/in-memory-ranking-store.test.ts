@@ -69,6 +69,44 @@ describe("InMemoryRankingStore", () => {
     });
   });
 
+  describe("addEntry - 닉네임 중복 방지", () => {
+    const key: RankingKey = "minesweeper:beginner";
+
+    it("같은 닉네임의 더 좋은 기록으로 갱신한다 (오름차순)", async () => {
+      await store.addEntry(key, createEntry("1", "Alice", 10000), true);
+      const result = await store.addEntry(key, createEntry("2", "Alice", 5000), true);
+
+      expect(result.rank).toBe(1);
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].score).toBe(5000);
+    });
+
+    it("같은 닉네임의 더 나쁜 기록은 무시한다 (오름차순)", async () => {
+      await store.addEntry(key, createEntry("1", "Alice", 5000), true);
+      const result = await store.addEntry(key, createEntry("2", "Alice", 10000), true);
+
+      expect(result.rank).toBeNull();
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].score).toBe(5000);
+    });
+
+    it("같은 닉네임의 동일 점수는 무시한다", async () => {
+      await store.addEntry(key, createEntry("1", "Alice", 5000), true);
+      const result = await store.addEntry(key, createEntry("2", "Alice", 5000), true);
+
+      expect(result.rank).toBeNull();
+      expect(result.entries).toHaveLength(1);
+    });
+
+    it("다른 닉네임은 별도로 저장된다", async () => {
+      await store.addEntry(key, createEntry("1", "Alice", 5000), true);
+      const result = await store.addEntry(key, createEntry("2", "Bob", 3000), true);
+
+      expect(result.rank).toBe(1);
+      expect(result.entries).toHaveLength(2);
+    });
+  });
+
   describe("addEntry (내림차순 - 테트리스)", () => {
     const key: RankingKey = "tetris:intermediate";
 

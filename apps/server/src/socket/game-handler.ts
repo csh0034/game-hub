@@ -310,11 +310,14 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
 
         // Submit tetris speed-race solo ranking (time-based)
         if (tetrisEngine.isSolo() && tetrisEngine.isSpeedRace() && result.winnerId) {
-          const playerId = room.players[0]?.id;
-          if (playerId) {
-            const playerSocket = io.sockets.sockets.get(playerId);
-            const nickname = playerSocket?.data?.nickname ?? "Unknown";
-            await submitRanking(io, rankingStore, "tetris", tetrisEngine.getDifficulty(), nickname, tetrisEngine.getCompletionTime(), result);
+          const completionTime = tetrisEngine.getValidatedCompletionTime();
+          if (completionTime != null) {
+            const playerId = room.players[0]?.id;
+            if (playerId) {
+              const playerSocket = io.sockets.sockets.get(playerId);
+              const nickname = playerSocket?.data?.nickname ?? "Unknown";
+              await submitRanking(io, rankingStore, "tetris", tetrisEngine.getDifficulty(), nickname, completionTime, result);
+            }
           }
         }
 
@@ -705,7 +708,10 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
         } else if (room?.gameType === "tetris") {
           const tetrisEngine = gameManager.getTetrisEngine(roomId);
           if (tetrisEngine && tetrisEngine.isSolo() && tetrisEngine.isSpeedRace() && result.result.winnerId) {
-            await submitRanking(io, rankingStore, "tetris", tetrisEngine.getDifficulty(), socket.data.nickname, tetrisEngine.getCompletionTime(), result.result);
+            const completionTime = tetrisEngine.getValidatedCompletionTime();
+            if (completionTime != null) {
+              await submitRanking(io, rankingStore, "tetris", tetrisEngine.getDifficulty(), socket.data.nickname, completionTime, result.result);
+            }
           }
         }
 

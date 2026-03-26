@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { MinesweeperEngine } from "./minesweeper-engine.js";
 import type { Player, MinesweeperPublicState, MinesweeperMove } from "@game-hub/shared-types";
 
@@ -40,11 +40,31 @@ function createTestBoard(rows: number, cols: number, mines: [number, number][]) 
   return board;
 }
 
+// reveal/chord 간격 제한(50ms)을 통과시키기 위해 시간을 전진시키는 헬퍼
+function tick(ms = 60) {
+  vi.advanceTimersByTime(ms);
+}
+
+// 인간적 클릭 패턴 시뮬레이션 (봇 탐지 통과용)
+let humanTickIdx = 0;
+const HUMAN_INTERVALS = [200, 350, 150, 500, 180, 2500, 300, 120, 400, 280, 3000, 250, 170, 600, 90];
+function humanTick() {
+  const ms = HUMAN_INTERVALS[humanTickIdx % HUMAN_INTERVALS.length];
+  humanTickIdx++;
+  vi.advanceTimersByTime(ms);
+}
+
 describe("MinesweeperEngine", () => {
   let engine: MinesweeperEngine;
 
   beforeEach(() => {
+    vi.useFakeTimers();
+    humanTickIdx = 0;
     engine = new MinesweeperEngine();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("gameType이 minesweeper이다", () => {
@@ -187,6 +207,7 @@ describe("MinesweeperEngine", () => {
 
       const move: MinesweeperMove = { type: "reveal", row: 0, col: 0 };
       const s1 = engine.processMove(state, "player1", move);
+      tick();
       const s2 = engine.processMove(s1, "player1", move);
       expect(s2.revealedCount).toBe(s1.revealedCount);
     });
@@ -224,6 +245,7 @@ describe("MinesweeperEngine", () => {
       for (let r = 0; r < 9; r++) {
         for (let c = 0; c < 9; c++) {
           if (s.board[r][c].status === "hidden" && !(r === 8 && c === 8)) {
+            tick();
             s = engine.processMove(s, "player1", { type: "reveal", row: r, col: c });
           }
         }
@@ -300,6 +322,7 @@ describe("MinesweeperEngine", () => {
 
       let s = engine.processMove(state, "player1", { type: "flag", row: 0, col: 0 });
       s = engine.processMove(s, "player1", { type: "question", row: 0, col: 0 });
+      tick();
       s = engine.processMove(s, "player1", { type: "reveal", row: 0, col: 0 });
       expect(s.board[0][0].status).toBe("questioned");
     });
@@ -332,6 +355,7 @@ describe("MinesweeperEngine", () => {
       for (let r = 0; r < 9; r++) {
         for (let c = 0; c < 9; c++) {
           if (!(r === 8 && c === 8)) {
+            tick();
             s = engine.processMove(s, "player1", { type: "reveal", row: r, col: c });
           }
         }
@@ -368,13 +392,28 @@ describe("MinesweeperEngine", () => {
 
     it("승리 후 완료 시간을 반환한다", () => {
       engine.initState(mockPlayers);
-      // 9x9 보드(beginner)에 (0,0)만 지뢰로 설정
-      const board = createTestBoard(9, 9, [[0, 0]]);
+      // 10개 지뢰를 교차 배치하여 대부분의 안전 셀이 인접 지뢰 보유
+      // beginner mineCount=10에 맞춰야 checkWinCondition이 정상 작동
+      const mines: [number, number][] = [
+        [0, 0], [0, 3], [0, 6],
+        [3, 1], [3, 4], [3, 7],
+        [6, 0], [6, 3], [6, 6],
+        [8, 8],
+      ];
+      const board = createTestBoard(9, 9, mines);
       engine._setBoard(board);
       engine._setStartedAt(Date.now() - 5000);
 
-      // 지뢰가 아닌 칸 하나를 열면 floodFill로 전체가 열림
-      engine.processMove(engine.toPublicState(), "player1", { type: "reveal", row: 8, col: 8 });
+      // 모든 비지뢰 셀을 인간적 간격으로 열기
+      let s = engine.toPublicState();
+      for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 9; c++) {
+          if (!board[r][c].hasMine && s.board[r][c].status === "hidden") {
+            humanTick();
+            s = engine.processMove(s, "player1", { type: "reveal", row: r, col: c });
+          }
+        }
+      }
 
       const time = engine.getCompletionTime();
       expect(time).not.toBeNull();
@@ -384,10 +423,61 @@ describe("MinesweeperEngine", () => {
     it("최소 시간 미만이면 null을 반환한다 (치팅 방지)", () => {
       // beginner 최소 시간: 3000ms
       engine.initState(mockPlayers);
-      const board = createTestBoard(9, 9, [[0, 0]]);
+      const board = createTestBoard(9, 9, [[0, 0], [0, 8], [8, 0]]);
       engine._setBoard(board);
       engine._setStartedAt(Date.now() - 1000); // 1초 전 시작 → 3초 미만
 
+      // 여러 클릭으로 moveCount 충족하되 시간은 부족
+      let s = engine.processMove(engine.toPublicState(), "player1", { type: "reveal", row: 4, col: 4 });
+      for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 9; c++) {
+          if (s.board[r][c].status === "hidden" && !board[r][c].hasMine) {
+            tick();
+            s = engine.processMove(s, "player1", { type: "reveal", row: r, col: c });
+          }
+        }
+      }
+
+      expect(engine.getCompletionTime()).toBeNull();
+    });
+
+    it("승리 시 completedAt을 즉시 기록하여 정확한 시간을 반환한다", () => {
+      engine.initState(mockPlayers);
+      // 10개 지뢰 교차 배치 (beginner mineCount=10)
+      const mines: [number, number][] = [
+        [0, 0], [0, 3], [0, 6],
+        [3, 1], [3, 4], [3, 7],
+        [6, 0], [6, 3], [6, 6],
+        [8, 8],
+      ];
+      const board = createTestBoard(9, 9, mines);
+      engine._setBoard(board);
+      engine._setStartedAt(Date.now() - 5000);
+
+      let s = engine.toPublicState();
+      for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 9; c++) {
+          if (!board[r][c].hasMine && s.board[r][c].status === "hidden") {
+            humanTick();
+            s = engine.processMove(s, "player1", { type: "reveal", row: r, col: c });
+          }
+        }
+      }
+
+      const time = engine.getCompletionTime();
+      expect(time).not.toBeNull();
+      expect(time!).toBeGreaterThanOrEqual(5000);
+    });
+
+    it("최소 클릭 수 미만이면 null을 반환한다", () => {
+      // beginner MIN_MOVE_COUNT = 3
+      // 단 1번의 reveal로 floodFill로 전체 열린 경우
+      engine.initState(mockPlayers);
+      const board = createTestBoard(9, 9, [[0, 0]]);
+      engine._setBoard(board);
+      engine._setStartedAt(Date.now() - 5000);
+
+      // 단 1번 클릭으로 승리 → moveCount=1 < MIN_MOVE_COUNT=3
       engine.processMove(engine.toPublicState(), "player1", { type: "reveal", row: 8, col: 8 });
 
       expect(engine.getCompletionTime()).toBeNull();
@@ -404,6 +494,7 @@ describe("MinesweeperEngine", () => {
       for (let r = 0; r < 16; r++) {
         for (let c = 0; c < 16; c++) {
           if (!(r === 0 && c === 0)) {
+            tick();
             intermediateEngine.processMove(intermediateEngine.toPublicState(), "player1", { type: "reveal", row: r, col: c });
           }
         }
@@ -428,13 +519,27 @@ describe("MinesweeperEngine", () => {
       const s2 = engine.processMove(s1, "player1", { type: "reveal", row: 5, col: 5 });
       expect(s2.revealedCount).toBe(s1.revealedCount);
     });
+
+    it("50ms 미만 간격의 chord도 무시된다", () => {
+      engine.initState(mockPlayers);
+      const board = createTestBoard(9, 9, [[0, 0]]);
+      engine._setBoard(board);
+      engine._setStartedAt(Date.now() - 10000);
+
+      // (1,1) reveal
+      let s = engine.processMove(engine.toPublicState(), "player1", { type: "reveal", row: 1, col: 1 });
+      // (0,0)에 깃발
+      s = engine.processMove(s, "player1", { type: "flag", row: 0, col: 0 });
+      // 즉시 chord → rate limit에 의해 무시
+      const countBefore = s.revealedCount;
+      s = engine.processMove(s, "player1", { type: "chord", row: 1, col: 1 });
+      expect(s.revealedCount).toBe(countBefore);
+    });
   });
 
   describe("processMove - chord", () => {
     it("올바른 깃발 수일 때 주변 hidden 셀을 reveal한다", () => {
       engine.initState(mockPlayers);
-      // 3x3 보드: (0,0)에 지뢰, 나머지 안전
-      // (1,1)의 adjacentMines = 1
       const board = createTestBoard(9, 9, [[0, 0]]);
       engine._setBoard(board);
       engine._setStartedAt(Date.now() - 10000);
@@ -448,6 +553,7 @@ describe("MinesweeperEngine", () => {
       s = engine.processMove(s, "player1", { type: "flag", row: 0, col: 0 });
 
       // chord on (1,1)
+      tick();
       s = engine.processMove(s, "player1", { type: "chord", row: 1, col: 1 });
 
       // (0,1), (1,0) 등 주변 hidden 셀이 열려야 함
@@ -464,7 +570,8 @@ describe("MinesweeperEngine", () => {
       let s = engine.processMove(engine.toPublicState(), "player1", { type: "reveal", row: 1, col: 1 });
       const countBefore = s.revealedCount;
 
-      // 깃발 없이 chord
+      // 깃발 없이 chord — 깃발 수 불일치로 무동작 (간격 무관)
+      tick();
       s = engine.processMove(s, "player1", { type: "chord", row: 1, col: 1 });
       expect(s.revealedCount).toBe(countBefore);
     });
@@ -490,6 +597,7 @@ describe("MinesweeperEngine", () => {
       const countBefore = s.revealedCount;
 
       // chord on (0,0) which has adjacentMines=0
+      tick();
       s = engine.processMove(s, "player1", { type: "chord", row: 0, col: 0 });
       expect(s.revealedCount).toBe(countBefore);
     });
@@ -509,6 +617,7 @@ describe("MinesweeperEngine", () => {
       // (0,1)에 잘못된 깃발 (지뢰 없는 곳)
       s = engine.processMove(s, "player1", { type: "flag", row: 0, col: 1 });
       // chord on (1,0) → (0,0) 지뢰 열림
+      tick();
       s = engine.processMove(s, "player1", { type: "chord", row: 1, col: 0 });
       expect(s.status).toBe("lost");
     });
@@ -531,6 +640,7 @@ describe("MinesweeperEngine", () => {
       s = engine.processMove(s, "player1", { type: "question", row: 0, col: 1 });
 
       // chord on (1,1) — flagged 2개 == adjacentMines 2
+      tick();
       s = engine.processMove(s, "player1", { type: "chord", row: 1, col: 1 });
 
       // (0,1)은 questioned이므로 건너뜀
@@ -550,14 +660,14 @@ describe("MinesweeperEngine", () => {
       // 대부분의 셀을 열기
       let s = engine.processMove(engine.toPublicState(), "player1", { type: "reveal", row: 8, col: 8 });
 
-      // 아직 안 열린 non-mine 셀 중 (0,0) 주변만 남을 수 있음
-      // (0,0)에 깃발을 놓고 인접 revealed 셀에서 chord
+      // (0,0)에 깃발
       s = engine.processMove(s, "player1", { type: "flag", row: 0, col: 0 });
 
-      // 남은 hidden 셀 개별 reveal 또는 chord로 모두 열기
+      // 남은 hidden 셀 개별 reveal로 모두 열기
       for (let r = 0; r < 9; r++) {
         for (let c = 0; c < 9; c++) {
           if (s.board[r][c].status === "hidden") {
+            tick();
             s = engine.processMove(s, "player1", { type: "reveal", row: r, col: c });
           }
         }

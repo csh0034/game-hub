@@ -747,6 +747,12 @@ describe("TetrisEngine", () => {
       expect(time).toBeGreaterThanOrEqual(0);
     });
 
+    it("getValidatedCompletionTime이 최소 시간 미만이면 null을 반환한다", () => {
+      speedEngine.initState(mockPlayers);
+      // completedAt이 없으면 null
+      expect(speedEngine.getValidatedCompletionTime()).toBeNull();
+    });
+
     it("40줄 클리어 시 승리한다", () => {
       const state = speedEngine.initState(mockPlayers);
       // 직접 linesCleared를 40 이상으로 설정하기 위해 반복적으로 하드드롭

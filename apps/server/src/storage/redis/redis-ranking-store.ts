@@ -24,6 +24,16 @@ export class RedisRankingStore implements RankingStore {
   ): Promise<{ rank: number | null; entries: RankingEntry[] }> {
     try {
       const existing = await this.getRankings(key);
+
+      // 같은 닉네임의 기존 기록 확인 — 더 좋은 기록일 때만 교체
+      const existingIdx = existing.findIndex((e) => e.nickname === entry.nickname);
+      if (existingIdx !== -1) {
+        const prev = existing[existingIdx];
+        const isWorse = sortAsc ? entry.score >= prev.score : entry.score <= prev.score;
+        if (isWorse) return { rank: null, entries: existing };
+        existing.splice(existingIdx, 1);
+      }
+
       const entries = [...existing, entry];
       entries.sort((a, b) => (sortAsc ? a.score - b.score : b.score - a.score));
       const trimmed = entries.slice(0, MAX_ENTRIES);

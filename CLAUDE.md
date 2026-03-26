@@ -13,20 +13,21 @@
 - **테스트**: Vitest + React Testing Library
 - **린터**: ESLint 9 (flat config)
 - **커버리지**: Vitest Coverage (v8)
+- **배포**: Docker (멀티스테이지 빌드)
 
 ## 주요 명령어
 
 ```bash
-pnpm install                           # 의존성 설치
-docker compose up redis -d             # Redis 시작 (포트 6389)
-pnpm dev                               # 프론트(3000) + 백엔드(3001) 동시 실행
-pnpm build                             # 전체 빌드
-pnpm lint                              # 전체 린트
-pnpm --filter shared-types lint               # 공유 타입 린트
-pnpm --filter server lint                     # 서버 린트
-pnpm --filter server test:coverage            # 서버 테스트 + 커버리지
-pnpm --filter web lint                        # 웹 린트
-pnpm --filter web test:coverage               # 웹 테스트 + 커버리지
+pnpm install                              # 의존성 설치
+docker compose up redis -d                # Redis 시작 (포트 6389)
+pnpm dev                                  # 프론트(3000) + 백엔드(3001) 동시 실행
+pnpm build                                # 전체 빌드
+pnpm lint                                 # 전체 린트
+pnpm --filter shared-types lint           # 공유 타입 린트
+pnpm --filter server lint                 # 서버 린트
+pnpm --filter server test:coverage        # 서버 테스트 + 커버리지
+pnpm --filter web lint                    # 웹 린트
+pnpm --filter web test:coverage           # 웹 테스트 + 커버리지
 ```
 
 ## 게임 규칙 문서
@@ -52,6 +53,12 @@ pnpm --filter web test:coverage               # 웹 테스트 + 커버리지
 | 요청사항 게시판 | `docs/request-board.md` |
 | 관리자 공지 | `docs/announcement.md` |
 | 방 운영 | `docs/room.md` |
+
+## 기타 문서
+
+| 문서 | 위치 |
+|------|------|
+| 용어사전 | `docs/glossary.md` |
 
 ## 규칙 문서
 

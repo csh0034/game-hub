@@ -330,6 +330,24 @@ describe("setupLobbyHandler — lobby:create-room", () => {
     expect(socket1.join).toHaveBeenCalledWith(room.id);
     expect(socket1.data.roomId).toBe(room.id);
   });
+
+  it("방 생성 시 방장 입장 시스템 메시지를 발송한다", () => {
+    setupLobbyHandler(io as unknown as GameServer, socket1 as unknown as GameSocket, gameManager, chatStore);
+
+    const callback = vi.fn();
+    socket1._trigger("lobby:create-room", { gameType: "gomoku", name: "Test Room" }, callback);
+
+    const room = callback.mock.calls[0][0];
+    const toCall = (io.to as ReturnType<typeof vi.fn>).mock.calls.find((args: unknown[]) => args[0] === room.id);
+    expect(toCall).toBeDefined();
+    const systemMsg = io._toEmit.mock.calls.find(
+      (args: unknown[]) =>
+        args[0] === "chat:room-message" &&
+        (args[1] as { playerId?: string; message?: string })?.playerId === "system" &&
+        (args[1] as { playerId?: string; message?: string })?.message === "Player1님이 입장했습니다.",
+    );
+    expect(systemMsg).toBeDefined();
+  });
 });
 
 describe("setupLobbyHandler — lobby:join-room", () => {

@@ -102,6 +102,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
     socket.data.roomId = room.id;
     callback(room);
     io.emit("lobby:room-created", room);
+    emitSystemMessage(room.id, `${player.nickname}님이 입장했습니다.`);
   });
 
   socket.on("lobby:join-room", (payload, callback) => {

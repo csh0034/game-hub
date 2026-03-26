@@ -9,13 +9,13 @@ import type { GameComponentProps } from "@/lib/game-registry";
 import { useGameStore } from "@/stores/game-store";
 
 const NUMBER_COLORS: Record<number, string> = {
-  1: "text-blue-600",
-  2: "text-green-600",
-  3: "text-red-600",
-  4: "text-indigo-800",
-  5: "text-amber-800",
-  6: "text-teal-600",
-  7: "text-gray-900",
+  1: "text-blue-400",
+  2: "text-green-400",
+  3: "text-red-400",
+  4: "text-purple-400",
+  5: "text-amber-400",
+  6: "text-teal-400",
+  7: "text-slate-300",
   8: "text-gray-500",
 };
 
@@ -127,29 +127,29 @@ export default function MinesweeperBoard({ isSpectating }: GameComponentProps) {
     <div className="flex flex-col items-center gap-4">
       {/* Difficulty label */}
       <div className="text-sm text-muted-foreground">
-        {difficultyConfig.label} ({state.rows}×{state.cols} · 💣{state.mineCount})
+        {difficultyConfig.label} ({state.rows}×{state.cols} · {state.mineCount})
       </div>
 
       {/* Header */}
       <div className="flex items-center justify-between w-full max-w-sm px-2">
-        <div className="flex items-center gap-1.5 text-lg font-mono font-bold bg-gray-900 text-red-500 px-3 py-1 rounded">
+        <div className="flex items-center gap-1.5 text-lg font-mono font-bold bg-card border border-border text-primary px-3 py-1.5 rounded-lg">
           <span className="text-base">🚩</span>
           {String(remainingMines).padStart(3, "0")}
         </div>
         <div />
-        <div className="flex items-center gap-1.5 text-lg font-mono font-bold bg-gray-900 text-red-500 px-3 py-1 rounded">
+        <div className="flex items-center gap-1.5 text-lg font-mono font-bold bg-card border border-border text-primary px-3 py-1.5 rounded-lg">
           <span className="text-base">⏱</span>
           {String(elapsed).padStart(3, "0")}
         </div>
       </div>
 
       {/* Board */}
-      {/* Board */}
       <div
-        className="relative grid border-2 border-gray-400 bg-gray-300"
+        className="relative grid border border-zinc-500 bg-zinc-500"
         style={{
           gridTemplateColumns: `repeat(${state.cols}, ${cellSize}px)`,
           gridTemplateRows: `repeat(${state.rows}, ${cellSize}px)`,
+          gap: "1px",
         }}
         onMouseLeave={() => {
           setPressedCells(new Set());
@@ -163,12 +163,12 @@ export default function MinesweeperBoard({ isSpectating }: GameComponentProps) {
             return (
             <button
               key={`${r}-${c}`}
-              className={`flex items-center justify-center border font-bold select-none ${
+              className={`flex items-center justify-center font-bold select-none transition-colors duration-75 ${
                 cell.status === "revealed"
-                  ? "bg-gray-200 border-gray-300"
+                  ? "bg-zinc-700 text-foreground"
                   : isPressed
-                    ? "bg-gray-300 border-gray-300"
-                    : "bg-gray-400 border-t-gray-200 border-l-gray-200 border-r-gray-500 border-b-gray-500 hover:bg-gray-350 active:bg-gray-300"
+                    ? "bg-zinc-600"
+                    : "bg-zinc-400 hover:bg-zinc-350 active:bg-zinc-500 text-zinc-900"
               }`}
               style={{ width: cellSize, height: cellSize, fontSize: cellSize > 30 ? 14 : 11 }}
               onMouseDown={(e) => {
@@ -212,7 +212,7 @@ export default function MinesweeperBoard({ isSpectating }: GameComponentProps) {
               disabled={state.status !== "playing"}
             >
               {cell.status === "flagged" && <span style={{ fontSize: cellSize > 30 ? 16 : 12 }}>🚩</span>}
-              {cell.status === "questioned" && <span style={{ fontSize: cellSize > 30 ? 16 : 12 }}>❓</span>}
+              {cell.status === "questioned" && <span className="text-primary" style={{ fontSize: cellSize > 30 ? 14 : 10 }}>?</span>}
               {cell.status === "revealed" && cell.hasMine && <span style={{ fontSize: cellSize > 30 ? 16 : 12 }}>💣</span>}
               {cell.status === "revealed" && !cell.hasMine && cell.adjacentMines !== undefined && cell.adjacentMines > 0 && (
                 <span className={NUMBER_COLORS[cell.adjacentMines]}>{cell.adjacentMines}</span>
@@ -225,12 +225,12 @@ export default function MinesweeperBoard({ isSpectating }: GameComponentProps) {
 
         {/* Game result overlay */}
         {state.status !== "playing" && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded gap-2">
-            <span className={`text-3xl font-bold drop-shadow-lg ${state.status === "won" ? "text-yellow-400" : "text-red-400"}`}>
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 gap-3">
+            <span className={`text-3xl font-bold drop-shadow-lg ${state.status === "won" ? "text-primary" : "text-destructive"}`}>
               {state.status === "won" ? "CLEAR!" : "GAME OVER"}
             </span>
             {gameResult?.rankingResult && gameResult.rankingResult.rank != null && (
-              <span className="text-sm text-yellow-400 font-bold">
+              <span className="text-sm text-primary font-bold">
                 {gameResult.rankingResult.isNewRecord ? "🏆 새로운 1위!" : `전체 ${gameResult.rankingResult.rank}위`}
               </span>
             )}
@@ -241,7 +241,7 @@ export default function MinesweeperBoard({ isSpectating }: GameComponentProps) {
       {/* Controls hint */}
       <div className="text-xs text-muted-foreground text-center space-x-3">
         <span>좌클릭 열기</span>
-        <span>우클릭 🚩↔❓</span>
+        <span>우클릭 🚩↔?</span>
         <span>양클릭 주변 열기</span>
       </div>
     </div>

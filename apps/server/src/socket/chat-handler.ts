@@ -79,12 +79,22 @@ export function setupChatHandler(io: IOServer, socket: IOSocket, gameManager: Ga
           io.to(roomId).emit("game:state-updated", result.newState);
           const rank = result.newState.guessOrder.length;
           const rankScores = [3, 2, 1];
+          const score = rankScores[rank - 1] || 0;
           io.to(roomId).emit("game:catch-mind-correct", {
             playerId: socket.id!,
             nickname: socket.data.nickname,
             rank,
-            score: rankScores[rank - 1] || 0,
+            score,
           });
+          const sysMsg: ChatMessage = {
+            id: crypto.randomUUID(),
+            playerId: "system",
+            nickname: "system",
+            message: `${socket.data.nickname}님이 정답을 맞추었습니다! (${rank}등, +${score}점)`,
+            timestamp: Date.now(),
+          };
+          chatStore.pushRoomMessage(roomId, sysMsg);
+          io.to(roomId).emit("chat:room-message", sysMsg);
 
           if (result.newState.roundEnded) {
             clearCatchMindTimer(roomId);

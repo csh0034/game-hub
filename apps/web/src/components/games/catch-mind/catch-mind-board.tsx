@@ -87,7 +87,6 @@ export default function CatchMindBoard({ roomId: _roomId, isSpectating }: GameCo
         <div className="mt-4 h-[250px]">
           <CatchMindChat
             state={state}
-            socket={socket}
             myId={myId}
             messages={roomMessages}
             onSendMessage={sendRoomMessage}

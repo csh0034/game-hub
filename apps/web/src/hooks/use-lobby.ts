@@ -3,20 +3,9 @@
 import { useEffect, useCallback, useRef } from "react";
 import { useLobbyStore } from "@/stores/lobby-store";
 import { useGameStore } from "@/stores/game-store";
-import { useChatStore } from "@/stores/chat-store";
 import type { GameSocket } from "@/lib/socket";
-import type { ChatMessage, CreateRoomPayload, GameOptions, Room } from "@game-hub/shared-types";
+import type { CreateRoomPayload, GameOptions, Room } from "@game-hub/shared-types";
 import { toast } from "sonner";
-
-function createSystemMessage(message: string): ChatMessage {
-  return {
-    id: `sys-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-    playerId: "system",
-    nickname: "system",
-    message,
-    timestamp: Date.now(),
-  };
-}
 
 export function useLobby(socket: GameSocket | null) {
   const { rooms, currentRoom, isSpectating, setRooms, setCurrentRoom, setIsSpectating, addRoom, updateRoom, removeRoom } =
@@ -38,28 +27,6 @@ export function useLobby(socket: GameSocket | null) {
       console.error("[lobby error]", message);
     });
 
-    socket.on("lobby:player-joined", (player) => {
-      useChatStore.getState().addRoomMessage(createSystemMessage(`${player.nickname}님이 입장했습니다.`));
-    });
-
-    socket.on("lobby:player-left", (playerId) => {
-      const room = useLobbyStore.getState().currentRoom;
-      const player = room?.players.find((p) => p.id === playerId);
-      const nickname = player?.nickname ?? "알 수 없음";
-      useChatStore.getState().addRoomMessage(createSystemMessage(`${nickname}님이 퇴장했습니다.`));
-    });
-
-    socket.on("lobby:spectator-joined", (player) => {
-      useChatStore.getState().addRoomMessage(createSystemMessage(`${player.nickname}님이 관전을 시작했습니다.`));
-    });
-
-    socket.on("lobby:spectator-left", (playerId) => {
-      const room = useLobbyStore.getState().currentRoom;
-      const spectator = room?.spectators.find((p) => p.id === playerId);
-      const nickname = spectator?.nickname ?? "알 수 없음";
-      useChatStore.getState().addRoomMessage(createSystemMessage(`${nickname}님이 관전을 종료했습니다.`));
-    });
-
     socket.on("lobby:spectator-kicked", () => {
       setCurrentRoom(null);
       setIsSpectating(false);
@@ -79,10 +46,6 @@ export function useLobby(socket: GameSocket | null) {
       socket.off("lobby:room-updated");
       socket.off("lobby:room-removed");
       socket.off("lobby:error");
-      socket.off("lobby:player-joined");
-      socket.off("lobby:player-left");
-      socket.off("lobby:spectator-joined");
-      socket.off("lobby:spectator-left");
       socket.off("lobby:spectator-kicked");
       socket.off("lobby:kicked");
     };

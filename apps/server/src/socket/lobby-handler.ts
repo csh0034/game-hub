@@ -1,11 +1,13 @@
 import type { Server, Socket } from "socket.io";
 import {
   GAME_CONFIGS,
+  type ChatMessage,
   type ClientToServerEvents,
   type ServerToClientEvents,
   type InterServerEvents,
   type SocketData,
 } from "@game-hub/shared-types";
+import crypto from "node:crypto";
 import type { GameManager } from "../games/game-manager.js";
 import type { ChatStore } from "../storage/index.js";
 import { clearGomokuTimer } from "../games/gomoku-timer.js";
@@ -16,6 +18,18 @@ type IOServer = Server<ClientToServerEvents, ServerToClientEvents, InterServerEv
 type IOSocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 
 export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: GameManager, chatStore: ChatStore) {
+  function emitSystemMessage(roomId: string, message: string) {
+    const msg: ChatMessage = {
+      id: crypto.randomUUID(),
+      playerId: "system",
+      nickname: "system",
+      message,
+      timestamp: Date.now(),
+    };
+    chatStore.pushRoomMessage(roomId, msg);
+    io.to(roomId).emit("chat:room-message", msg);
+  }
+
   function emitPlayerLeftIfPlaying(roomId: string) {
     const room = gameManager.getRoom(roomId);
     if (room && room.status === "playing") {
@@ -33,6 +47,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
     if (!prevRoomId) return;
 
     if (socket.data.isSpectator) {
+      const nickname = socket.data.nickname;
       const prevRoom = gameManager.removeSpectator(prevRoomId, socket.id!);
       socket.leave(prevRoomId);
       socket.data.roomId = null;
@@ -41,10 +56,12 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
         io.to(prevRoomId).emit("lobby:spectator-left", socket.id!);
         io.to(prevRoomId).emit("lobby:room-updated", prevRoom);
         io.emit("lobby:room-updated", prevRoom);
+        emitSystemMessage(prevRoomId, `${nickname}님이 관전을 종료했습니다.`);
       }
       return;
     }
 
+    const nickname = socket.data.nickname;
     emitPlayerLeftIfPlaying(prevRoomId);
     clearGomokuTimer(prevRoomId);
     clearTetrisTicker(prevRoomId);
@@ -56,6 +73,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
       io.to(prevRoomId).emit("lobby:player-left", socket.id!);
       io.to(prevRoomId).emit("lobby:room-updated", prevRoom);
       io.emit("lobby:room-updated", prevRoom);
+      emitSystemMessage(prevRoomId, `${nickname}님이 퇴장했습니다.`);
     } else {
       chatStore.deleteRoomHistory(prevRoomId);
       io.emit("lobby:room-removed", prevRoomId);
@@ -105,6 +123,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
     callback(room);
     io.to(room.id).emit("lobby:player-joined", player);
     io.emit("lobby:room-updated", room);
+    emitSystemMessage(room.id, `${player.nickname}님이 입장했습니다.`);
   });
 
   socket.on("lobby:leave-room", () => {
@@ -112,6 +131,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
     if (!roomId) return;
 
     if (socket.data.isSpectator) {
+      const nickname = socket.data.nickname;
       const room = gameManager.removeSpectator(roomId, socket.id!);
       socket.leave(roomId);
       socket.data.roomId = null;
@@ -120,11 +140,13 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
         io.to(roomId).emit("lobby:spectator-left", socket.id!);
         io.to(roomId).emit("lobby:room-updated", room);
         io.emit("lobby:room-updated", room);
+        emitSystemMessage(roomId, `${nickname}님이 관전을 종료했습니다.`);
       }
       socket.join("lobby");
       return;
     }
 
+    const nickname = socket.data.nickname;
     emitPlayerLeftIfPlaying(roomId);
     clearGomokuTimer(roomId);
     clearTetrisTicker(roomId);
@@ -136,6 +158,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
       io.to(roomId).emit("lobby:player-left", socket.id!);
       io.to(roomId).emit("lobby:room-updated", room);
       io.emit("lobby:room-updated", room);
+      emitSystemMessage(roomId, `${nickname}님이 퇴장했습니다.`);
     } else {
       chatStore.deleteRoomHistory(roomId);
       io.emit("lobby:room-removed", roomId);
@@ -193,6 +216,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
     callback(room);
     io.to(room.id).emit("lobby:spectator-joined", player);
     io.emit("lobby:room-updated", room);
+    emitSystemMessage(room.id, `${player.nickname}님이 관전을 시작했습니다.`);
     // 게임 중 관전 입장 시 현재 게임 상태 전송
     if (room.status === "playing") {
       const gameState = gameManager.getGameState(room.id);

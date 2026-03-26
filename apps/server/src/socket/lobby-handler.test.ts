@@ -813,6 +813,85 @@ describe("setupLobbyHandler — lobby:join-spectate", () => {
   });
 });
 
+describe("setupLobbyHandler — 시스템 메시지", () => {
+  let socket1: ReturnType<typeof createMockSocket>;
+  let socket2: ReturnType<typeof createMockSocket>;
+  let io: ReturnType<typeof createMockIo>;
+  let gameManager: GameManager;
+  let chatStore: InMemoryChatStore;
+
+  beforeEach(() => {
+    socket1 = createMockSocket("socket-1", "Player1");
+    socket2 = createMockSocket("socket-2", "Player2");
+    io = createMockIo({ withTo: true });
+    gameManager = new GameManager();
+    chatStore = new InMemoryChatStore();
+  });
+
+  it("플레이어 입장 시 시스템 메시지를 저장하고 브로드캐스트한다", async () => {
+    setupLobbyHandler(io as unknown as GameServer, socket1 as unknown as GameSocket, gameManager, chatStore);
+    setupLobbyHandler(io as unknown as GameServer, socket2 as unknown as GameSocket, gameManager, chatStore);
+
+    const createCallback = vi.fn();
+    socket1._trigger("lobby:create-room", { gameType: "gomoku", name: "Test Room" }, createCallback);
+    const room = createCallback.mock.calls[0][0];
+
+    socket2._trigger("lobby:join-room", { roomId: room.id }, vi.fn());
+
+    const history = await chatStore.getRoomHistory(room.id);
+    expect(history.some((m) => m.playerId === "system" && m.message === "Player2님이 입장했습니다.")).toBe(true);
+  });
+
+  it("관전자 입장 시 시스템 메시지를 저장하고 브로드캐스트한다", async () => {
+    setupLobbyHandler(io as unknown as GameServer, socket1 as unknown as GameSocket, gameManager, chatStore);
+    setupLobbyHandler(io as unknown as GameServer, socket2 as unknown as GameSocket, gameManager, chatStore);
+
+    const createCallback = vi.fn();
+    socket1._trigger("lobby:create-room", { gameType: "gomoku", name: "Test Room" }, createCallback);
+    const room = createCallback.mock.calls[0][0];
+    gameManager.updateGameOptions(room.id, "socket-1", { spectateEnabled: true });
+
+    socket2._trigger("lobby:join-spectate", { roomId: room.id }, vi.fn());
+
+    const history = await chatStore.getRoomHistory(room.id);
+    expect(history.some((m) => m.playerId === "system" && m.message === "Player2님이 관전을 시작했습니다.")).toBe(true);
+  });
+
+  it("플레이어 퇴장 시 시스템 메시지를 저장한다", async () => {
+    setupLobbyHandler(io as unknown as GameServer, socket1 as unknown as GameSocket, gameManager, chatStore);
+    setupLobbyHandler(io as unknown as GameServer, socket2 as unknown as GameSocket, gameManager, chatStore);
+
+    const createCallback = vi.fn();
+    socket1._trigger("lobby:create-room", { gameType: "gomoku", name: "Test Room" }, createCallback);
+    const room = createCallback.mock.calls[0][0];
+
+    socket2._trigger("lobby:join-room", { roomId: room.id }, vi.fn());
+    socket2.data.roomId = room.id;
+    socket2._trigger("lobby:leave-room");
+
+    const history = await chatStore.getRoomHistory(room.id);
+    expect(history.some((m) => m.playerId === "system" && m.message === "Player2님이 퇴장했습니다.")).toBe(true);
+  });
+
+  it("관전자 퇴장 시 시스템 메시지를 저장한다", async () => {
+    setupLobbyHandler(io as unknown as GameServer, socket1 as unknown as GameSocket, gameManager, chatStore);
+    setupLobbyHandler(io as unknown as GameServer, socket2 as unknown as GameSocket, gameManager, chatStore);
+
+    const createCallback = vi.fn();
+    socket1._trigger("lobby:create-room", { gameType: "gomoku", name: "Test Room" }, createCallback);
+    const room = createCallback.mock.calls[0][0];
+    gameManager.updateGameOptions(room.id, "socket-1", { spectateEnabled: true });
+
+    socket2._trigger("lobby:join-spectate", { roomId: room.id }, vi.fn());
+    socket2.data.roomId = room.id;
+    socket2.data.isSpectator = true;
+    socket2._trigger("lobby:leave-room");
+
+    const history = await chatStore.getRoomHistory(room.id);
+    expect(history.some((m) => m.playerId === "system" && m.message === "Player2님이 관전을 종료했습니다.")).toBe(true);
+  });
+});
+
 describe("setupLobbyHandler — lobby:kick-spectators", () => {
   let socket1: ReturnType<typeof createMockSocket>;
   let socket2: ReturnType<typeof createMockSocket>;

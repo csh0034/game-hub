@@ -2,6 +2,7 @@ import { renderHook, act } from "@testing-library/react";
 import { useLobby } from "./use-lobby";
 import { useLobbyStore } from "@/stores/lobby-store";
 import { useGameStore } from "@/stores/game-store";
+import { useChatStore } from "@/stores/chat-store";
 import type { Room } from "@game-hub/shared-types";
 
 type Handler = (...args: unknown[]) => void;
@@ -30,6 +31,7 @@ function createRoom(overrides: Partial<Room> = {}): Room {
     gameType: "gomoku",
     hostId: "host-1",
     players: [],
+    spectators: [],
     maxPlayers: 2,
     status: "waiting",
     createdAt: Date.now(),
@@ -41,6 +43,7 @@ describe("useLobby", () => {
   beforeEach(() => {
     useLobbyStore.setState(useLobbyStore.getInitialState());
     useGameStore.setState(useGameStore.getInitialState());
+    useChatStore.setState(useChatStore.getInitialState());
   });
 
   it("마운트 시 lobby:get-rooms를 emit한다", () => {
@@ -313,6 +316,68 @@ describe("useLobby", () => {
     // No error thrown
   });
 
+  it("lobby:player-joined 이벤트로 입장 시스템 메시지를 추가한다", () => {
+    const socket = createMockSocket();
+    renderHook(() => useLobby(socket as never));
+
+    act(() => {
+      socket._trigger("lobby:player-joined", { id: "p1", nickname: "Player1", isReady: false });
+    });
+
+    const msgs = useChatStore.getState().roomMessages;
+    expect(msgs).toHaveLength(1);
+    expect(msgs[0].playerId).toBe("system");
+    expect(msgs[0].message).toBe("Player1님이 입장했습니다.");
+  });
+
+  it("lobby:player-left 이벤트로 퇴장 시스템 메시지를 추가한다", () => {
+    const socket = createMockSocket();
+    useLobbyStore.setState({
+      currentRoom: createRoom({ players: [{ id: "p1", nickname: "Player1", isReady: false }] }),
+    });
+    renderHook(() => useLobby(socket as never));
+
+    act(() => {
+      socket._trigger("lobby:player-left", "p1");
+    });
+
+    const msgs = useChatStore.getState().roomMessages;
+    expect(msgs).toHaveLength(1);
+    expect(msgs[0].playerId).toBe("system");
+    expect(msgs[0].message).toBe("Player1님이 퇴장했습니다.");
+  });
+
+  it("lobby:spectator-joined 이벤트로 관전 시작 시스템 메시지를 추가한다", () => {
+    const socket = createMockSocket();
+    renderHook(() => useLobby(socket as never));
+
+    act(() => {
+      socket._trigger("lobby:spectator-joined", { id: "s1", nickname: "Spectator1", isReady: false });
+    });
+
+    const msgs = useChatStore.getState().roomMessages;
+    expect(msgs).toHaveLength(1);
+    expect(msgs[0].playerId).toBe("system");
+    expect(msgs[0].message).toBe("Spectator1님이 관전을 시작했습니다.");
+  });
+
+  it("lobby:spectator-left 이벤트로 관전 종료 시스템 메시지를 추가한다", () => {
+    const socket = createMockSocket();
+    useLobbyStore.setState({
+      currentRoom: createRoom({ spectators: [{ id: "s1", nickname: "Spectator1", isReady: false }] }),
+    });
+    renderHook(() => useLobby(socket as never));
+
+    act(() => {
+      socket._trigger("lobby:spectator-left", "s1");
+    });
+
+    const msgs = useChatStore.getState().roomMessages;
+    expect(msgs).toHaveLength(1);
+    expect(msgs[0].playerId).toBe("system");
+    expect(msgs[0].message).toBe("Spectator1님이 관전을 종료했습니다.");
+  });
+
   it("언마운트 시 이벤트 리스너를 해제한다", () => {
     const socket = createMockSocket();
     const { unmount } = renderHook(() => useLobby(socket as never));
@@ -323,6 +388,10 @@ describe("useLobby", () => {
     expect(socket.off).toHaveBeenCalledWith("lobby:room-updated");
     expect(socket.off).toHaveBeenCalledWith("lobby:room-removed");
     expect(socket.off).toHaveBeenCalledWith("lobby:error");
+    expect(socket.off).toHaveBeenCalledWith("lobby:player-joined");
+    expect(socket.off).toHaveBeenCalledWith("lobby:player-left");
+    expect(socket.off).toHaveBeenCalledWith("lobby:spectator-joined");
+    expect(socket.off).toHaveBeenCalledWith("lobby:spectator-left");
     expect(socket.off).toHaveBeenCalledWith("lobby:spectator-kicked");
     expect(socket.off).toHaveBeenCalledWith("lobby:kicked");
   });

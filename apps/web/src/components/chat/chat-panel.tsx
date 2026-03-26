@@ -70,7 +70,7 @@ export function ChatPanel({
             if (isSystem) {
               return (
                 <div key={msg.id ?? idx} className="text-center py-1">
-                  <span className="text-xs text-emerald-400 bg-emerald-400/10 px-2.5 py-1 rounded-full">
+                  <span className="text-xs text-primary bg-primary/10 px-2.5 py-1 rounded-full">
                     {msg.message}
                   </span>
                 </div>

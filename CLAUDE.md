@@ -30,7 +30,7 @@ pnpm --filter web lint                    # 웹 린트
 pnpm --filter web test:coverage           # 웹 테스트 + 커버리지
 ```
 
-## 게임 규칙 문서
+## 게임 문서
 
 | 게임 | 문서 |
 |------|------|
@@ -41,7 +41,7 @@ pnpm --filter web test:coverage           # 웹 테스트 + 커버리지
 | 지뢰찾기 (Minesweeper) | `docs/games/minesweeper.md` |
 | 텍사스 홀덤 (Texas Hold'em) | `docs/games/texas-holdem.md` |
 
-## 공통 기능 문서
+## 기능 문서
 
 | 기능 | 문서 |
 |------|------|

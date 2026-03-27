@@ -51,6 +51,7 @@ pnpm --filter web test:coverage           # 웹 테스트 + 커버리지
 | 랭킹 | `docs/ranking.md` |
 | 요청사항 게시판 | `docs/request-board.md` |
 | 관리자 공지 | `docs/announcement.md` |
+| 플랜카드 | `docs/placard.md` |
 | 방 운영 | `docs/room.md` |
 
 ## 기타 문서

@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { ChatMessage, CatchMindPublicState } from "@game-hub/shared-types";
+import type { ChatMessage, CatchMindPublicState, SocketData } from "@game-hub/shared-types";
 import { setupChatHandler } from "./chat-handler.js";
 import { GameManager } from "../games/game-manager.js";
-import type { ChatStore } from "../storage/index.js";
+import type { ChatStore, SessionStore } from "../storage/index.js";
 import { createMockSocket, createMockIo, type GameServer, type GameSocket } from "./socket-test-helpers.js";
 
 vi.mock("../games/catch-mind-timer.js", () => ({
@@ -51,6 +51,40 @@ function createMockChatStore(): ChatStore {
   };
 }
 
+function createMockSessionStore(): SessionStore {
+  const sessions = new Map<string, SocketData>();
+  const nicknames = new Map<string, string>();
+
+  return {
+    saveSession: vi.fn(async (socketId: string, data: SocketData) => {
+      sessions.set(socketId, data);
+      if (data.nickname) nicknames.set(data.nickname, socketId);
+    }),
+    getSession: vi.fn(async (socketId: string) => sessions.get(socketId) ?? null),
+    deleteSession: vi.fn(async (socketId: string) => {
+      const data = sessions.get(socketId);
+      if (data?.nickname) nicknames.delete(data.nickname);
+      sessions.delete(socketId);
+    }),
+    isNicknameTaken: vi.fn(async () => false),
+    reserveNickname: vi.fn(async (nickname: string, socketId: string) => {
+      nicknames.set(nickname, socketId);
+    }),
+    releaseNickname: vi.fn(async (nickname: string) => {
+      nicknames.delete(nickname);
+    }),
+    findSessionByNickname: vi.fn(async (nickname: string) => {
+      const socketId = nicknames.get(nickname);
+      if (!socketId) return null;
+      const data = sessions.get(socketId);
+      if (!data) return null;
+      return { socketId, data };
+    }),
+  };
+}
+
+const dummySessionStore = createMockSessionStore();
+
 describe("chat:lobby-message", () => {
   let socket: ReturnType<typeof createMockSocket>;
   let io: ReturnType<typeof createMockIo>;
@@ -62,7 +96,7 @@ describe("chat:lobby-message", () => {
     io = createMockIo({ withTo: true });
     gameManager = new GameManager();
     chatStore = createMockChatStore();
-    setupChatHandler(io as unknown as GameServer, socket as unknown as GameSocket, gameManager, chatStore);
+    setupChatHandler(io as unknown as GameServer, socket as unknown as GameSocket, gameManager, chatStore, dummySessionStore);
   });
 
   it("인증된 유저가 roomId 없을 때 lobby room에 브로드캐스트한다", () => {
@@ -102,7 +136,7 @@ describe("chat:lobby-message", () => {
 
   it("관리자 닉네임을 '관리자'로 치환하고 isAdmin 플래그를 설정한다", () => {
     const adminSocket = createMockSocket("socket-admin", "admin");
-    setupChatHandler(io as unknown as GameServer, adminSocket as unknown as GameSocket, gameManager, chatStore);
+    setupChatHandler(io as unknown as GameServer, adminSocket as unknown as GameSocket, gameManager, chatStore, dummySessionStore);
     adminSocket.data.authenticated = true;
     adminSocket.data.roomId = null;
 
@@ -145,7 +179,7 @@ describe("chat:room-message", () => {
     io = createMockIo({ withTo: true });
     gameManager = new GameManager();
     chatStore = createMockChatStore();
-    setupChatHandler(io as unknown as GameServer, socket as unknown as GameSocket, gameManager, chatStore);
+    setupChatHandler(io as unknown as GameServer, socket as unknown as GameSocket, gameManager, chatStore, dummySessionStore);
   });
 
   it("roomId가 있으면 해당 room에 메시지를 전송한다", () => {
@@ -174,7 +208,7 @@ describe("chat:room-message", () => {
 
   it("관리자 닉네임을 '관리자'로 치환하고 isAdmin 플래그를 설정한다", () => {
     const adminSocket = createMockSocket("socket-admin", "admin");
-    setupChatHandler(io as unknown as GameServer, adminSocket as unknown as GameSocket, gameManager, chatStore);
+    setupChatHandler(io as unknown as GameServer, adminSocket as unknown as GameSocket, gameManager, chatStore, dummySessionStore);
     adminSocket.data.roomId = "room-1";
 
     adminSocket._trigger("chat:room-message", "방 공지");
@@ -215,7 +249,7 @@ describe("chat:request-history", () => {
     io = createMockIo({ withTo: true });
     gameManager = new GameManager();
     chatStore = createMockChatStore();
-    setupChatHandler(io as unknown as GameServer, socket as unknown as GameSocket, gameManager, chatStore);
+    setupChatHandler(io as unknown as GameServer, socket as unknown as GameSocket, gameManager, chatStore, dummySessionStore);
   });
 
   it("로비 메시지 이력을 반환한다", async () => {
@@ -290,7 +324,7 @@ describe("chat:delete-message", () => {
     io = createMockIo({ withTo: true });
     gameManager = new GameManager();
     chatStore = createMockChatStore();
-    setupChatHandler(io as unknown as GameServer, socket as unknown as GameSocket, gameManager, chatStore);
+    setupChatHandler(io as unknown as GameServer, socket as unknown as GameSocket, gameManager, chatStore, dummySessionStore);
   });
 
   it("admin이 로비 메시지를 삭제한다", async () => {
@@ -321,7 +355,7 @@ describe("chat:delete-message", () => {
 
   it("admin이 아닌 유저는 삭제할 수 없다", () => {
     const normalSocket = createMockSocket("socket-2", "Player1");
-    setupChatHandler(io as unknown as GameServer, normalSocket as unknown as GameSocket, gameManager, chatStore);
+    setupChatHandler(io as unknown as GameServer, normalSocket as unknown as GameSocket, gameManager, chatStore, dummySessionStore);
 
     const callback = vi.fn();
     normalSocket._trigger("chat:delete-message", "lobby", "some-id", callback);
@@ -362,7 +396,7 @@ describe("chat:room-message — spectator chat", () => {
     // spectateEnabled를 켜서 관전자 입장이 가능하도록 설정
     gameManager.updateGameOptions(room.id, "host-1", { spectateEnabled: true, spectateChatEnabled: true });
 
-    setupChatHandler(io as unknown as GameServer, socket as unknown as GameSocket, gameManager, chatStore);
+    setupChatHandler(io as unknown as GameServer, socket as unknown as GameSocket, gameManager, chatStore, dummySessionStore);
   });
 
   it("관전자가 spectateChatEnabled=true일 때 메시지를 전송한다", () => {
@@ -447,9 +481,9 @@ describe("chat:room-message — catch-mind integration", () => {
     guesser2Socket = createMockSocket("guesser-2", "Guesser2");
     guesser2Socket.data.roomId = roomId;
 
-    setupChatHandler(io as unknown as GameServer, drawerSocket as unknown as GameSocket, gameManager, chatStore);
-    setupChatHandler(io as unknown as GameServer, guesserSocket as unknown as GameSocket, gameManager, chatStore);
-    setupChatHandler(io as unknown as GameServer, guesser2Socket as unknown as GameSocket, gameManager, chatStore);
+    setupChatHandler(io as unknown as GameServer, drawerSocket as unknown as GameSocket, gameManager, chatStore, dummySessionStore);
+    setupChatHandler(io as unknown as GameServer, guesserSocket as unknown as GameSocket, gameManager, chatStore, dummySessionStore);
+    setupChatHandler(io as unknown as GameServer, guesser2Socket as unknown as GameSocket, gameManager, chatStore, dummySessionStore);
   });
 
   it("출제자(drawer)는 drawing 중 채팅이 차단된다", () => {
@@ -525,6 +559,119 @@ describe("chat:room-message — catch-mind integration", () => {
       io,
       roomId,
       gameManager,
+    );
+  });
+});
+
+describe("chat:whisper", () => {
+  let socket: ReturnType<typeof createMockSocket>;
+  let io: ReturnType<typeof createMockIo>;
+  let gameManager: GameManager;
+  let chatStore: ChatStore;
+  let sessionStore: SessionStore;
+
+  beforeEach(async () => {
+    socket = createMockSocket("socket-1", "Player1");
+    io = createMockIo({ withTo: true });
+    gameManager = new GameManager();
+    chatStore = createMockChatStore();
+    sessionStore = createMockSessionStore();
+
+    // 대상 유저 세션 등록
+    await sessionStore.saveSession("socket-2", {
+      playerId: "socket-2",
+      nickname: "Player2",
+      roomId: null,
+      authenticated: true,
+      authenticatedAt: Date.now(),
+    });
+    await sessionStore.reserveNickname("Player2", "socket-2");
+
+    setupChatHandler(io as unknown as GameServer, socket as unknown as GameSocket, gameManager, chatStore, sessionStore);
+  });
+
+  it("정상적으로 귓속말을 전송한다", async () => {
+    socket.data.authenticated = true;
+    const callback = vi.fn();
+
+    socket._trigger("chat:whisper", { targetNickname: "Player2", message: "안녕" }, callback);
+
+    await vi.waitFor(() => {
+      expect(callback).toHaveBeenCalledWith({ success: true });
+    });
+    expect(io.to).toHaveBeenCalledWith("socket-2");
+    expect(io._toEmit).toHaveBeenCalledWith(
+      "chat:whisper-received",
+      expect.objectContaining({
+        fromNickname: "Player1",
+        message: "안녕",
+      }),
+    );
+  });
+
+  it("인증되지 않은 유저는 귓속말을 보낼 수 없다", () => {
+    socket.data.authenticated = false;
+    const callback = vi.fn();
+
+    socket._trigger("chat:whisper", { targetNickname: "Player2", message: "안녕" }, callback);
+
+    expect(callback).toHaveBeenCalledWith({ success: false, error: "인증이 필요합니다." });
+  });
+
+  it("존재하지 않는 대상에게는 보낼 수 없다", async () => {
+    socket.data.authenticated = true;
+    const callback = vi.fn();
+
+    socket._trigger("chat:whisper", { targetNickname: "없는유저", message: "안녕" }, callback);
+
+    await vi.waitFor(() => {
+      expect(callback).toHaveBeenCalledWith({ success: false, error: "접속 중이 아닌 사용자입니다." });
+    });
+  });
+
+  it("자기 자신에게는 보낼 수 없다", () => {
+    socket.data.authenticated = true;
+    const callback = vi.fn();
+
+    socket._trigger("chat:whisper", { targetNickname: "Player1", message: "안녕" }, callback);
+
+    expect(callback).toHaveBeenCalledWith({ success: false, error: "자신에게는 귓속말을 보낼 수 없습니다." });
+  });
+
+  it("메시지를 500자로 잘라서 전송한다", async () => {
+    socket.data.authenticated = true;
+    const callback = vi.fn();
+    const longMessage = "가".repeat(600);
+
+    socket._trigger("chat:whisper", { targetNickname: "Player2", message: longMessage }, callback);
+
+    await vi.waitFor(() => {
+      expect(callback).toHaveBeenCalledWith({ success: true });
+    });
+    expect(io._toEmit).toHaveBeenCalledWith(
+      "chat:whisper-received",
+      expect.objectContaining({
+        message: "가".repeat(500),
+      }),
+    );
+  });
+
+  it("관리자 닉네임은 '관리자'로 변환된다", async () => {
+    const adminSocket = createMockSocket("socket-admin", "admin");
+    setupChatHandler(io as unknown as GameServer, adminSocket as unknown as GameSocket, gameManager, chatStore, sessionStore);
+    adminSocket.data.authenticated = true;
+    const callback = vi.fn();
+
+    adminSocket._trigger("chat:whisper", { targetNickname: "Player2", message: "관리자 귓속말" }, callback);
+
+    await vi.waitFor(() => {
+      expect(callback).toHaveBeenCalledWith({ success: true });
+    });
+    expect(io._toEmit).toHaveBeenCalledWith(
+      "chat:whisper-received",
+      expect.objectContaining({
+        fromNickname: "관리자",
+      }),
     );
   });
 });

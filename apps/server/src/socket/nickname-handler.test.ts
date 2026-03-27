@@ -86,10 +86,9 @@ describe("setupNicknameHandler", () => {
     });
   });
 
-  it("중복 닉네임을 거부한다", async () => {
-    const otherSocket = createMockSocket("socket-2", "홍길동", { authenticated: false });
+  it("중복 닉네임 시 기존 소켓을 강제 로그아웃하고 새 소켓이 닉네임을 인계한다", async () => {
+    const otherSocket = createMockSocket("socket-2", "홍길동", { authenticated: true });
     io = createMockIo({ sockets: [socket, otherSocket] });
-    // 다른 소켓이 닉네임을 예약한 상태
     await sessionStore.reserveNickname("홍길동", "socket-2");
     await sessionStore.saveSession("socket-2", otherSocket.data);
     setupNicknameHandler(io, socket, sessionStore, gameManager);
@@ -99,11 +98,15 @@ describe("setupNicknameHandler", () => {
 
     await vi.waitFor(() => {
       expect(callback).toHaveBeenCalledWith({
-        success: false,
-        error: "이미 사용 중인 닉네임입니다.",
+        success: true,
+        isAdmin: false,
+        githubRepoUrl: "https://github.com/csh0034/game-hub",
       });
     });
-    expect(socket.data.nickname).toBe("Player_sock");
+    expect(socket.data.nickname).toBe("홍길동");
+    expect(otherSocket.emit).toHaveBeenCalledWith("player:force-logout");
+    expect(otherSocket.data.authenticated).toBe(false);
+    expect(otherSocket.disconnect).toHaveBeenCalledWith(true);
   });
 
   it("자기 자신의 닉네임과 같은 값으로 변경할 수 있다", async () => {

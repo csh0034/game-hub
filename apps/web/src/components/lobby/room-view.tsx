@@ -84,9 +84,11 @@ interface RoomViewProps {
   onKickPlayer?: (targetId: string) => Promise<void>;
   roomMessages: ChatMessage[];
   onSendRoomMessage: (message: string) => void;
+  onlinePlayers?: { nickname: string }[];
+  onWhisper?: (targetNickname: string, message: string) => void;
 }
 
-export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeaveImmediate, onToggleReady, onUpdateGameOptions, onUpdateRoomName, onKickSpectators, onKickPlayer, roomMessages, onSendRoomMessage }: RoomViewProps) {
+export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeaveImmediate, onToggleReady, onUpdateGameOptions, onUpdateRoomName, onKickSpectators, onKickPlayer, roomMessages, onSendRoomMessage, onlinePlayers, onWhisper }: RoomViewProps) {
   const { gameState, gameResult, playerLeftInfo, startGame, requestRematch, setPlayerLeftInfo } = useGame(socket);
   const [pendingOptions, setPendingOptions] = useState<GameOptions | null>(null);
   const [kickConfirmOpen, setKickConfirmOpen] = useState(false);
@@ -213,9 +215,11 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
               <ChatPanel
                 messages={roomMessages}
                 onSendMessage={onSendRoomMessage}
-                placeholder={isSpectating && !spectateChatEnabled ? "관전자 채팅이 허용되지 않습니다" : "게임 채팅..."}
+                placeholder={isSpectating && !spectateChatEnabled ? "관전자 채팅이 허용되지 않습니다" : "게임 채팅... (@닉네임으로 귓속말)"}
                 myNickname={nickname}
                 disabled={isSpectating && !spectateChatEnabled}
+                onlinePlayers={onlinePlayers}
+                onWhisper={onWhisper}
               />
             </div>
           </div>
@@ -778,9 +782,11 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
           <ChatPanel
             messages={roomMessages}
             onSendMessage={onSendRoomMessage}
-            placeholder={isSpectating && !spectateChatEnabled ? "관전자 채팅이 허용되지 않습니다" : "방 채팅..."}
+            placeholder={isSpectating && !spectateChatEnabled ? "관전자 채팅이 허용되지 않습니다" : "방 채팅... (@닉네임으로 귓속말)"}
             myNickname={nickname}
             disabled={isSpectating && !spectateChatEnabled}
+            onlinePlayers={onlinePlayers}
+            onWhisper={onWhisper}
           />
         </div>
         {(room.gameType === "minesweeper" || (room.gameType === "tetris" && room.players.length <= 1 && room.gameOptions?.tetrisMode === "speed-race")) && (

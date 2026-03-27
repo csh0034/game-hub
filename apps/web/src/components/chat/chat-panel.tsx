@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import type { ChatMessage } from "@game-hub/shared-types";
 import { Send, Trash2 } from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
@@ -14,6 +14,8 @@ interface ChatPanelProps {
   isAdmin?: boolean;
   onDeleteMessage?: (messageId: string) => void;
   disabled?: boolean;
+  onlinePlayers?: { nickname: string }[];
+  onWhisper?: (targetNickname: string, message: string) => void;
 }
 
 
@@ -25,11 +27,50 @@ export function ChatPanel({
   isAdmin = false,
   onDeleteMessage,
   disabled = false,
+  onlinePlayers,
+  onWhisper,
 }: ChatPanelProps) {
   const [input, setInput] = useState("");
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [showMentionDropdown, setShowMentionDropdown] = useState(false);
+  const [mentionFilter, setMentionFilter] = useState("");
+  const [mentionIndex, setMentionIndex] = useState(0);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const isComposingRef = useRef(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const filteredPlayers = useMemo(() => {
+    if (!onlinePlayers || !showMentionDropdown) return [];
+    return onlinePlayers
+      .filter((p) => p.nickname !== myNickname)
+      .filter((p) => p.nickname.toLowerCase().includes(mentionFilter.toLowerCase()))
+      .slice(0, 8);
+  }, [onlinePlayers, showMentionDropdown, mentionFilter, myNickname]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setInput(value);
+
+    if (value.startsWith("@") && onlinePlayers && onWhisper) {
+      const spaceIdx = value.indexOf(" ");
+      const filterText = spaceIdx === -1 ? value.slice(1) : "";
+      if (spaceIdx === -1) {
+        setMentionFilter(filterText);
+        setShowMentionDropdown(true);
+        setMentionIndex(0);
+      } else {
+        setShowMentionDropdown(false);
+      }
+    } else {
+      setShowMentionDropdown(false);
+    }
+  };
+
+  const handleSelectMention = (nickname: string) => {
+    setInput(`@${nickname} `);
+    setShowMentionDropdown(false);
+    inputRef.current?.focus();
+  };
 
   // 새 메시지 시 자동 스크롤
   useEffect(() => {
@@ -43,6 +84,23 @@ export function ChatPanel({
     e.preventDefault();
     const trimmed = input.trim();
     if (!trimmed) return;
+
+    if (trimmed.startsWith("@") && onWhisper && onlinePlayers) {
+      const matched = onlinePlayers
+        .filter((p) => p.nickname !== myNickname)
+        .sort((a, b) => b.nickname.length - a.nickname.length)
+        .find((p) => trimmed.startsWith(`@${p.nickname} `));
+
+      if (matched) {
+        const message = trimmed.slice(matched.nickname.length + 2);
+        if (message) {
+          onWhisper(matched.nickname, message);
+          setInput("");
+          return;
+        }
+      }
+    }
+
     onSendMessage(trimmed);
     setInput("");
   };
@@ -118,16 +176,49 @@ export function ChatPanel({
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex gap-2 px-3 py-2.5 border-t border-border">
+      <form onSubmit={handleSubmit} className="relative flex gap-2 px-3 py-2.5 border-t border-border">
+        {showMentionDropdown && filteredPlayers.length > 0 && (
+          <div className="absolute bottom-full left-0 right-0 mb-1 bg-card border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto z-50">
+            {filteredPlayers.map((player, idx) => (
+              <button
+                key={player.nickname}
+                type="button"
+                className={`w-full text-left px-3 py-2 text-sm hover:bg-secondary/50 ${idx === mentionIndex ? "bg-secondary/50" : ""}`}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  handleSelectMention(player.nickname);
+                }}
+              >
+                {player.nickname}
+              </button>
+            ))}
+          </div>
+        )}
         <input
+          ref={inputRef}
           type="text"
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={handleInputChange}
           onCompositionStart={() => { isComposingRef.current = true; }}
           onCompositionEnd={() => { isComposingRef.current = false; }}
           onKeyDown={(e) => {
             if (e.key === "Enter" && isComposingRef.current) {
               e.preventDefault();
+              return;
+            }
+            if (showMentionDropdown && filteredPlayers.length > 0) {
+              if (e.key === "ArrowDown") {
+                e.preventDefault();
+                setMentionIndex((prev) => Math.min(prev + 1, filteredPlayers.length - 1));
+              } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                setMentionIndex((prev) => Math.max(prev - 1, 0));
+              } else if (e.key === "Tab" || (e.key === "Enter" && !isComposingRef.current)) {
+                e.preventDefault();
+                handleSelectMention(filteredPlayers[mentionIndex].nickname);
+              } else if (e.key === "Escape") {
+                setShowMentionDropdown(false);
+              }
             }
           }}
           placeholder={placeholder}

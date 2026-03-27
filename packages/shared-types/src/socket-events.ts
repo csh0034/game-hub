@@ -46,6 +46,7 @@ export interface ClientToServerEvents {
   "chat:room-message": (message: string) => void;
   "chat:request-history": (target: "lobby" | "room", callback: (messages: ChatMessage[]) => void) => void;
   "chat:delete-message": (target: "lobby" | "room", messageId: string, callback: (result: { success: boolean; error?: string }) => void) => void;
+  "chat:whisper": (payload: { targetNickname: string; message: string }, callback: (result: { success: boolean; error?: string }) => void) => void;
 
   // Request Board
   "request:create": (payload: CreateRequestPayload, callback: (request: FeatureRequest | null, error?: string) => void) => void;
@@ -63,6 +64,10 @@ export interface ClientToServerEvents {
 
   // System
   "system:announce": (message: string, callback: (result: { success: boolean; error?: string }) => void) => void;
+
+  // Placard
+  "placard:set": (text: string, callback: (result: { success: boolean; error?: string }) => void) => void;
+  "placard:get": (callback: (text: string | null) => void) => void;
 }
 
 // Server → Client
@@ -104,6 +109,7 @@ export interface ServerToClientEvents {
   "chat:lobby-message": (data: ChatMessage) => void;
   "chat:room-message": (data: ChatMessage) => void;
   "chat:message-deleted": (data: { target: "lobby" | "room"; messageId: string }) => void;
+  "chat:whisper-received": (data: { fromNickname: string; message: string; timestamp: number }) => void;
 
   // Request Board
   "request:created": (request: FeatureRequest) => void;
@@ -116,6 +122,12 @@ export interface ServerToClientEvents {
 
   // Ranking
   "ranking:updated": (data: { key: RankingKey; rankings: RankingEntry[] }) => void;
+
+  // Player
+  "player:force-logout": () => void;
+
+  // Placard
+  "placard:updated": (text: string | null) => void;
 
   // System
   "system:player-count": (data: { count: number; players: { nickname: string; connectedAt: number; isAdmin?: boolean }[] }) => void;

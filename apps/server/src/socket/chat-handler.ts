@@ -9,7 +9,7 @@ import {
 import crypto from "node:crypto";
 import type { CatchMindPublicState } from "@game-hub/shared-types";
 import type { GameManager } from "../games/game-manager.js";
-import type { ChatStore } from "../storage/index.js";
+import type { ChatStore, SessionStore } from "../storage/index.js";
 import { isAdmin } from "../admin.js";
 import { clearCatchMindTimer } from "../games/catch-mind-timer.js";
 import { startCatchMindNextRound } from "./game-handler.js";
@@ -17,7 +17,7 @@ import { startCatchMindNextRound } from "./game-handler.js";
 type IOServer = Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 type IOSocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 
-export function setupChatHandler(io: IOServer, socket: IOSocket, gameManager: GameManager, chatStore: ChatStore) {
+export function setupChatHandler(io: IOServer, socket: IOSocket, gameManager: GameManager, chatStore: ChatStore, sessionStore: SessionStore) {
   socket.on("chat:lobby-message", (message) => {
     if (!socket.data.authenticated) return;
     if (socket.data.roomId) return;
@@ -152,5 +152,25 @@ export function setupChatHandler(io: IOServer, socket: IOSocket, gameManager: Ga
     }
 
     callback({ success: deleted, error: deleted ? undefined : "메시지를 찾을 수 없습니다." });
+  });
+
+  socket.on("chat:whisper", async (payload, callback) => {
+    if (!socket.data.authenticated) return callback({ success: false, error: "인증이 필요합니다." });
+
+    const { targetNickname, message } = payload;
+    if (!targetNickname || !message) return callback({ success: false, error: "잘못된 요청입니다." });
+    if (targetNickname === socket.data.nickname) return callback({ success: false, error: "자신에게는 귓속말을 보낼 수 없습니다." });
+
+    const target = await sessionStore.findSessionByNickname(targetNickname);
+    if (!target) return callback({ success: false, error: "접속 중이 아닌 사용자입니다." });
+
+    const admin = isAdmin(socket.data.nickname);
+    io.to(target.socketId).emit("chat:whisper-received", {
+      fromNickname: admin ? "관리자" : socket.data.nickname,
+      message: message.slice(0, 500),
+      timestamp: Date.now(),
+    });
+
+    callback({ success: true });
   });
 }

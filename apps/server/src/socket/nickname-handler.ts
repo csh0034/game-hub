@@ -37,14 +37,16 @@ export function setupNicknameHandler(
     // Nickname uniqueness check
     const taken = await sessionStore.isNicknameTaken(trimmed, socket.id!);
     if (taken) {
-      // Check if the holder is actually connected
       const prev = await sessionStore.findSessionByNickname(trimmed);
-      if (prev && io.sockets.sockets.has(prev.socketId)) {
-        callback({ success: false, error: "이미 사용 중인 닉네임입니다." });
-        return;
-      }
-      // Previous holder disconnected — allow reconnection
       if (prev) {
+        // Force logout the previous holder (last tab wins)
+        const oldSocket = io.sockets.sockets.get(prev.socketId);
+        if (oldSocket) {
+          oldSocket.emit("player:force-logout");
+          oldSocket.data.authenticated = false;
+          oldSocket.disconnect(true);
+        }
+
         const oldRoomId = prev.data.roomId;
         await sessionStore.deleteSession(prev.socketId);
         await sessionStore.releaseNickname(trimmed);

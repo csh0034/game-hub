@@ -19,6 +19,7 @@ import { ChatPanel } from "@/components/chat/chat-panel";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import { AnnounceDialog } from "@/components/common/announce-dialog";
 import { AnnouncementOverlay } from "@/components/common/announcement-overlay";
+import { PlacardDialog } from "@/components/common/placard-dialog";
 import { RequestBoard } from "@/components/request-board/request-board";
 import LobbyRankingPanel from "@/components/ranking/lobby-ranking-panel";
 
@@ -64,7 +65,7 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
   const { socket, isConnected, playerCount, onlinePlayers } = useSocket();
   const { rooms, currentRoom, isSpectating, createRoom, joinRoom, spectateRoom, leaveRoom, kickSpectators, kickPlayer, toggleReady, updateRoomName, updateGameOptions } =
     useLobby(socket);
-  const { lobbyMessages, roomMessages, sendLobbyMessage, sendRoomMessage, clearRoomMessages, requestLobbyHistory, requestRoomHistory, deleteMessage } =
+  const { lobbyMessages, roomMessages, sendLobbyMessage, sendRoomMessage, clearRoomMessages, requestLobbyHistory, requestRoomHistory, deleteMessage, sendWhisper } =
     useChat(socket);
   const { requests, createRequest, acceptRequest, rejectRequest, resolveRequest, stopRequest, changeLabelRequest, deleteRequest } = useRequests(socket);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -79,7 +80,10 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
   const [announcement, setAnnouncement] = useState<{ message: string; receivedAt: number } | null>(
     null,
   );
+  const [placardOpen, setPlacardOpen] = useState(false);
+  const [placardText, setPlacardText] = useState<string | null>(null);
   const confirmResolveRef = useRef<((value: boolean) => void) | null>(null);
+  const [forceLoggedOut, setForceLoggedOut] = useState(false);
 
   const nickname = useSyncExternalStore(
     store.subscribe,
@@ -87,9 +91,33 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
     store.getServerSnapshot,
   );
 
+  // 다른 탭에서 같은 닉네임으로 접속 시 강제 로그아웃 수신
+  useEffect(() => {
+    if (!socket) return;
+    const handler = () => {
+      setForceLoggedOut(true);
+      setIsAdmin(false);
+      isAdminRef.current = false;
+      if (currentRoom) {
+        useLobbyStore.getState().setCurrentRoom(null);
+        useLobbyStore.getState().setIsSpectating(false);
+        useGameStore.getState().reset();
+        history.replaceState(null, "", "/lobby");
+      }
+      toast.info("다른 탭에서 접속하여 로그아웃되었습니다.");
+      // 서버가 disconnect(true)를 호출하면 "io server disconnect"로 끊기며
+      // Socket.IO가 자동 재접속하지 않으므로 수동으로 재접속한다.
+      socket.once("disconnect", () => {
+        socket.connect();
+      });
+    };
+    socket.on("player:force-logout", handler);
+    return () => { socket.off("player:force-logout", handler); };
+  }, [socket, currentRoom]);
+
   // 재접속 시 저장된 닉네임을 서버에 전송 + pendingRoomId 자동 입장
   useEffect(() => {
-    if (!socket || !isConnected || !nickname) return;
+    if (!socket || !isConnected || !nickname || forceLoggedOut) return;
 
     socket.emit("player:set-nickname", nickname, (result) => {
       if (!result.success) {
@@ -131,7 +159,7 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
           useLobbyStore.getState().setPendingRoomId(null);
         });
     });
-  }, [socket, isConnected, nickname, requestLobbyHistory, joinRoom, spectateRoom, clearRoomMessages, requestRoomHistory]);
+  }, [socket, isConnected, nickname, forceLoggedOut, requestLobbyHistory, joinRoom, spectateRoom, clearRoomMessages, requestRoomHistory]);
 
   // 관리자 공지 수신 (관리자 본인은 제외)
   useEffect(() => {
@@ -147,7 +175,21 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
     };
   }, [socket]);
 
+  // 플랜카드 초기 로드 + 실시간 업데이트
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+    socket.emit("placard:get", (text) => {
+      setPlacardText(text);
+    });
+    const handler = (text: string | null) => {
+      setPlacardText(text);
+    };
+    socket.on("placard:updated", handler);
+    return () => { socket.off("placard:updated", handler); };
+  }, [socket, isConnected]);
+
   const handleNicknameComplete = useCallback((newNickname: string) => {
+    setForceLoggedOut(false);
     store.set(newNickname);
   }, []);
 
@@ -283,8 +325,8 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
     return null;
   }
 
-  // 닉네임 미설정 시 닉네임 폼 표시
-  if (nickname === null) {
+  // 닉네임 미설정 또는 다른 탭에서 강제 로그아웃된 경우 닉네임 폼 표시
+  if (nickname === null || forceLoggedOut) {
     return <NicknameForm onComplete={handleNicknameComplete} />;
   }
 
@@ -317,6 +359,24 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
     />
   );
 
+  const placardDialog = (
+    <PlacardDialog
+      open={placardOpen}
+      currentText={placardText}
+      onClose={() => setPlacardOpen(false)}
+      onSubmit={(text) => {
+        socket?.emit("placard:set", text, (result) => {
+          if (result.success) {
+            setPlacardOpen(false);
+            toast.success(text.trim() ? "플랜카드를 적용했습니다" : "플랜카드를 삭제했습니다");
+          } else {
+            toast.error(result.error ?? "플랜카드 설정에 실패했습니다");
+          }
+        });
+      }}
+    />
+  );
+
   if (currentRoom) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -336,6 +396,8 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
             onKickPlayer={kickPlayer}
             roomMessages={roomMessages}
             onSendRoomMessage={sendRoomMessage}
+            onlinePlayers={onlinePlayers}
+            onWhisper={sendWhisper}
           />
         </main>
         <Footer githubRepoUrl={githubRepoUrl} />
@@ -384,14 +446,28 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
                 )}
               </Link>
               {isAdmin && (
-                <button
-                  onClick={() => setAnnounceOpen(true)}
-                  className="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  공지하기
-                </button>
+                <>
+                  <button
+                    onClick={() => setAnnounceOpen(true)}
+                    className="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    공지하기
+                  </button>
+                  <button
+                    onClick={() => setPlacardOpen(true)}
+                    className="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    플랜카드
+                  </button>
+                </>
               )}
             </div>
+
+            {placardText && (
+              <div className="px-4 py-3 rounded-lg bg-primary/10 border border-primary/20 text-sm text-center font-medium">
+                {placardText}
+              </div>
+            )}
 
             {activeTab === "lobby" ? (
               <>
@@ -433,10 +509,12 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
                 <ChatPanel
                   messages={lobbyMessages}
                   onSendMessage={sendLobbyMessage}
-                  placeholder="로비 채팅..."
+                  placeholder="로비 채팅... (@닉네임으로 귓속말)"
                   myNickname={nickname ?? undefined}
                   isAdmin={isAdmin}
                   onDeleteMessage={(messageId) => deleteMessage("lobby", messageId)}
+                  onlinePlayers={onlinePlayers}
+                  onWhisper={sendWhisper}
                 />
               </div>
               <LobbyRankingPanel
@@ -450,6 +528,7 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
       </main>
       <Footer githubRepoUrl={githubRepoUrl} />
       {announceDialog}
+      {placardDialog}
       <AnnouncementOverlay
         message={announcement?.message ?? null}
         receivedAt={announcement?.receivedAt ?? null}

@@ -57,6 +57,7 @@ export function createMockSocket(id: string, nickname: string, options?: MockSoc
     _toEmit: toEmit,
   };
 
+  socket.disconnect = vi.fn();
   if (withJoin) socket.join = vi.fn();
   if (withLeave) socket.leave = vi.fn();
   if (withEmit) socket.emit = vi.fn();

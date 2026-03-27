@@ -15,6 +15,7 @@ import { setupGameHandler } from "./socket/game-handler.js";
 import { setupNicknameHandler } from "./socket/nickname-handler.js";
 import { setupRequestHandler } from "./socket/request-handler.js";
 import { setupAnnounceHandler } from "./socket/announce-handler.js";
+import { setupPlacardHandler } from "./socket/placard-handler.js";
 import { broadcastAuthenticatedCount } from "./socket/broadcast-player-count.js";
 import { GameManager } from "./games/game-manager.js";
 import { parseCorsOrigin } from "./cors.js";
@@ -69,7 +70,7 @@ async function bootstrap() {
     gameManager = new GameManager(storage.roomStore);
   }
 
-  const { chatStore, sessionStore, requestStore, rankingStore } = storage;
+  const { chatStore, sessionStore, requestStore, rankingStore, placardStore } = storage;
 
   app.get("/health", (_req, res) => {
     res.json({ status: "ok", rooms: gameManager.getRoomCount() });
@@ -87,10 +88,11 @@ async function bootstrap() {
 
     setupNicknameHandler(io, socket, sessionStore, gameManager);
     setupLobbyHandler(io, socket, gameManager, chatStore);
-    setupChatHandler(io, socket, gameManager, chatStore);
+    setupChatHandler(io, socket, gameManager, chatStore, sessionStore);
     setupGameHandler(io, socket, gameManager, rankingStore);
     setupRequestHandler(io, socket, requestStore);
     setupAnnounceHandler(io, socket);
+    setupPlacardHandler(io, socket, placardStore);
 
     socket.on("disconnect", async () => {
       console.log(`[disconnect] ${socket.id}`);

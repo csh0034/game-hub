@@ -1,6 +1,7 @@
 import { useEffect, useCallback } from "react";
 import type { GameSocket } from "@/lib/socket";
 import { useChatStore } from "@/stores/chat-store";
+import { toast } from "sonner";
 
 export function useChat(socket: GameSocket | null) {
   const {
@@ -29,11 +30,16 @@ export function useChat(socket: GameSocket | null) {
       }
     };
     socket.on("chat:message-deleted", handleMessageDeleted);
+    const handleWhisperReceived = (data: { fromNickname: string; message: string }) => {
+      toast(`${data.fromNickname}님의 귓속말`, { description: data.message, duration: 5000 });
+    };
+    socket.on("chat:whisper-received", handleWhisperReceived);
 
     return () => {
       socket.off("chat:lobby-message", addLobbyMessage);
       socket.off("chat:room-message", addRoomMessage);
       socket.off("chat:message-deleted", handleMessageDeleted);
+      socket.off("chat:whisper-received", handleWhisperReceived);
     };
   }, [socket, addLobbyMessage, addRoomMessage, removeLobbyMessage, removeRoomMessage]);
 
@@ -68,6 +74,19 @@ export function useChat(socket: GameSocket | null) {
     [socket],
   );
 
+  const sendWhisper = useCallback(
+    (targetNickname: string, message: string) => {
+      socket?.emit("chat:whisper", { targetNickname, message }, (result) => {
+        if (result.success) {
+          toast("귓속말이 전송되었습니다", { duration: 2000 });
+        } else {
+          toast.error(result.error ?? "귓속말 전송에 실패했습니다");
+        }
+      });
+    },
+    [socket],
+  );
+
   return {
     lobbyMessages,
     roomMessages,
@@ -78,5 +97,6 @@ export function useChat(socket: GameSocket | null) {
     clearRoomMessages,
     clearLobbyMessages,
     deleteMessage,
+    sendWhisper,
   };
 }

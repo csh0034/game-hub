@@ -98,6 +98,32 @@ describe("InMemoryRankingStore", () => {
       expect(result.entries).toHaveLength(1);
     });
 
+    it("기존 중복 닉네임 데이터를 자동 정리한다 (더 나쁜 기록 제출 시)", async () => {
+      // 중복 방지 이전에 쌓인 기존 중복 데이터 시뮬레이션
+      await store.addEntry(key, createEntry("1", "Alice", 5000), true);
+      // 내부 배열에 직접 중복 삽입 (레거시 데이터 시뮬레이션)
+      const rankings = await store.getRankings(key);
+      rankings.push(createEntry("dup", "Alice", 8000));
+
+      const result = await store.addEntry(key, createEntry("3", "Alice", 9000), true);
+
+      expect(result.rank).toBeNull();
+      expect(result.entries.filter((e) => e.nickname === "Alice")).toHaveLength(1);
+      expect(result.entries.find((e) => e.nickname === "Alice")!.score).toBe(5000);
+    });
+
+    it("기존 중복 닉네임 데이터를 자동 정리한다 (더 좋은 기록 제출 시)", async () => {
+      await store.addEntry(key, createEntry("1", "Alice", 10000), true);
+      const rankings = await store.getRankings(key);
+      rankings.push(createEntry("dup", "Alice", 8000));
+
+      const result = await store.addEntry(key, createEntry("3", "Alice", 3000), true);
+
+      expect(result.rank).toBe(1);
+      expect(result.entries.filter((e) => e.nickname === "Alice")).toHaveLength(1);
+      expect(result.entries.find((e) => e.nickname === "Alice")!.score).toBe(3000);
+    });
+
     it("다른 닉네임은 별도로 저장된다", async () => {
       await store.addEntry(key, createEntry("1", "Alice", 5000), true);
       const result = await store.addEntry(key, createEntry("2", "Bob", 3000), true);

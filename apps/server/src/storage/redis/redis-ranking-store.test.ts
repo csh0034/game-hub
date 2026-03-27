@@ -139,6 +139,39 @@ describe("RedisRankingStore", () => {
       expect(redis.set).not.toHaveBeenCalled();
     });
 
+    it("기존 중복 닉네임 데이터를 자동 정리한다 (더 나쁜 기록 제출 시)", async () => {
+      const existing = [
+        createEntry("e1", 5000, "Alice"),
+        createEntry("e-dup", 8000, "Alice"),
+        createEntry("e3", 3000, "Bob"),
+      ];
+      redis.get.mockResolvedValue(JSON.stringify(existing));
+
+      const newEntry = createEntry("e4", 9000, "Alice");
+      const result = await store.addEntry(key, newEntry, true);
+
+      expect(result.rank).toBeNull();
+      expect(result.entries.filter((e) => e.nickname === "Alice")).toHaveLength(1);
+      expect(result.entries.find((e) => e.nickname === "Alice")!.score).toBe(5000);
+      expect(redis.set).toHaveBeenCalled();
+    });
+
+    it("기존 중복 닉네임 데이터를 자동 정리한다 (더 좋은 기록 제출 시)", async () => {
+      const existing = [
+        createEntry("e1", 10000, "Alice"),
+        createEntry("e-dup", 8000, "Alice"),
+        createEntry("e3", 3000, "Bob"),
+      ];
+      redis.get.mockResolvedValue(JSON.stringify(existing));
+
+      const newEntry = createEntry("e4", 2000, "Alice");
+      const result = await store.addEntry(key, newEntry, true);
+
+      expect(result.rank).toBe(1);
+      expect(result.entries.filter((e) => e.nickname === "Alice")).toHaveLength(1);
+      expect(result.entries.find((e) => e.nickname === "Alice")!.score).toBe(2000);
+    });
+
     it("Redis 에러 시 rank null과 빈 배열을 반환한다", async () => {
       redis.set.mockRejectedValue(new Error("fail"));
 

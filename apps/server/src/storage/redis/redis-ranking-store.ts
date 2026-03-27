@@ -26,12 +26,27 @@ export class RedisRankingStore implements RankingStore {
       const existing = await this.getRankings(key);
 
       // 같은 닉네임의 기존 기록 확인 — 더 좋은 기록일 때만 교체
-      const existingIdx = existing.findIndex((e) => e.nickname === entry.nickname);
-      if (existingIdx !== -1) {
-        const prev = existing[existingIdx];
-        const isWorse = sortAsc ? entry.score >= prev.score : entry.score <= prev.score;
-        if (isWorse) return { rank: null, entries: existing };
-        existing.splice(existingIdx, 1);
+      const prevEntries = existing.filter((e) => e.nickname === entry.nickname);
+      if (prevEntries.length > 0) {
+        const best = prevEntries.reduce((a, b) =>
+          (sortAsc ? a.score <= b.score : a.score >= b.score) ? a : b,
+        );
+        const isWorse = sortAsc ? entry.score >= best.score : entry.score <= best.score;
+        if (isWorse) {
+          // 기존 중복 정리 후 최고 기록만 유지
+          const cleaned = existing.filter((e) => e.nickname !== entry.nickname);
+          cleaned.push(best);
+          cleaned.sort((a, b) => (sortAsc ? a.score - b.score : b.score - a.score));
+          const trimmed = cleaned.slice(0, MAX_ENTRIES);
+          if (cleaned.length !== existing.length) {
+            await this.redis.set(`ranking:${key}`, JSON.stringify(trimmed));
+          }
+          return { rank: null, entries: trimmed };
+        }
+        // 기존 기록 모두 제거 (새 기록으로 교체)
+        const cleaned = existing.filter((e) => e.nickname !== entry.nickname);
+        existing.length = 0;
+        existing.push(...cleaned);
       }
 
       const entries = [...existing, entry];

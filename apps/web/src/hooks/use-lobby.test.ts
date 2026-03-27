@@ -259,6 +259,35 @@ describe("useLobby", () => {
     ).rejects.toBe("방장만 가능");
   });
 
+  it("switchRole이 lobby:switch-role을 emit하고 관전 상태를 갱신한다", async () => {
+    const socket = createMockSocket();
+    socket.emit.mockImplementation(((event: string, callback?: (result: { success: boolean; role?: string }) => void) => {
+      if (event === "lobby:switch-role" && callback) callback({ success: true, role: "spectator" });
+    }) as typeof socket.emit);
+
+    const { result } = renderHook(() => useLobby(socket as never));
+
+    await act(async () => {
+      await result.current.switchRole();
+    });
+
+    expect(socket.emit).toHaveBeenCalledWith("lobby:switch-role", expect.any(Function));
+    expect(useLobbyStore.getState().isSpectating).toBe(true);
+  });
+
+  it("switchRole 실패 시 reject한다", async () => {
+    const socket = createMockSocket();
+    socket.emit.mockImplementation(((event: string, callback?: (result: { success: boolean; error?: string }) => void) => {
+      if (event === "lobby:switch-role" && callback) callback({ success: false, error: "전환 불가" });
+    }) as typeof socket.emit);
+
+    const { result } = renderHook(() => useLobby(socket as never));
+
+    await expect(
+      act(() => result.current.switchRole()),
+    ).rejects.toBe("전환 불가");
+  });
+
   it("lobby:spectator-kicked 이벤트로 로비로 복귀한다", () => {
     const socket = createMockSocket();
     useLobbyStore.setState({ currentRoom: createRoom(), isSpectating: true });

@@ -253,6 +253,29 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
     callback({ success: true });
   });
 
+  socket.on("lobby:switch-role", (callback) => {
+    const roomId = socket.data.roomId;
+    if (!roomId) return callback({ success: false, error: "방에 참가하고 있지 않습니다." });
+
+    if (socket.data.isSpectator) {
+      const room = gameManager.switchToPlayer(roomId, socket.id!);
+      if (!room) return callback({ success: false, error: "플레이어로 전환할 수 없습니다." });
+      socket.data.isSpectator = false;
+      io.to(roomId).emit("lobby:room-updated", room);
+      io.emit("lobby:room-updated", room);
+      emitSystemMessage(roomId, `${socket.data.nickname}님이 플레이어로 전환했습니다.`);
+      callback({ success: true, role: "player" });
+    } else {
+      const room = gameManager.switchToSpectator(roomId, socket.id!);
+      if (!room) return callback({ success: false, error: "관전자로 전환할 수 없습니다." });
+      socket.data.isSpectator = true;
+      io.to(roomId).emit("lobby:room-updated", room);
+      io.emit("lobby:room-updated", room);
+      emitSystemMessage(roomId, `${socket.data.nickname}님이 관전자로 전환했습니다.`);
+      callback({ success: true, role: "spectator" });
+    }
+  });
+
   socket.on("lobby:kick", (targetId, callback) => {
     const roomId = socket.data.roomId;
     if (!roomId) return callback({ success: false, error: "방에 참가하고 있지 않습니다." });

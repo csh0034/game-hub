@@ -129,6 +129,17 @@ export function useLobby(socket: GameSocket | null) {
     [socket]
   );
 
+  const switchRole = useCallback((): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      if (!socket) return reject("Not connected");
+      socket.emit("lobby:switch-role", (result) => {
+        if (!result.success) return reject(result.error);
+        setIsSpectating(result.role === "spectator");
+        resolve();
+      });
+    });
+  }, [socket, setIsSpectating]);
+
   const toggleReady = useCallback(() => {
     if (!socket) return;
     socket.emit("lobby:toggle-ready");
@@ -163,5 +174,5 @@ export function useLobby(socket: GameSocket | null) {
     [socket]
   );
 
-  return { rooms, currentRoom, isSpectating, createRoom, joinRoom, spectateRoom, leaveRoom, kickSpectators, kickPlayer, toggleReady, updateRoomName, updateGameOptions };
+  return { rooms, currentRoom, isSpectating, createRoom, joinRoom, spectateRoom, leaveRoom, kickSpectators, kickPlayer, switchRole, toggleReady, updateRoomName, updateGameOptions };
 }

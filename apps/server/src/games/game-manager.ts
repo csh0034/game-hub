@@ -299,6 +299,36 @@ export class GameManager {
     return removedIds;
   }
 
+  switchToSpectator(roomId: string, playerId: string): Room | null {
+    const room = this.rooms.get(roomId);
+    if (!room) return null;
+    if (room.status !== "waiting") return null;
+    if (!room.gameOptions?.spectateEnabled) return null;
+    if (room.hostId === playerId) return null;
+    if (room.spectators.length >= MAX_SPECTATORS) return null;
+    const playerIndex = room.players.findIndex((p) => p.id === playerId);
+    if (playerIndex === -1) return null;
+    const [player] = room.players.splice(playerIndex, 1);
+    player.isReady = false;
+    room.spectators.push(player);
+    this.persistRoom(room);
+    return room;
+  }
+
+  switchToPlayer(roomId: string, playerId: string): Room | null {
+    const room = this.rooms.get(roomId);
+    if (!room) return null;
+    if (room.status !== "waiting") return null;
+    if (room.players.length >= room.maxPlayers) return null;
+    const spectatorIndex = room.spectators.findIndex((p) => p.id === playerId);
+    if (spectatorIndex === -1) return null;
+    const [spectator] = room.spectators.splice(spectatorIndex, 1);
+    spectator.isReady = false;
+    room.players.push(spectator);
+    this.persistRoom(room);
+    return room;
+  }
+
   isSpectator(roomId: string, playerId: string): boolean {
     const room = this.rooms.get(roomId);
     if (!room) return false;

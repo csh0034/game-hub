@@ -82,13 +82,14 @@ interface RoomViewProps {
   onUpdateRoomName?: (name: string) => Promise<void>;
   onKickSpectators?: () => Promise<void>;
   onKickPlayer?: (targetId: string) => Promise<void>;
+  onSwitchRole?: () => Promise<void>;
   roomMessages: ChatMessage[];
   onSendRoomMessage: (message: string) => void;
   onlinePlayers?: { nickname: string }[];
   onWhisper?: (targetNickname: string, message: string) => void;
 }
 
-export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeaveImmediate, onToggleReady, onUpdateGameOptions, onUpdateRoomName, onKickSpectators, onKickPlayer, roomMessages, onSendRoomMessage, onlinePlayers, onWhisper }: RoomViewProps) {
+export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeaveImmediate, onToggleReady, onUpdateGameOptions, onUpdateRoomName, onKickSpectators, onKickPlayer, onSwitchRole, roomMessages, onSendRoomMessage, onlinePlayers, onWhisper }: RoomViewProps) {
   const { gameState, gameResult, playerLeftInfo, startGame, requestRematch, setPlayerLeftInfo } = useGame(socket);
   const [pendingOptions, setPendingOptions] = useState<GameOptions | null>(null);
   const [kickConfirmOpen, setKickConfirmOpen] = useState(false);
@@ -337,14 +338,25 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
             </div>
           ))}
           {Array.from({ length: room.maxPlayers - room.players.length }).map(
-            (_, i) => (
-              <div
-                key={`empty-${i}`}
-                className="flex items-center bg-secondary/20 rounded-lg px-4 py-3 border border-dashed border-border"
-              >
-                <span className="text-sm text-muted-foreground">대기 중...</span>
-              </div>
-            )
+            (_, i) => {
+              const canSwitch = isSpectating && !isPlaying && room.gameOptions?.spectateEnabled && onSwitchRole;
+              return canSwitch ? (
+                <button
+                  key={`empty-${i}`}
+                  onClick={() => onSwitchRole()}
+                  className="flex items-center bg-secondary/20 rounded-lg px-4 py-3 border border-dashed border-border hover:border-primary hover:bg-primary/5 cursor-pointer transition-colors w-full text-left"
+                >
+                  <span className="text-sm text-primary">클릭하여 플레이어로 이동</span>
+                </button>
+              ) : (
+                <div
+                  key={`empty-${i}`}
+                  className="flex items-center bg-secondary/20 rounded-lg px-4 py-3 border border-dashed border-border"
+                >
+                  <span className="text-sm text-muted-foreground">대기 중...</span>
+                </div>
+              );
+            }
           )}
         </div>
       </div>
@@ -380,14 +392,25 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
               </div>
             ))}
             {Array.from({ length: MAX_SPECTATORS - room.spectators.length }).map(
-              (_, i) => (
-                <div
-                  key={`empty-spectator-${i}`}
-                  className="flex items-center bg-secondary/20 rounded-lg px-4 py-3 border border-dashed border-border"
-                >
-                  <span className="text-sm text-muted-foreground">관전 대기...</span>
-                </div>
-              )
+              (_, i) => {
+                const canSwitch = !isSpectating && !isHost && !isPlaying && room.gameOptions?.spectateEnabled && onSwitchRole;
+                return canSwitch ? (
+                  <button
+                    key={`empty-spectator-${i}`}
+                    onClick={() => onSwitchRole()}
+                    className="flex items-center bg-secondary/20 rounded-lg px-4 py-3 border border-dashed border-border hover:border-amber-500 hover:bg-amber-500/5 cursor-pointer transition-colors w-full text-left"
+                  >
+                    <span className="text-sm text-amber-600">클릭하여 관전자로 이동</span>
+                  </button>
+                ) : (
+                  <div
+                    key={`empty-spectator-${i}`}
+                    className="flex items-center bg-secondary/20 rounded-lg px-4 py-3 border border-dashed border-border"
+                  >
+                    <span className="text-sm text-muted-foreground">관전 대기...</span>
+                  </div>
+                );
+              }
             )}
           </div>
         </div>

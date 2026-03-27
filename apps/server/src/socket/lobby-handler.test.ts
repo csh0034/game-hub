@@ -992,3 +992,92 @@ describe("setupLobbyHandler — lobby:kick-spectators", () => {
     expect(callback).toHaveBeenCalledWith({ success: false, error: "방에 참가하고 있지 않습니다." });
   });
 });
+
+describe("setupLobbyHandler — lobby:switch-role", () => {
+  let socket1: ReturnType<typeof createMockSocket>;
+  let socket2: ReturnType<typeof createMockSocket>;
+  let socket3: ReturnType<typeof createMockSocket>;
+  let io: ReturnType<typeof createMockIo>;
+  let gameManager: GameManager;
+  let chatStore: InMemoryChatStore;
+
+  beforeEach(() => {
+    socket1 = createMockSocket("socket-1", "Player1");
+    socket2 = createMockSocket("socket-2", "Player2");
+    socket3 = createMockSocket("socket-3", "Player3");
+    io = createMockIo({ withTo: true, sockets: [socket1 as unknown as GameSocket, socket2 as unknown as GameSocket, socket3 as unknown as GameSocket] });
+    gameManager = new GameManager();
+    chatStore = new InMemoryChatStore();
+  });
+
+  function setupRoom() {
+    setupLobbyHandler(io as unknown as GameServer, socket1 as unknown as GameSocket, gameManager, chatStore);
+    setupLobbyHandler(io as unknown as GameServer, socket2 as unknown as GameSocket, gameManager, chatStore);
+    setupLobbyHandler(io as unknown as GameServer, socket3 as unknown as GameSocket, gameManager, chatStore);
+
+    const createCallback = vi.fn();
+    socket1._trigger("lobby:create-room", { gameType: "catch-mind", name: "Test Room", gameOptions: { spectateEnabled: true } }, createCallback);
+    const room = createCallback.mock.calls[0][0];
+
+    const joinCallback = vi.fn();
+    socket2._trigger("lobby:join-room", { roomId: room.id }, joinCallback);
+
+    return room;
+  }
+
+  it("플레이어가 관전자로 전환한다", () => {
+    const room = setupRoom();
+    socket2.data.roomId = room.id;
+
+    const callback = vi.fn();
+    socket2._trigger("lobby:switch-role", callback);
+
+    expect(callback).toHaveBeenCalledWith({ success: true, role: "spectator" });
+    expect(socket2.data.isSpectator).toBe(true);
+    const updatedRoom = gameManager.getRoom(room.id);
+    expect(updatedRoom!.players).toHaveLength(1);
+    expect(updatedRoom!.spectators).toHaveLength(1);
+    expect(updatedRoom!.spectators[0].id).toBe("socket-2");
+  });
+
+  it("관전자가 플레이어로 전환한다", () => {
+    const room = setupRoom();
+    socket3.data.roomId = room.id;
+
+    // socket3를 관전자로 참가
+    const spectateCallback = vi.fn();
+    socket3._trigger("lobby:join-spectate", { roomId: room.id }, spectateCallback);
+    socket3.data.roomId = room.id;
+    socket3.data.isSpectator = true;
+
+    const callback = vi.fn();
+    socket3._trigger("lobby:switch-role", callback);
+
+    expect(callback).toHaveBeenCalledWith({ success: true, role: "player" });
+    expect(socket3.data.isSpectator).toBe(false);
+    const updatedRoom = gameManager.getRoom(room.id);
+    expect(updatedRoom!.spectators).toHaveLength(0);
+    expect(updatedRoom!.players.some((p: { id: string }) => p.id === "socket-3")).toBe(true);
+  });
+
+  it("방장은 관전자로 전환할 수 없다", () => {
+    const room = setupRoom();
+    socket1.data.roomId = room.id;
+
+    const callback = vi.fn();
+    socket1._trigger("lobby:switch-role", callback);
+
+    expect(callback).toHaveBeenCalledWith({ success: false, error: "관전자로 전환할 수 없습니다." });
+    expect(socket1.data.isSpectator).toBeUndefined();
+  });
+
+  it("방에 참가하지 않은 상태에서 전환하면 에러를 반환한다", () => {
+    setupLobbyHandler(io as unknown as GameServer, socket1 as unknown as GameSocket, gameManager, chatStore);
+    socket1.data.roomId = null;
+
+    const callback = vi.fn();
+    socket1._trigger("lobby:switch-role", callback);
+
+    expect(callback).toHaveBeenCalledWith({ success: false, error: "방에 참가하고 있지 않습니다." });
+  });
+});

@@ -27,6 +27,7 @@ export interface ClientToServerEvents {
   "lobby:join-spectate": (payload: JoinRoomPayload, callback: (room: Room | null, error?: string) => void) => void;
   "lobby:kick-spectators": (callback: (result: { success: boolean; error?: string }) => void) => void;
   "lobby:kick": (targetId: string, callback: (result: { success: boolean; error?: string }) => void) => void;
+  "lobby:switch-role": (callback: (result: { success: boolean; error?: string; role?: "player" | "spectator" }) => void) => void;
 
   // Game
   "game:move": (move: GameMove) => void;

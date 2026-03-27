@@ -399,6 +399,76 @@ describe("GameManager", () => {
       expect(reset!.spectators).toHaveLength(1);
     });
 
+    it("플레이어를 관전자로 전환한다", () => {
+      const room = gm.createRoom({ ...gomokuPayload, gameOptions: { spectateEnabled: true } }, host);
+      gm.joinRoom(room.id, guest);
+      const result = gm.switchToSpectator(room.id, guest.id);
+      expect(result).not.toBeNull();
+      expect(result!.players).toHaveLength(1);
+      expect(result!.spectators).toHaveLength(1);
+      expect(result!.spectators[0].id).toBe("guest-1");
+      expect(result!.spectators[0].isReady).toBe(false);
+    });
+
+    it("방장은 관전자로 전환할 수 없다", () => {
+      const room = gm.createRoom({ ...gomokuPayload, gameOptions: { spectateEnabled: true } }, host);
+      gm.joinRoom(room.id, guest);
+      expect(gm.switchToSpectator(room.id, host.id)).toBeNull();
+    });
+
+    it("관전 미허용 방에서는 관전자로 전환할 수 없다", () => {
+      const room = gm.createRoom(gomokuPayload, host);
+      gm.joinRoom(room.id, guest);
+      expect(gm.switchToSpectator(room.id, guest.id)).toBeNull();
+    });
+
+    it("관전자가 가득 차면 관전자로 전환할 수 없다", () => {
+      const room = gm.createRoom({ ...gomokuPayload, gameOptions: { spectateEnabled: true } }, host);
+      gm.joinRoom(room.id, guest);
+      for (let i = 0; i < 4; i++) {
+        gm.addSpectator(room.id, { id: `spec-${i}`, nickname: `Spec${i}`, isReady: false });
+      }
+      expect(gm.switchToSpectator(room.id, guest.id)).toBeNull();
+    });
+
+    it("playing 상태에서는 관전자로 전환할 수 없다", () => {
+      const h: Player = { id: "host-p", nickname: "Host", isReady: true };
+      const g: Player = { id: "guest-p", nickname: "Guest", isReady: true };
+      const room = gm.createRoom({ ...gomokuPayload, gameOptions: { spectateEnabled: true } }, h);
+      gm.joinRoom(room.id, g);
+      gm.startGame(room.id);
+      expect(gm.switchToSpectator(room.id, g.id)).toBeNull();
+    });
+
+    it("관전자를 플레이어로 전환한다", () => {
+      const room = gm.createRoom({ ...gomokuPayload, gameOptions: { spectateEnabled: true } }, host);
+      gm.addSpectator(room.id, spectator);
+      const result = gm.switchToPlayer(room.id, spectator.id);
+      expect(result).not.toBeNull();
+      expect(result!.spectators).toHaveLength(0);
+      expect(result!.players).toHaveLength(2);
+      expect(result!.players[1].id).toBe("spec-1");
+      expect(result!.players[1].isReady).toBe(false);
+    });
+
+    it("플레이어가 가득 차면 플레이어로 전환할 수 없다", () => {
+      const room = gm.createRoom({ ...gomokuPayload, gameOptions: { spectateEnabled: true } }, host);
+      gm.joinRoom(room.id, guest);
+      gm.addSpectator(room.id, spectator);
+      // 오목은 maxPlayers=2이므로 이미 가득 참
+      expect(gm.switchToPlayer(room.id, spectator.id)).toBeNull();
+    });
+
+    it("playing 상태에서는 플레이어로 전환할 수 없다", () => {
+      const h: Player = { id: "host-p", nickname: "Host", isReady: true };
+      const g: Player = { id: "guest-p", nickname: "Guest", isReady: true };
+      const room = gm.createRoom({ ...gomokuPayload, gameOptions: { spectateEnabled: true, spectateInGameEnabled: true } }, h);
+      gm.joinRoom(room.id, g);
+      gm.startGame(room.id);
+      gm.addSpectator(room.id, spectator);
+      expect(gm.switchToPlayer(room.id, spectator.id)).toBeNull();
+    });
+
     it("replacePlayerId로 관전자 ID를 교체한다", () => {
       const room = gm.createRoom({ ...gomokuPayload, gameOptions: { spectateEnabled: true } }, host);
       gm.addSpectator(room.id, spectator);

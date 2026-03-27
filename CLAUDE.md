@@ -40,7 +40,6 @@ pnpm --filter web test:coverage           # 웹 테스트 + 커버리지
 | 오목 (Gomoku) | `docs/games/gomoku.md` |
 | 지뢰찾기 (Minesweeper) | `docs/games/minesweeper.md` |
 | 텍사스 홀덤 (Texas Hold'em) | `docs/games/texas-holdem.md` |
-| 3쿠션 당구 (Three-Cushion Billiards) | `docs/games/billiards.md` |
 
 ## 공통 기능 문서
 

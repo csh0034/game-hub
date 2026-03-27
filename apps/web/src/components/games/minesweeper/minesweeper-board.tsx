@@ -212,7 +212,7 @@ export default function MinesweeperBoard({ isSpectating }: GameComponentProps) {
               disabled={state.status !== "playing"}
             >
               {cell.status === "flagged" && <span style={{ fontSize: cellSize > 30 ? 16 : 12 }}>🚩</span>}
-              {cell.status === "questioned" && <span className="text-primary" style={{ fontSize: cellSize > 30 ? 14 : 10 }}>?</span>}
+              {cell.status === "questioned" && <span className="font-bold text-yellow-400" style={{ fontSize: cellSize > 30 ? 16 : 13 }}>?</span>}
               {cell.status === "revealed" && cell.hasMine && <span style={{ fontSize: cellSize > 30 ? 16 : 12 }}>💣</span>}
               {cell.status === "revealed" && !cell.hasMine && cell.adjacentMines !== undefined && cell.adjacentMines > 0 && (
                 <span className={NUMBER_COLORS[cell.adjacentMines]}>{cell.adjacentMines}</span>

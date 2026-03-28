@@ -358,6 +358,23 @@ describe("setupGameHandler", () => {
     });
   });
 
+  describe("game:move — finished 상태 가드", () => {
+    it("방 상태가 finished이면 move를 무시한다", () => {
+      const { room } = setupGomokuRoom(gameManager);
+      hostSocket.data.roomId = room.id;
+      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager, mockRankingStore);
+
+      hostSocket._trigger("game:start");
+      room.status = "finished";
+      vi.clearAllMocks();
+
+      hostSocket._trigger("game:move", { row: 7, col: 7 });
+
+      expect(io._toEmit).not.toHaveBeenCalled();
+      expect(hostSocket.emit).not.toHaveBeenCalled();
+    });
+  });
+
   describe("game:move — 테트리스 tick 무시", () => {
     function setupTetrisRoom(gameManager: GameManager) {
       const host = { id: "host-1", nickname: "Host", isReady: true };

@@ -563,6 +563,9 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
       return;
     }
 
+    // Prevent processing moves on finished games (tick/move race condition)
+    if (room?.status === "finished") return;
+
     const tetrisEngine = room?.gameType === "tetris" ? gameManager.getTetrisEngine(roomId) : null;
     if (tetrisEngine) {
       tetrisEngine.clearDirty();

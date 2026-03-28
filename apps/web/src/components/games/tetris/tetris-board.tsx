@@ -424,11 +424,12 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
 
     // Speed race solo: 40줄 클리어 성공
     if (isSoloSpeedRaceClear) {
+      const clearTime = gameResult.completionTimeMs ?? elapsedTime;
       return (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded gap-2">
           <span className="text-3xl font-bold text-yellow-400 drop-shadow-lg">CLEAR!</span>
           <span className="text-sm text-white/80">
-            클리어 시간: {(elapsedTime / 1000).toFixed(1)}초
+            클리어 시간: {(clearTime / 1000).toFixed(1)}초
           </span>
           {gameResult.rankingResult && gameResult.rankingResult.rank != null && (
             <span className="text-sm text-yellow-400 font-bold">
@@ -486,7 +487,7 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
     }
 
     const detail = isSpeedRace
-      ? (isWinner ? `클리어 시간: ${(elapsedTime / 1000).toFixed(1)}초` : `${myBoard?.linesCleared ?? 0}/${SPEED_RACE_TARGET_LINES}줄`)
+      ? (isWinner ? `클리어 시간: ${((gameResult?.completionTimeMs ?? elapsedTime) / 1000).toFixed(1)}초` : `${myBoard?.linesCleared ?? 0}/${SPEED_RACE_TARGET_LINES}줄`)
       : `점수: ${myScore.toLocaleString()}`;
 
     return (
@@ -495,7 +496,7 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
         <span className="text-sm text-white/80">{detail}</span>
       </div>
     );
-  }, [isWinner, isLoser, isDraw, myScore, isSpeedRace, elapsedTime, myBoard?.linesCleared]);
+  }, [isWinner, isLoser, isDraw, myScore, isSpeedRace, elapsedTime, gameResult, myBoard?.linesCleared]);
 
   // 관전자: 플레이어 보드만 표시 (내 보드 없음)
   if (isSpectating) {

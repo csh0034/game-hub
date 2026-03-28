@@ -241,7 +241,7 @@ export class TetrisEngine implements GameEngine {
           if (!this.completedAt) this.completedAt = Date.now();
           const time = this.getCompletionTime();
           const timeStr = (time / 1000).toFixed(1);
-          return { winnerId: id, reason: `클리어 시간: ${timeStr}초` };
+          return { winnerId: id, reason: `클리어 시간: ${timeStr}초`, completionTimeMs: time };
         }
       }
 

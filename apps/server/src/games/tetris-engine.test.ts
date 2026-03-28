@@ -797,5 +797,19 @@ describe("TetrisEngine", () => {
       const p2Board = versusSpeedEngine.toPublicStateForPlayer("player2");
       expect(p2Board?.pendingGarbage).toBe(0);
     });
+
+    it("40줄 클리어 시 completionTimeMs를 포함한다", () => {
+      const state = speedEngine.initState(mockPlayers);
+      // private playerStates에 접근하여 linesCleared를 강제 설정
+      const ps = (speedEngine as never as { playerStates: Map<string, { linesCleared: number }> }).playerStates.get("player1");
+      ps!.linesCleared = 40;
+
+      const result = speedEngine.checkWin(state);
+      expect(result).not.toBeNull();
+      expect(result!.winnerId).toBe("player1");
+      expect(result!.completionTimeMs).toBeTypeOf("number");
+      expect(result!.completionTimeMs).toBeGreaterThanOrEqual(0);
+      expect(result!.reason).toContain("클리어 시간:");
+    });
   });
 });

@@ -28,11 +28,11 @@ export function DrawingPhase({ state, socket, myId, keyword, isSpectating }: Dra
         <TurnTimer turnStartedAt={state.turnStartedAt} drawTimeSeconds={state.drawTimeSeconds} />
       </div>
 
-      {isDrawer || (isSpectating && keyword) ? (
+      {isDrawer && !isSpectating ? (
         <div className="text-sm">
           제시어: <span className="font-bold text-primary">{keyword}</span>
         </div>
-      ) : (
+      ) : !isSpectating ? (
         <div className="text-sm text-muted-foreground">
           {state.showCharHint && state.keywordLength !== null ? (
             <>글자수: <span className="font-bold text-foreground tracking-widest">{"○".repeat(state.keywordLength)}</span></>
@@ -40,7 +40,7 @@ export function DrawingPhase({ state, socket, myId, keyword, isSpectating }: Dra
             "채팅으로 정답을 맞추세요!"
           )}
         </div>
-      )}
+      ) : null}
 
       <DrawingArea state={state} socket={socket} isDrawer={isDrawer && !isSpectating} />
     </div>

@@ -75,14 +75,22 @@ export default function CatchMindBoard({ roomId: _roomId, isSpectating }: GameCo
   return (
     <div className="flex gap-4">
       <div className="flex-1">
-        <div className="flex justify-end mb-2">
-          <button
-            onClick={() => setShowHelp(true)}
-            className="text-muted-foreground hover:text-foreground transition-colors"
-            title="게임 도움말"
-          >
-            <HelpCircle className="w-5 h-5" />
-          </button>
+        <div className="flex items-center mb-2">
+          {isSpectating && cmPrivateState?.keyword && (
+            <div className="px-3 py-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-sm">
+              <span className="text-muted-foreground">제시어: </span>
+              <span className="font-bold text-primary">{cmPrivateState.keyword}</span>
+            </div>
+          )}
+          <div className="ml-auto">
+            <button
+              onClick={() => setShowHelp(true)}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+              title="게임 도움말"
+            >
+              <HelpCircle className="w-5 h-5" />
+            </button>
+          </div>
         </div>
         {renderPhase()}
         <div className="mt-4 h-[250px]">

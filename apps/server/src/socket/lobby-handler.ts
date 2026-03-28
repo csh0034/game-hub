@@ -218,11 +218,37 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
     io.to(room.id).emit("lobby:spectator-joined", player);
     io.emit("lobby:room-updated", room);
     emitSystemMessage(room.id, `${player.nickname}님이 관전을 시작했습니다.`);
-    // 게임 중 관전 입장 시 현재 게임 상태 전송
+    // 게임 중 관전 입장 시 현재 게임 상태 + 비공개 상태 전송
     if (room.status === "playing") {
       const gameState = gameManager.getGameState(room.id);
       if (gameState) {
         socket.emit("game:started", gameState);
+      }
+      if (room.gameType === "liar-drawing") {
+        const liarEngine = gameManager.getLiarDrawingEngine(room.id);
+        if (liarEngine) {
+          socket.emit("game:private-state", {
+            role: "spectator" as const,
+            keyword: liarEngine.getKeyword(),
+            liarId: liarEngine.getLiarId() ?? undefined,
+          });
+        }
+      }
+      if (room.gameType === "catch-mind") {
+        const cmEngine = gameManager.getCatchMindEngine(room.id);
+        if (cmEngine) {
+          socket.emit("game:private-state", { keyword: cmEngine.getKeyword()! });
+        }
+      }
+      if (room.gameType === "texas-holdem") {
+        const holdemEngine = gameManager.getHoldemEngine(room.id);
+        if (holdemEngine) {
+          const allHoleCards: Record<string, ReturnType<typeof holdemEngine.getHoleCards>> = {};
+          for (const p of room.players) {
+            allHoleCards[p.id] = holdemEngine.getHoleCards(p.id);
+          }
+          socket.emit("game:private-state", { allHoleCards });
+        }
       }
     }
   });

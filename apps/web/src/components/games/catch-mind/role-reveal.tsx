@@ -39,24 +39,20 @@ export function RoleReveal({ privateState, drawerNickname, isDrawer, isSpectatin
             <div className="text-3xl font-bold text-primary">{privateState?.keyword}</div>
             <div className="text-sm text-muted-foreground">그림으로 표현하세요 (글자/숫자 금지)</div>
           </div>
-        ) : isSpectating && privateState?.keyword ? (
-          <div className="space-y-2">
-            <div className="text-lg text-muted-foreground">
-              출제자: <span className="font-bold text-foreground">{drawerNickname}</span>
-            </div>
-            <div className="text-sm text-muted-foreground">제시어</div>
-            <div className="text-3xl font-bold text-primary">{privateState.keyword}</div>
-          </div>
         ) : (
           <div className="space-y-2">
             <div className="text-lg text-muted-foreground">
               출제자: <span className="font-bold text-foreground">{drawerNickname}</span>
             </div>
-            <div className="text-2xl font-bold">채팅으로 정답을 맞추세요!</div>
-            {keywordLength !== null && (
-              <div className="text-sm text-muted-foreground">
-                글자수: <span className="font-bold text-foreground tracking-widest">{"○".repeat(keywordLength)}</span>
-              </div>
+            {!isSpectating && (
+              <>
+                <div className="text-2xl font-bold">채팅으로 정답을 맞추세요!</div>
+                {keywordLength !== null && (
+                  <div className="text-sm text-muted-foreground">
+                    글자수: <span className="font-bold text-foreground tracking-widest">{"○".repeat(keywordLength)}</span>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}

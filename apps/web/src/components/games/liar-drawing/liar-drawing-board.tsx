@@ -68,27 +68,23 @@ export default function LiarDrawingBoard({ isSpectating }: GameComponentProps) {
   return (
     <div className="flex gap-4">
       <div className="flex-1">
-        <div className="flex justify-end mb-2">
-          <button
-            onClick={() => setShowHelp(true)}
-            className="text-muted-foreground hover:text-foreground transition-colors"
-            title="게임 도움말"
-          >
-            <HelpCircle className="w-5 h-5" />
-          </button>
-        </div>
-        {isSpectating && liarPrivateState && (
-          <div className="mb-2 px-3 py-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-sm">
-            <span className="text-muted-foreground">라이어: </span>
-            <span className="font-bold text-yellow-400">{state.players.find((p) => p.id === liarPrivateState.liarId)?.nickname ?? "?"}</span>
-            {liarPrivateState.keyword && (
-              <>
-                <span className="text-muted-foreground ml-3">제시어: </span>
-                <span className="font-bold text-primary">{liarPrivateState.keyword}</span>
-              </>
-            )}
+        <div className="flex items-center mb-2">
+          {isSpectating && liarPrivateState && (
+            <div className="px-3 py-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-sm">
+              <span className="text-muted-foreground">라이어: </span>
+              <span className="font-bold text-yellow-400">{state.players.find((p) => p.id === liarPrivateState.liarId)?.nickname ?? "?"}</span>
+            </div>
+          )}
+          <div className="ml-auto">
+            <button
+              onClick={() => setShowHelp(true)}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+              title="게임 도움말"
+            >
+              <HelpCircle className="w-5 h-5" />
+            </button>
           </div>
-        )}
+        </div>
         {renderPhase()}
       </div>
       <Scoreboard state={state} myId={myId} />

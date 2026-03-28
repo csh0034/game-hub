@@ -7,12 +7,13 @@ interface RoleRevealProps {
   privateState: CatchMindPrivateState | null;
   drawerNickname: string;
   isDrawer: boolean;
+  isSpectating?: boolean;
   roundNumber: number;
   totalRounds: number;
   keywordLength: number | null;
 }
 
-export function RoleReveal({ privateState, drawerNickname, isDrawer, roundNumber, totalRounds, keywordLength }: RoleRevealProps) {
+export function RoleReveal({ privateState, drawerNickname, isDrawer, isSpectating, roundNumber, totalRounds, keywordLength }: RoleRevealProps) {
   const [countdown, setCountdown] = useState(3);
 
   useEffect(() => {
@@ -37,6 +38,14 @@ export function RoleReveal({ privateState, drawerNickname, isDrawer, roundNumber
             <div className="text-sm text-muted-foreground">제시어</div>
             <div className="text-3xl font-bold text-primary">{privateState?.keyword}</div>
             <div className="text-sm text-muted-foreground">그림으로 표현하세요 (글자/숫자 금지)</div>
+          </div>
+        ) : isSpectating && privateState?.keyword ? (
+          <div className="space-y-2">
+            <div className="text-lg text-muted-foreground">
+              출제자: <span className="font-bold text-foreground">{drawerNickname}</span>
+            </div>
+            <div className="text-sm text-muted-foreground">제시어</div>
+            <div className="text-3xl font-bold text-primary">{privateState.keyword}</div>
           </div>
         ) : (
           <div className="space-y-2">

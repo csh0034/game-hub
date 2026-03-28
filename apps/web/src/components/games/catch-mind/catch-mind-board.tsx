@@ -49,6 +49,7 @@ export default function CatchMindBoard({ roomId: _roomId, isSpectating }: GameCo
             privateState={cmPrivateState}
             drawerNickname={drawerPlayer?.nickname || ""}
             isDrawer={isDrawer}
+            isSpectating={isSpectating}
             roundNumber={state.roundNumber}
             totalRounds={state.totalRounds}
             keywordLength={state.keywordLength}

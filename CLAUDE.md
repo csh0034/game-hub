@@ -45,6 +45,7 @@ pnpm --filter web test:coverage           # 웹 테스트 + 커버리지
 
 | 기능 | 문서 |
 |------|------|
+| 닉네임 | `docs/nickname.md` |
 | 채팅 | `docs/chat.md` |
 | 관전 | `docs/spectator.md` |
 | 강퇴 | `docs/kick.md` |

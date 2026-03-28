@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import type { FeatureRequest, CreateRequestPayload, RequestLabel } from "@game-hub/shared-types";
+import { useState, useCallback, useMemo } from "react";
+import type { FeatureRequest, CreateRequestPayload, RequestLabel, RequestStatus } from "@game-hub/shared-types";
 import { Send } from "lucide-react";
 
 const labelOptions: { value: RequestLabel; name: string; color: string }[] = [
@@ -11,32 +11,32 @@ const labelOptions: { value: RequestLabel; name: string; color: string }[] = [
   { value: "new-game", name: "게임 추가", color: "bg-purple-500/15 text-purple-500 border-purple-500/30" },
 ];
 import { RequestItem } from "./request-item";
-import { AcceptDialog } from "./accept-dialog";
-import { RejectDialog } from "./reject-dialog";
-import { ResolveDialog } from "./resolve-dialog";
-import { StopDialog } from "./stop-dialog";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import { toast } from "sonner";
 
 interface RequestBoardProps {
   requests: FeatureRequest[];
   onCreateRequest: (payload: CreateRequestPayload) => Promise<{ success: boolean; error?: string }>;
-  onAcceptRequest: (requestId: string, adminResponse?: string) => Promise<{ success: boolean; error?: string }>;
-  onRejectRequest: (requestId: string, adminResponse: string) => Promise<{ success: boolean; error?: string }>;
-  onResolveRequest: (requestId: string, commitHash?: string, adminResponse?: string) => Promise<{ success: boolean; error?: string }>;
-  onStopRequest: (requestId: string, adminResponse: string) => Promise<{ success: boolean; error?: string }>;
+  onChangeStatus: (requestId: string, status: RequestStatus) => Promise<{ success: boolean; error?: string }>;
+  onUpdateFields: (requestId: string, fields: Record<string, string | null>) => Promise<{ success: boolean; error?: string }>;
   onChangeLabelRequest: (requestId: string, label: RequestLabel) => Promise<{ success: boolean; error?: string }>;
   onDeleteRequest: (requestId: string) => Promise<{ success: boolean; error?: string }>;
   isAdmin: boolean;
 }
 
+const statusLabels: Record<RequestStatus, string> = {
+  open: "재오픈",
+  "in-progress": "진행",
+  resolved: "완료",
+  rejected: "거부",
+  stopped: "중단",
+};
+
 export function RequestBoard({
   requests,
   onCreateRequest,
-  onAcceptRequest,
-  onRejectRequest,
-  onResolveRequest,
-  onStopRequest,
+  onChangeStatus,
+  onUpdateFields,
   onChangeLabelRequest,
   onDeleteRequest,
   isAdmin,
@@ -45,10 +45,6 @@ export function RequestBoard({
   const [description, setDescription] = useState("");
   const [label, setLabel] = useState<RequestLabel>("feature");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [acceptTarget, setAcceptTarget] = useState<string | null>(null);
-  const [rejectTarget, setRejectTarget] = useState<string | null>(null);
-  const [resolveTarget, setResolveTarget] = useState<string | null>(null);
-  const [stopTarget, setStopTarget] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   const handleChangeLabel = useCallback(
@@ -94,63 +90,45 @@ export function RequestBoard({
     [title, description, label, isSubmitting, onCreateRequest],
   );
 
-  const handleAccept = useCallback(
-    async (adminResponse?: string) => {
-      if (!acceptTarget) return;
-      const result = await onAcceptRequest(acceptTarget, adminResponse);
-      if (result.success) {
-        setAcceptTarget(null);
-      } else {
-        toast.error(result.error ?? "진행 처리에 실패했습니다");
+  const handleChangeStatus = useCallback(
+    async (requestId: string, targetStatus: RequestStatus) => {
+      const result = await onChangeStatus(requestId, targetStatus);
+      if (!result.success) {
+        toast.error(result.error ?? `${statusLabels[targetStatus]} 처리에 실패했습니다`);
       }
     },
-    [acceptTarget, onAcceptRequest],
+    [onChangeStatus],
   );
 
-  const handleReject = useCallback(
-    async (adminResponse: string) => {
-      if (!rejectTarget) return;
-      const result = await onRejectRequest(rejectTarget, adminResponse);
-      if (result.success) {
-        setRejectTarget(null);
-      } else {
-        toast.error(result.error ?? "거부 처리에 실패했습니다");
+  const handleUpdateFields = useCallback(
+    async (requestId: string, fields: Record<string, string | null>) => {
+      const result = await onUpdateFields(requestId, fields);
+      if (!result.success) {
+        toast.error(result.error ?? "수정에 실패했습니다");
       }
     },
-    [rejectTarget, onRejectRequest],
+    [onUpdateFields],
   );
 
-  const handleResolve = useCallback(
-    async (commitHash?: string, adminResponse?: string) => {
-      if (!resolveTarget) return;
-      const result = await onResolveRequest(resolveTarget, commitHash, adminResponse);
-      if (result.success) {
-        setResolveTarget(null);
-      } else {
-        toast.error(result.error ?? "완료 처리에 실패했습니다");
-      }
-    },
-    [resolveTarget, onResolveRequest],
-  );
+  const grouped = useMemo(() => {
+    const result: Record<RequestStatus, FeatureRequest[]> = {
+      open: [], "in-progress": [], resolved: [], rejected: [], stopped: [],
+    };
+    for (const r of requests) result[r.status].push(r);
+    return result;
+  }, [requests]);
 
-  const handleStop = useCallback(
-    async (adminResponse: string) => {
-      if (!stopTarget) return;
-      const result = await onStopRequest(stopTarget, adminResponse);
-      if (result.success) {
-        setStopTarget(null);
-      } else {
-        toast.error(result.error ?? "중단 처리에 실패했습니다");
-      }
-    },
-    [stopTarget, onStopRequest],
+  const renderRequestItem = (request: FeatureRequest) => (
+    <RequestItem
+      key={request.id}
+      request={request}
+      isAdmin={isAdmin}
+      onChangeStatus={handleChangeStatus}
+      onChangeLabel={handleChangeLabel}
+      onUpdateFields={handleUpdateFields}
+      onDelete={setDeleteTarget}
+    />
   );
-
-  const openRequests = requests.filter((r) => r.status === "open");
-  const inProgressRequests = requests.filter((r) => r.status === "in-progress");
-  const resolvedRequests = requests.filter((r) => r.status === "resolved");
-  const rejectedRequests = requests.filter((r) => r.status === "rejected");
-  const stoppedRequests = requests.filter((r) => r.status === "stopped");
 
   return (
     <div className="space-y-6">
@@ -204,126 +182,41 @@ export function RequestBoard({
       </form>
 
       {/* 요청 목록 */}
-      {openRequests.length > 0 && (
+      {grouped.open.length > 0 && (
         <section>
-          <h3 className="text-sm font-medium text-muted-foreground mb-2">
-            요청 ({openRequests.length})
-          </h3>
-          <div className="space-y-2">
-            {openRequests.map((request) => (
-              <RequestItem
-                key={request.id}
-                request={request}
-                isAdmin={isAdmin}
-                onAccept={setAcceptTarget}
-                onReject={setRejectTarget}
-                onResolve={setResolveTarget}
-                onChangeLabel={handleChangeLabel}
-                onStop={setStopTarget}
-                onDelete={setDeleteTarget}
-              />
-            ))}
-          </div>
+          <h3 className="text-sm font-medium text-muted-foreground mb-2">요청 ({grouped.open.length})</h3>
+          <div className="space-y-2">{grouped.open.map(renderRequestItem)}</div>
         </section>
       )}
 
-      {/* 진행중 목록 */}
-      {inProgressRequests.length > 0 && (
+      {grouped["in-progress"].length > 0 && (
         <section>
-          <h3 className="text-sm font-medium text-muted-foreground mb-2">
-            진행중 ({inProgressRequests.length})
-          </h3>
-          <div className="space-y-2">
-            {inProgressRequests.map((request) => (
-              <RequestItem
-                key={request.id}
-                request={request}
-                isAdmin={isAdmin}
-                onAccept={setAcceptTarget}
-                onReject={setRejectTarget}
-                onResolve={setResolveTarget}
-                onStop={setStopTarget}
-                onChangeLabel={handleChangeLabel}
-                onDelete={setDeleteTarget}
-              />
-            ))}
-          </div>
+          <h3 className="text-sm font-medium text-muted-foreground mb-2">진행중 ({grouped["in-progress"].length})</h3>
+          <div className="space-y-2">{grouped["in-progress"].map(renderRequestItem)}</div>
         </section>
       )}
 
-      {/* 완료 목록 */}
-      {resolvedRequests.length > 0 && (
+      {grouped.resolved.length > 0 && (
         <section>
-          <h3 className="text-sm font-medium text-muted-foreground mb-2">
-            완료 ({resolvedRequests.length})
-          </h3>
-          <div className="space-y-2">
-            {resolvedRequests.map((request) => (
-              <RequestItem
-                key={request.id}
-                request={request}
-                isAdmin={isAdmin}
-                onAccept={setAcceptTarget}
-                onReject={setRejectTarget}
-                onResolve={setResolveTarget}
-                onStop={setStopTarget}
-                onChangeLabel={handleChangeLabel}
-                onDelete={setDeleteTarget}
-              />
-            ))}
-          </div>
+          <h3 className="text-sm font-medium text-muted-foreground mb-2">완료 ({grouped.resolved.length})</h3>
+          <div className="space-y-2">{grouped.resolved.map(renderRequestItem)}</div>
         </section>
       )}
 
-      {/* 거부 목록 */}
-      {rejectedRequests.length > 0 && (
+      {grouped.rejected.length > 0 && (
         <section>
-          <h3 className="text-sm font-medium text-muted-foreground mb-2">
-            거부 ({rejectedRequests.length})
-          </h3>
-          <div className="space-y-2">
-            {rejectedRequests.map((request) => (
-              <RequestItem
-                key={request.id}
-                request={request}
-                isAdmin={isAdmin}
-                onAccept={setAcceptTarget}
-                onReject={setRejectTarget}
-                onResolve={setResolveTarget}
-                onStop={setStopTarget}
-                onChangeLabel={handleChangeLabel}
-                onDelete={setDeleteTarget}
-              />
-            ))}
-          </div>
+          <h3 className="text-sm font-medium text-muted-foreground mb-2">거부 ({grouped.rejected.length})</h3>
+          <div className="space-y-2">{grouped.rejected.map(renderRequestItem)}</div>
         </section>
       )}
 
-      {/* 중단 목록 */}
-      {stoppedRequests.length > 0 && (
+      {grouped.stopped.length > 0 && (
         <section>
-          <h3 className="text-sm font-medium text-muted-foreground mb-2">
-            중단 ({stoppedRequests.length})
-          </h3>
-          <div className="space-y-2">
-            {stoppedRequests.map((request) => (
-              <RequestItem
-                key={request.id}
-                request={request}
-                isAdmin={isAdmin}
-                onAccept={setAcceptTarget}
-                onReject={setRejectTarget}
-                onResolve={setResolveTarget}
-                onStop={setStopTarget}
-                onChangeLabel={handleChangeLabel}
-                onDelete={setDeleteTarget}
-              />
-            ))}
-          </div>
+          <h3 className="text-sm font-medium text-muted-foreground mb-2">중단 ({grouped.stopped.length})</h3>
+          <div className="space-y-2">{grouped.stopped.map(renderRequestItem)}</div>
         </section>
       )}
 
-      {/* 빈 상태 */}
       {requests.length === 0 && (
         <div className="text-center py-12 text-muted-foreground">
           <p className="text-lg">아직 요청사항이 없습니다</p>
@@ -331,35 +224,6 @@ export function RequestBoard({
         </div>
       )}
 
-      {/* 진행 처리 다이얼로그 */}
-      <AcceptDialog
-        open={acceptTarget !== null}
-        onConfirm={handleAccept}
-        onCancel={() => setAcceptTarget(null)}
-      />
-
-      {/* 거부 다이얼로그 */}
-      <RejectDialog
-        open={rejectTarget !== null}
-        onConfirm={handleReject}
-        onCancel={() => setRejectTarget(null)}
-      />
-
-      {/* 중단 다이얼로그 */}
-      <StopDialog
-        open={stopTarget !== null}
-        onConfirm={handleStop}
-        onCancel={() => setStopTarget(null)}
-      />
-
-      {/* 완료 처리 다이얼로그 */}
-      <ResolveDialog
-        open={resolveTarget !== null}
-        onConfirm={handleResolve}
-        onCancel={() => setResolveTarget(null)}
-      />
-
-      {/* 삭제 확인 다이얼로그 */}
       <ConfirmDialog
         open={deleteTarget !== null}
         title="요청사항 삭제"

@@ -1,7 +1,7 @@
 import { useEffect, useCallback } from "react";
 import type { GameSocket } from "@/lib/socket";
 import { useRequestStore } from "@/stores/request-store";
-import type { CreateRequestPayload, RequestLabel } from "@game-hub/shared-types";
+import type { CreateRequestPayload, UpdateRequestPayload, RequestLabel, RequestStatus } from "@game-hub/shared-types";
 
 export function useRequests(socket: GameSocket | null) {
   const { requests, setRequests, addRequest, updateRequest, removeRequest } =
@@ -12,19 +12,15 @@ export function useRequests(socket: GameSocket | null) {
 
     socket.emit("request:get-all", setRequests);
     socket.on("request:created", addRequest);
-    socket.on("request:accepted", updateRequest);
-    socket.on("request:rejected", updateRequest);
-    socket.on("request:resolved", updateRequest);
-    socket.on("request:stopped", updateRequest);
+    socket.on("request:status-changed", updateRequest);
+    socket.on("request:updated", updateRequest);
     socket.on("request:label-changed", updateRequest);
     socket.on("request:deleted", removeRequest);
 
     return () => {
       socket.off("request:created", addRequest);
-      socket.off("request:accepted", updateRequest);
-      socket.off("request:rejected", updateRequest);
-      socket.off("request:resolved", updateRequest);
-      socket.off("request:stopped", updateRequest);
+      socket.off("request:status-changed", updateRequest);
+      socket.off("request:updated", updateRequest);
       socket.off("request:label-changed", updateRequest);
       socket.off("request:deleted", removeRequest);
     };
@@ -49,53 +45,27 @@ export function useRequests(socket: GameSocket | null) {
     [socket],
   );
 
-  const acceptRequest = useCallback(
-    (requestId: string, adminResponse?: string): Promise<{ success: boolean; error?: string }> => {
+  const changeStatus = useCallback(
+    (requestId: string, status: RequestStatus): Promise<{ success: boolean; error?: string }> => {
       return new Promise((resolve) => {
         if (!socket) {
           resolve({ success: false, error: "소켓 연결이 없습니다" });
           return;
         }
-        socket.emit("request:accept", { requestId, adminResponse }, resolve);
+        socket.emit("request:change-status", { requestId, status }, resolve);
       });
     },
     [socket],
   );
 
-  const rejectRequest = useCallback(
-    (requestId: string, adminResponse: string): Promise<{ success: boolean; error?: string }> => {
+  const updateRequestFields = useCallback(
+    (payload: UpdateRequestPayload): Promise<{ success: boolean; error?: string }> => {
       return new Promise((resolve) => {
         if (!socket) {
           resolve({ success: false, error: "소켓 연결이 없습니다" });
           return;
         }
-        socket.emit("request:reject", { requestId, adminResponse }, resolve);
-      });
-    },
-    [socket],
-  );
-
-  const resolveRequest = useCallback(
-    (requestId: string, commitHash?: string, adminResponse?: string): Promise<{ success: boolean; error?: string }> => {
-      return new Promise((resolve) => {
-        if (!socket) {
-          resolve({ success: false, error: "소켓 연결이 없습니다" });
-          return;
-        }
-        socket.emit("request:resolve", { requestId, commitHash, adminResponse }, resolve);
-      });
-    },
-    [socket],
-  );
-
-  const stopRequest = useCallback(
-    (requestId: string, adminResponse: string): Promise<{ success: boolean; error?: string }> => {
-      return new Promise((resolve) => {
-        if (!socket) {
-          resolve({ success: false, error: "소켓 연결이 없습니다" });
-          return;
-        }
-        socket.emit("request:stop", { requestId, adminResponse }, resolve);
+        socket.emit("request:update", payload, resolve);
       });
     },
     [socket],
@@ -127,5 +97,5 @@ export function useRequests(socket: GameSocket | null) {
     [socket],
   );
 
-  return { requests, createRequest, acceptRequest, rejectRequest, resolveRequest, stopRequest, changeLabelRequest, deleteRequest };
+  return { requests, createRequest, changeStatus, updateRequestFields, changeLabelRequest, deleteRequest };
 }

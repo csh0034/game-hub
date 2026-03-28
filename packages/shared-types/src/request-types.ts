@@ -27,25 +27,17 @@ export interface CreateRequestPayload {
   label: RequestLabel;
 }
 
-export interface AcceptRequestPayload {
+export interface ChangeStatusPayload {
   requestId: string;
-  adminResponse?: string;
+  status: RequestStatus;
 }
 
-export interface RejectRequestPayload {
+export interface UpdateRequestPayload {
   requestId: string;
-  adminResponse: string;
-}
-
-export interface ResolveRequestPayload {
-  requestId: string;
-  commitHash?: string;
-  adminResponse?: string;
-}
-
-export interface StopRequestPayload {
-  requestId: string;
-  adminResponse: string;
+  title?: string;
+  description?: string;
+  adminResponse?: string | null;
+  commitHash?: string | null;
 }
 
 export interface ChangeLabelPayload {

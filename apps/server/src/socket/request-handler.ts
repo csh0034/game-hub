@@ -70,7 +70,7 @@ export function setupRequestHandler(
     callback(request);
   });
 
-  socket.on("request:accept", async (payload, callback) => {
+  socket.on("request:change-status", async (payload, callback) => {
     if (!socket.data.authenticated) {
       callback({ success: false, error: "인증이 필요합니다" });
       return;
@@ -81,7 +81,7 @@ export function setupRequestHandler(
       return;
     }
 
-    const { requestId, adminResponse } = payload;
+    const { requestId, status: targetStatus } = payload;
     const request = await requestStore.getRequest(requestId);
 
     if (!request) {
@@ -89,25 +89,31 @@ export function setupRequestHandler(
       return;
     }
 
-    if (request.status !== "open") {
-      callback({ success: false, error: "요청 상태의 항목만 수락할 수 있습니다" });
+    if (request.status === targetStatus) {
+      callback({ success: true });
       return;
     }
 
-    const accepted: FeatureRequest = {
+    const now = Date.now();
+    const updated: FeatureRequest = {
       ...request,
-      status: "in-progress",
-      inProgressAt: Date.now(),
-      adminResponse: adminResponse?.trim() || null,
+      status: targetStatus,
+      inProgressAt: targetStatus === "in-progress" ? now : null,
+      rejectedAt: targetStatus === "rejected" ? now : null,
+      resolvedAt: targetStatus === "resolved" ? now : null,
+      stoppedAt: targetStatus === "stopped" ? now : null,
+      commitHash: targetStatus === "resolved" ? request.commitHash : null,
+      commitUrl: targetStatus === "resolved" && request.commitHash && GITHUB_REPO_URL
+        ? `${GITHUB_REPO_URL}/commit/${request.commitHash}` : null,
     };
 
-    await requestStore.updateRequest(accepted);
+    await requestStore.updateRequest(updated);
 
-    io.emit("request:accepted", accepted);
+    io.emit("request:status-changed", updated);
     callback({ success: true });
   });
 
-  socket.on("request:reject", async (payload, callback) => {
+  socket.on("request:update", async (payload, callback) => {
     if (!socket.data.authenticated) {
       callback({ success: false, error: "인증이 필요합니다" });
       return;
@@ -118,12 +124,7 @@ export function setupRequestHandler(
       return;
     }
 
-    const { requestId, adminResponse } = payload;
-
-    if (!adminResponse?.trim()) {
-      callback({ success: false, error: "거부 사유를 입력해주세요" });
-      return;
-    }
+    const { requestId, title, description, adminResponse, commitHash } = payload;
 
     const request = await requestStore.getRequest(requestId);
 
@@ -132,105 +133,33 @@ export function setupRequestHandler(
       return;
     }
 
-    if (request.status !== "open" && request.status !== "in-progress") {
-      callback({ success: false, error: "요청 또는 진행중 상태의 항목만 거부할 수 있습니다" });
+    const newTitle = title?.trim();
+    if (newTitle !== undefined && (!newTitle || newTitle.length > 100)) {
+      callback({ success: false, error: "제목은 1~100자여야 합니다" });
       return;
     }
 
-    const rejected: FeatureRequest = {
+    const newDescription = description?.trim();
+    if (newDescription !== undefined && (!newDescription || newDescription.length > 1000)) {
+      callback({ success: false, error: "설명은 1~1000자여야 합니다" });
+      return;
+    }
+
+    const hash = commitHash === undefined ? request.commitHash : (commitHash?.trim() || null);
+    const updated: FeatureRequest = {
       ...request,
-      status: "rejected",
-      rejectedAt: Date.now(),
-      adminResponse: adminResponse.trim(),
+      ...(newTitle !== undefined && { title: newTitle }),
+      ...(newDescription !== undefined && { description: newDescription }),
+      ...(adminResponse !== undefined && { adminResponse: adminResponse === null ? null : (adminResponse.trim() || null) }),
+      ...(commitHash !== undefined && {
+        commitHash: hash,
+        commitUrl: hash && GITHUB_REPO_URL ? `${GITHUB_REPO_URL}/commit/${hash}` : null,
+      }),
     };
 
-    await requestStore.updateRequest(rejected);
+    await requestStore.updateRequest(updated);
 
-    io.emit("request:rejected", rejected);
-    callback({ success: true });
-  });
-
-  socket.on("request:resolve", async (payload, callback) => {
-    if (!socket.data.authenticated) {
-      callback({ success: false, error: "인증이 필요합니다" });
-      return;
-    }
-
-    if (!isAdmin(socket.data.nickname)) {
-      callback({ success: false, error: "권한이 없습니다" });
-      return;
-    }
-
-    const { requestId, commitHash, adminResponse } = payload;
-
-    const request = await requestStore.getRequest(requestId);
-
-    if (!request) {
-      callback({ success: false, error: "요청사항을 찾을 수 없습니다" });
-      return;
-    }
-
-    if (request.status !== "open" && request.status !== "in-progress") {
-      callback({ success: false, error: "요청 또는 진행중 상태의 항목만 완료할 수 있습니다" });
-      return;
-    }
-
-    const hash = commitHash?.trim() || null;
-    const resolved: FeatureRequest = {
-      ...request,
-      status: "resolved",
-      resolvedAt: Date.now(),
-      commitHash: hash,
-      commitUrl: hash && GITHUB_REPO_URL ? `${GITHUB_REPO_URL}/commit/${hash}` : null,
-      adminResponse: adminResponse?.trim() || request.adminResponse,
-    };
-
-    await requestStore.updateRequest(resolved);
-
-    io.emit("request:resolved", resolved);
-    callback({ success: true });
-  });
-
-  socket.on("request:stop", async (payload, callback) => {
-    if (!socket.data.authenticated) {
-      callback({ success: false, error: "인증이 필요합니다" });
-      return;
-    }
-
-    if (!isAdmin(socket.data.nickname)) {
-      callback({ success: false, error: "권한이 없습니다" });
-      return;
-    }
-
-    const { requestId, adminResponse } = payload;
-
-    if (!adminResponse?.trim()) {
-      callback({ success: false, error: "중단 사유를 입력해주세요" });
-      return;
-    }
-
-    const request = await requestStore.getRequest(requestId);
-
-    if (!request) {
-      callback({ success: false, error: "요청사항을 찾을 수 없습니다" });
-      return;
-    }
-
-    if (request.status !== "open" && request.status !== "in-progress") {
-      callback({ success: false, error: "요청 또는 진행중 상태의 항목만 중단할 수 있습니다" });
-      return;
-    }
-
-    const stopped: FeatureRequest = {
-      ...request,
-      status: "stopped",
-      stoppedAt: Date.now(),
-      adminResponse: adminResponse.trim(),
-    };
-
-    await requestStore.updateRequest(stopped);
-
-    io.emit("request:stopped", stopped);
+    io.emit("request:updated", updated);
     callback({ success: true });
   });
 

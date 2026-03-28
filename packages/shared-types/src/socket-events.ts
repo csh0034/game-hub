@@ -38,6 +38,7 @@ export interface ClientToServerEvents {
   // Player
   "player:set-nickname": (
     nickname: string,
+    browserId: string,
     callback: (result: { success: boolean; error?: string; isAdmin?: boolean; githubRepoUrl?: string }) => void,
   ) => void;
   "player:logout": () => void;
@@ -147,4 +148,5 @@ export interface SocketData {
   authenticated: boolean;
   authenticatedAt: number | null;
   isSpectator?: boolean;
+  browserId?: string;
 }

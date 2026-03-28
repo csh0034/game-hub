@@ -21,7 +21,7 @@ export function setupNicknameHandler(
   sessionStore: SessionStore,
   gameManager: GameManager,
 ) {
-  socket.on("player:set-nickname", async (nickname, callback) => {
+  socket.on("player:set-nickname", async (nickname, browserId, callback) => {
     const trimmed = nickname.trim();
 
     if (trimmed.length < 3 || trimmed.length > 20) {
@@ -39,9 +39,13 @@ export function setupNicknameHandler(
     if (taken) {
       const prev = await sessionStore.findSessionByNickname(trimmed);
       if (prev) {
-        // Force logout the previous holder (last tab wins)
         const oldSocket = io.sockets.sockets.get(prev.socketId);
         if (oldSocket) {
+          // 같은 브라우저(browserId 일치)만 force-logout 허용
+          if (prev.data.browserId !== browserId) {
+            callback({ success: false, error: "이미 사용 중인 닉네임입니다." });
+            return;
+          }
           oldSocket.emit("player:force-logout");
           oldSocket.data.authenticated = false;
           oldSocket.disconnect(true);
@@ -65,6 +69,7 @@ export function setupNicknameHandler(
       }
     }
 
+    socket.data.browserId = browserId;
     socket.data.nickname = trimmed;
     socket.data.authenticated = true;
     socket.data.authenticatedAt = Date.now();

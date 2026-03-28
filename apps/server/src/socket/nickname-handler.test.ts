@@ -20,13 +20,14 @@ describe("setupNicknameHandler", () => {
 
   it("유효한 닉네임을 설정한다", async () => {
     const callback = vi.fn();
-    socket._trigger("player:set-nickname", "홍길동", callback);
+    socket._trigger("player:set-nickname", "홍길동", "browser-1", callback);
 
     await vi.waitFor(() => {
       expect(callback).toHaveBeenCalledWith({ success: true, isAdmin: false, githubRepoUrl: "https://github.com/csh0034/game-hub" });
     });
     expect(socket.data.nickname).toBe("홍길동");
     expect(socket.data.authenticated).toBe(true);
+    expect(socket.data.browserId).toBe("browser-1");
     expect(io.emit).toHaveBeenCalledWith("system:player-count", {
       count: 1,
       players: [expect.objectContaining({ nickname: "홍길동" })],
@@ -35,7 +36,7 @@ describe("setupNicknameHandler", () => {
 
   it("닉네임 앞뒤 공백을 제거한다", async () => {
     const callback = vi.fn();
-    socket._trigger("player:set-nickname", "  홍길동  ", callback);
+    socket._trigger("player:set-nickname", "  홍길동  ", "browser-1", callback);
 
     await vi.waitFor(() => {
       expect(callback).toHaveBeenCalledWith({ success: true, isAdmin: false, githubRepoUrl: "https://github.com/csh0034/game-hub" });
@@ -45,7 +46,7 @@ describe("setupNicknameHandler", () => {
 
   it("3자 미만 닉네임을 거부한다", () => {
     const callback = vi.fn();
-    socket._trigger("player:set-nickname", "ab", callback);
+    socket._trigger("player:set-nickname", "ab", "browser-1", callback);
 
     expect(callback).toHaveBeenCalledWith({
       success: false,
@@ -56,7 +57,7 @@ describe("setupNicknameHandler", () => {
 
   it("20자 초과 닉네임을 거부한다", () => {
     const callback = vi.fn();
-    socket._trigger("player:set-nickname", "a".repeat(21), callback);
+    socket._trigger("player:set-nickname", "a".repeat(21), "browser-1", callback);
 
     expect(callback).toHaveBeenCalledWith({
       success: false,
@@ -67,7 +68,7 @@ describe("setupNicknameHandler", () => {
 
   it("'관리자' 닉네임을 거부한다", () => {
     const callback = vi.fn();
-    socket._trigger("player:set-nickname", "관리자", callback);
+    socket._trigger("player:set-nickname", "관리자", "browser-1", callback);
 
     expect(callback).toHaveBeenCalledWith({
       success: false,
@@ -78,7 +79,7 @@ describe("setupNicknameHandler", () => {
 
   it("공백만 있는 닉네임을 거부한다", () => {
     const callback = vi.fn();
-    socket._trigger("player:set-nickname", "   ", callback);
+    socket._trigger("player:set-nickname", "   ", "browser-1", callback);
 
     expect(callback).toHaveBeenCalledWith({
       success: false,
@@ -86,27 +87,53 @@ describe("setupNicknameHandler", () => {
     });
   });
 
-  it("중복 닉네임 시 기존 소켓을 강제 로그아웃하고 새 소켓이 닉네임을 인계한다", async () => {
-    const otherSocket = createMockSocket("socket-2", "홍길동", { authenticated: true });
-    io = createMockIo({ sockets: [socket, otherSocket] });
-    await sessionStore.reserveNickname("홍길동", "socket-2");
-    await sessionStore.saveSession("socket-2", otherSocket.data);
-    setupNicknameHandler(io, socket, sessionStore, gameManager);
+  describe("닉네임 충돌", () => {
+    it("같은 브라우저에서 중복 닉네임 시 기존 소켓을 강제 로그아웃한다", async () => {
+      const otherSocket = createMockSocket("socket-2", "홍길동", { authenticated: true });
+      otherSocket.data.browserId = "browser-A";
+      io = createMockIo({ sockets: [socket, otherSocket] });
+      await sessionStore.reserveNickname("홍길동", "socket-2");
+      await sessionStore.saveSession("socket-2", otherSocket.data);
+      setupNicknameHandler(io, socket, sessionStore, gameManager);
 
-    const callback = vi.fn();
-    socket._trigger("player:set-nickname", "홍길동", callback);
+      const callback = vi.fn();
+      socket._trigger("player:set-nickname", "홍길동", "browser-A", callback);
 
-    await vi.waitFor(() => {
-      expect(callback).toHaveBeenCalledWith({
-        success: true,
-        isAdmin: false,
-        githubRepoUrl: "https://github.com/csh0034/game-hub",
+      await vi.waitFor(() => {
+        expect(callback).toHaveBeenCalledWith({
+          success: true,
+          isAdmin: false,
+          githubRepoUrl: "https://github.com/csh0034/game-hub",
+        });
       });
+      expect(socket.data.nickname).toBe("홍길동");
+      expect(otherSocket.emit).toHaveBeenCalledWith("player:force-logout");
+      expect(otherSocket.data.authenticated).toBe(false);
+      expect(otherSocket.disconnect).toHaveBeenCalledWith(true);
     });
-    expect(socket.data.nickname).toBe("홍길동");
-    expect(otherSocket.emit).toHaveBeenCalledWith("player:force-logout");
-    expect(otherSocket.data.authenticated).toBe(false);
-    expect(otherSocket.disconnect).toHaveBeenCalledWith(true);
+
+    it("다른 브라우저에서 중복 닉네임 시 거부한다", async () => {
+      const otherSocket = createMockSocket("socket-2", "홍길동", { authenticated: true });
+      otherSocket.data.browserId = "browser-A";
+      io = createMockIo({ sockets: [socket, otherSocket] });
+      await sessionStore.reserveNickname("홍길동", "socket-2");
+      await sessionStore.saveSession("socket-2", otherSocket.data);
+      setupNicknameHandler(io, socket, sessionStore, gameManager);
+
+      const callback = vi.fn();
+      socket._trigger("player:set-nickname", "홍길동", "browser-B", callback);
+
+      await vi.waitFor(() => {
+        expect(callback).toHaveBeenCalledWith({
+          success: false,
+          error: "이미 사용 중인 닉네임입니다.",
+        });
+      });
+      // 기존 소켓이 영향받지 않아야 한다
+      expect(otherSocket.emit).not.toHaveBeenCalledWith("player:force-logout");
+      expect(otherSocket.disconnect).not.toHaveBeenCalled();
+      expect(otherSocket.data.authenticated).toBe(true);
+    });
   });
 
   it("자기 자신의 닉네임과 같은 값으로 변경할 수 있다", async () => {
@@ -116,7 +143,7 @@ describe("setupNicknameHandler", () => {
     setupNicknameHandler(io, socket, sessionStore, gameManager);
 
     const callback = vi.fn();
-    socket._trigger("player:set-nickname", "홍길동", callback);
+    socket._trigger("player:set-nickname", "홍길동", "browser-1", callback);
 
     await vi.waitFor(() => {
       expect(callback).toHaveBeenCalledWith({ success: true, isAdmin: false, githubRepoUrl: "https://github.com/csh0034/game-hub" });
@@ -125,7 +152,7 @@ describe("setupNicknameHandler", () => {
 
   it("로그아웃 시 authenticated를 false로 설정하고 카운트를 갱신한다", async () => {
     const callback = vi.fn();
-    socket._trigger("player:set-nickname", "홍길동", callback);
+    socket._trigger("player:set-nickname", "홍길동", "browser-1", callback);
     await vi.waitFor(() => {
       expect(socket.data.authenticated).toBe(true);
     });
@@ -143,6 +170,7 @@ describe("setupNicknameHandler", () => {
 
     beforeEach(() => {
       oldSocket = createMockSocket("old-socket", "홍길동");
+      oldSocket.data.browserId = "browser-A";
       newSocket = createMockSocket("new-socket", "NewPlayer", { authenticated: false });
     });
 
@@ -156,7 +184,7 @@ describe("setupNicknameHandler", () => {
       setupNicknameHandler(io, newSocket, sessionStore, gameManager);
 
       const callback = vi.fn();
-      newSocket._trigger("player:set-nickname", "홍길동", callback);
+      newSocket._trigger("player:set-nickname", "홍길동", "browser-A", callback);
 
       await vi.waitFor(() => {
         expect(callback).toHaveBeenCalledWith({
@@ -167,6 +195,26 @@ describe("setupNicknameHandler", () => {
       });
       expect(newSocket.data.nickname).toBe("홍길동");
       expect(newSocket.data.authenticated).toBe(true);
+    });
+
+    it("이전 소켓이 끊어졌으면 다른 브라우저에서도 닉네임을 사용할 수 있다", async () => {
+      await sessionStore.reserveNickname("홍길동", "old-socket");
+      await sessionStore.saveSession("old-socket", oldSocket.data);
+
+      io = createMockIo({ sockets: [newSocket] });
+      setupNicknameHandler(io, newSocket, sessionStore, gameManager);
+
+      const callback = vi.fn();
+      newSocket._trigger("player:set-nickname", "홍길동", "browser-B", callback);
+
+      await vi.waitFor(() => {
+        expect(callback).toHaveBeenCalledWith({
+          success: true,
+          isAdmin: false,
+          githubRepoUrl: "https://github.com/csh0034/game-hub",
+        });
+      });
+      expect(newSocket.data.nickname).toBe("홍길동");
     });
 
     it("재접속 시 이전 방 멤버십이 복원된다", async () => {
@@ -187,7 +235,7 @@ describe("setupNicknameHandler", () => {
       setupNicknameHandler(io, newSocket, sessionStore, gameManager);
 
       const callback = vi.fn();
-      newSocket._trigger("player:set-nickname", "홍길동", callback);
+      newSocket._trigger("player:set-nickname", "홍길동", "browser-A", callback);
 
       await vi.waitFor(() => {
         expect(callback).toHaveBeenCalledWith({
@@ -233,7 +281,7 @@ describe("setupNicknameHandler", () => {
       setupNicknameHandler(io, newSocket, sessionStore, gameManager);
 
       const callback = vi.fn();
-      newSocket._trigger("player:set-nickname", "홍길동", callback);
+      newSocket._trigger("player:set-nickname", "홍길동", "browser-A", callback);
 
       await vi.waitFor(() => {
         expect(callback).toHaveBeenCalledWith({

@@ -12,6 +12,18 @@ export type GameSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
 let socket: GameSocket | null = null;
 
+const BROWSER_ID_KEY = "game-hub-browser-id";
+
+export function getBrowserId(): string {
+  if (typeof window === "undefined") return "";
+  let id = localStorage.getItem(BROWSER_ID_KEY);
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem(BROWSER_ID_KEY, id);
+  }
+  return id;
+}
+
 export function getSocket(): GameSocket {
   if (!socket) {
     socket = io(SOCKET_URL, {

@@ -12,6 +12,7 @@ import { useRequests } from "@/hooks/use-requests";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { NicknameForm } from "@/components/lobby/nickname-form";
+import { getBrowserId } from "@/lib/socket";
 import { GameCardGrid } from "@/components/lobby/game-card-grid";
 import { RoomList } from "@/components/lobby/room-list";
 import { RoomView } from "@/components/lobby/room-view";
@@ -119,7 +120,7 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
   useEffect(() => {
     if (!socket || !isConnected || !nickname || forceLoggedOut) return;
 
-    socket.emit("player:set-nickname", nickname, (result) => {
+    socket.emit("player:set-nickname", nickname, getBrowserId(), (result) => {
       if (!result.success) {
         store.remove();
         setIsAdmin(false);

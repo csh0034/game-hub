@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Gamepad2 } from "lucide-react";
-import { getSocket } from "@/lib/socket";
+import { getSocket, getBrowserId } from "@/lib/socket";
 
 interface NicknameFormProps {
   onComplete: (nickname: string) => void;
@@ -29,7 +29,7 @@ export function NicknameForm({ onComplete }: NicknameFormProps) {
     setError("");
 
     const socket = getSocket();
-    socket.emit("player:set-nickname", trimmed, (result) => {
+    socket.emit("player:set-nickname", trimmed, getBrowserId(), (result) => {
       setIsSubmitting(false);
       if (result.success) {
         onComplete(trimmed);

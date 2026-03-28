@@ -174,7 +174,7 @@ describe("Tetris 8-player E2E", () => {
   it("should set nicknames for all 8 clients", async () => {
     for (let i = 0; i < NUM_PLAYERS; i++) {
       const result = await new Promise<{ success: boolean; error?: string }>((resolve) => {
-        clients[i].emit("player:set-nickname", `Player${i + 1}`, resolve);
+        clients[i].emit("player:set-nickname", `Player${i + 1}`, `browser-${i}`, resolve);
       });
       expect(result.success).toBe(true);
     }

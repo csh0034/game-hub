@@ -21,7 +21,11 @@ export function setupNicknameHandler(
   sessionStore: SessionStore,
   gameManager: GameManager,
 ) {
-  socket.on("player:set-nickname", async (nickname, browserId, callback) => {
+  socket.on("player:set-nickname", async (nickname, browserIdOrCallback, maybeCallback) => {
+    // 하위 호환: browserId 없이 (nickname, callback) 2인자로 호출하는 기존 클라이언트 지원
+    const callback = typeof maybeCallback === "function" ? maybeCallback : typeof browserIdOrCallback === "function" ? browserIdOrCallback : null;
+    const browserId = typeof browserIdOrCallback === "string" ? browserIdOrCallback : undefined;
+    if (!callback) return;
     const trimmed = nickname.trim();
 
     if (trimmed.length < 3 || trimmed.length > 20) {

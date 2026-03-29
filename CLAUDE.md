@@ -39,7 +39,6 @@ pnpm --filter web test:coverage           # 웹 테스트 + 커버리지
 | 테트리스 (Tetris) | `docs/games/tetris.md` |
 | 오목 (Gomoku) | `docs/games/gomoku.md` |
 | 지뢰찾기 (Minesweeper) | `docs/games/minesweeper.md` |
-| 텍사스 홀덤 (Texas Hold'em) | `docs/games/texas-holdem.md` |
 | 타자 게임 (Typing) | `docs/games/typing.md` |
 
 ## 기능 문서

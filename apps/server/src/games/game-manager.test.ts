@@ -6,7 +6,6 @@ const host: Player = { id: "host-1", nickname: "Host", isReady: true };
 const guest: Player = { id: "guest-1", nickname: "Guest", isReady: true };
 
 const gomokuPayload: CreateRoomPayload = { name: "오목 방", gameType: "gomoku" };
-const holdemPayload: CreateRoomPayload = { name: "홀덤 방", gameType: "texas-holdem" };
 
 describe("GameManager", () => {
   let gm: GameManager;
@@ -145,13 +144,6 @@ describe("GameManager", () => {
       const state = gm.startGame(room.id);
       expect(state).not.toBeNull();
       expect(gm.getRoom(room.id)!.status).toBe("playing");
-    });
-
-    it("홀덤 게임을 시작하면 HoldemEngine 인스턴스가 생성된다", () => {
-      const room = gm.createRoom(holdemPayload, host);
-      gm.joinRoom(room.id, guest);
-      gm.startGame(room.id);
-      expect(gm.getHoldemEngine(room.id)).not.toBeNull();
     });
 
     it("최소 인원 미달 시 null을 반환한다", () => {

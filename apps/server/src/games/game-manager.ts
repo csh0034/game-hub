@@ -2,7 +2,6 @@ import type { Room, CreateRoomPayload, GameOptions } from "@game-hub/shared-type
 import { MAX_SPECTATORS, MAX_ROOM_NAME_LENGTH } from "@game-hub/shared-types";
 import type { Player, GameType, GameState, GameMove, GameResult } from "@game-hub/shared-types";
 import { GomokuEngine } from "./gomoku-engine.js";
-import { HoldemEngine } from "./holdem-engine.js";
 import { MinesweeperEngine } from "./minesweeper-engine.js";
 import { TetrisEngine } from "./tetris-engine.js";
 import { LiarDrawingEngine } from "./liar-drawing-engine.js";
@@ -15,14 +14,13 @@ export class GameManager {
   private rooms: Map<string, Room> = new Map();
   private gameStates: Map<string, GameState> = new Map();
   private engines: Map<GameType, GameEngine> = new Map();
-  // Per-room stateful engine instances (holdem, minesweeper, tetris)
+  // Per-room stateful engine instances (minesweeper, tetris)
   private roomEngines: Map<string, GameEngine> = new Map();
   private roomStore: RoomStore | null;
 
   constructor(roomStore?: RoomStore) {
     this.roomStore = roomStore ?? null;
     this.engines.set("gomoku", new GomokuEngine());
-    this.engines.set("texas-holdem", new HoldemEngine());
     this.engines.set("minesweeper", new MinesweeperEngine());
     this.engines.set("tetris", new TetrisEngine());
     this.engines.set("liar-drawing", new LiarDrawingEngine());
@@ -143,15 +141,6 @@ export class GameManager {
     if (otherPlayers.length > 0 && !otherPlayers.every((p) => p.isReady)) return null;
     room.status = "playing";
 
-    if (room.gameType === "texas-holdem") {
-      const holdemEngine = new HoldemEngine();
-      this.roomEngines.set(roomId, holdemEngine);
-      const state = holdemEngine.initState(room.players);
-      this.gameStates.set(roomId, state);
-      this.persistRoom(room);
-      return state;
-    }
-
     if (room.gameType === "minesweeper") {
       const difficulty = room.gameOptions?.minesweeperDifficulty ?? "beginner";
       const minesweeperEngine = new MinesweeperEngine(difficulty);
@@ -236,7 +225,7 @@ export class GameManager {
     const newState = engine.processMove(state, playerId, move);
     this.gameStates.set(roomId, newState);
     const result = engine.checkWin(newState);
-    if (result && room.gameType !== "texas-holdem" && room.gameType !== "liar-drawing" && room.gameType !== "catch-mind") {
+    if (result && room.gameType !== "liar-drawing" && room.gameType !== "catch-mind") {
       room.status = "finished";
       this.persistRoom(room);
     }
@@ -355,11 +344,6 @@ export class GameManager {
 
   getRoomCount(): number {
     return this.rooms.size;
-  }
-
-  getHoldemEngine(roomId: string): HoldemEngine | null {
-    const engine = this.roomEngines.get(roomId);
-    return engine instanceof HoldemEngine ? engine : null;
   }
 
   getMinesweeperEngine(roomId: string): MinesweeperEngine | null {

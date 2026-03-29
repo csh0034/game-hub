@@ -1,4 +1,4 @@
-export type GameType = "gomoku" | "texas-holdem" | "minesweeper" | "tetris" | "liar-drawing" | "catch-mind" | "typing";
+export type GameType = "gomoku" | "minesweeper" | "tetris" | "liar-drawing" | "catch-mind" | "typing";
 
 export interface GameConfig {
   gameType: GameType;
@@ -52,16 +52,6 @@ export const GAME_CONFIGS: Record<GameType, GameConfig> = {
     maxPlayers: 1,
     icon: "💣",
   },
-  "texas-holdem": {
-    gameType: "texas-holdem",
-    name: "텍사스 홀덤",
-    description: "포커 카드 게임, 베팅으로 승부",
-    minPlayers: 2,
-    maxPlayers: 8,
-    icon: "🃏",
-    disabled: true,
-    disabledReason: "패치중",
-  },
   typing: {
     gameType: "typing",
     name: "타자 게임",
@@ -89,60 +79,6 @@ export interface GomokuState {
 export interface GomokuMove {
   row: number;
   col: number;
-}
-
-// Texas Hold'em types
-export type Suit = "hearts" | "diamonds" | "clubs" | "spades";
-export type Rank = "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "10" | "J" | "Q" | "K" | "A";
-
-export interface Card {
-  suit: Suit;
-  rank: Rank;
-}
-
-export type HoldemPhase = "waiting" | "preflop" | "flop" | "turn" | "river" | "showdown";
-export type HoldemAction = "fold" | "check" | "call" | "raise" | "all-in";
-
-export interface HoldemPlayerState {
-  id: string;
-  nickname: string;
-  chips: number;
-  currentBet: number;
-  holeCards: Card[];
-  folded: boolean;
-  isAllIn: boolean;
-  isDealer: boolean;
-  isTurn: boolean;
-  seatIndex: number;
-  eliminated: boolean;
-}
-
-export interface HoldemPublicState {
-  phase: HoldemPhase;
-  communityCards: Card[];
-  pot: number;
-  currentBet: number;
-  dealerIndex: number;
-  currentPlayerIndex: number;
-  players: Omit<HoldemPlayerState, "holeCards">[];
-  smallBlind: number;
-  bigBlind: number;
-  minRaise: number;
-  actedPlayerIds: string[];
-  winners?: { playerId: string; amount: number; handName: string }[];
-  showdownCards?: Record<string, Card[]>;
-  roundNumber: number;
-  eliminatedPlayerIds: string[];
-}
-
-export interface HoldemPrivateState {
-  holeCards?: Card[];
-  allHoleCards?: Record<string, Card[]>;
-}
-
-export interface HoldemMove {
-  action: HoldemAction;
-  amount?: number;
 }
 
 // Minesweeper types
@@ -428,8 +364,8 @@ export interface TypingMove {
   word: string;
 }
 
-export type GameState = GomokuState | HoldemPublicState | MinesweeperPublicState | TetrisPublicState | LiarDrawingPublicState | CatchMindPublicState | TypingPublicState;
-export type GameMove = GomokuMove | HoldemMove | MinesweeperMove | TetrisMove | LiarDrawingMove | CatchMindMove | TypingMove;
+export type GameState = GomokuState | MinesweeperPublicState | TetrisPublicState | LiarDrawingPublicState | CatchMindPublicState | TypingPublicState;
+export type GameMove = GomokuMove | MinesweeperMove | TetrisMove | LiarDrawingMove | CatchMindMove | TypingMove;
 
 export interface GameResult {
   winnerId: string | null; // null = draw

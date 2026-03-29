@@ -49,18 +49,6 @@ describe("useGameStore", () => {
     });
   });
 
-  describe("setRoundResult", () => {
-    it("라운드 결과를 설정한다", () => {
-      const result = {
-        winners: [{ playerId: "p1", amount: 100, handName: "원페어" }],
-        eliminatedPlayerIds: [],
-        nextRoundIn: 3000,
-      };
-      useGameStore.getState().setRoundResult(result);
-      expect(useGameStore.getState().roundResult).toEqual(result);
-    });
-  });
-
   describe("reset", () => {
     it("모든 상태를 null로 초기화한다", () => {
       useGameStore.getState().setGameState({ type: "gomoku" } as unknown as GameState);
@@ -73,7 +61,6 @@ describe("useGameStore", () => {
       expect(state.gameResult).toBeNull();
       expect(state.privateState).toBeNull();
       expect(state.playerLeftInfo).toBeNull();
-      expect(state.roundResult).toBeNull();
     });
   });
 });

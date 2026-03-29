@@ -47,7 +47,6 @@ describe("useGame", () => {
 
     expect(useGameStore.getState().gameState).toBe(state);
     expect(useGameStore.getState().gameResult).toBeNull();
-    expect(useGameStore.getState().roundResult).toBeNull();
   });
 
   it("game:state-updated 이벤트로 게임 상태를 갱신한다", () => {
@@ -95,22 +94,6 @@ describe("useGame", () => {
     });
 
     expect(useGameStore.getState().playerLeftInfo).toEqual({ nickname: "탈주자", willEnd: true });
-  });
-
-  it("game:round-ended 이벤트로 라운드 결과를 설정한다", () => {
-    const socket = createMockSocket();
-    renderHook(() => useGame(socket as never));
-    const roundResult = {
-      winners: [{ playerId: "p1", amount: 100, handName: "원페어" }],
-      eliminatedPlayerIds: [],
-      nextRoundIn: 3000,
-    };
-
-    act(() => {
-      socket._trigger("game:round-ended", roundResult);
-    });
-
-    expect(useGameStore.getState().roundResult).toEqual(roundResult);
   });
 
   it("makeMove가 game:move를 emit한다", () => {
@@ -223,7 +206,6 @@ describe("useGame", () => {
     expect(socket.off).toHaveBeenCalledWith("game:ended", expect.any(Function));
     expect(socket.off).toHaveBeenCalledWith("game:private-state", expect.any(Function));
     expect(socket.off).toHaveBeenCalledWith("game:player-left", expect.any(Function));
-    expect(socket.off).toHaveBeenCalledWith("game:round-ended", expect.any(Function));
     expect(socket.off).toHaveBeenCalledWith("game:tetris-player-updated", expect.any(Function));
     expect(socket.off).toHaveBeenCalledWith("game:tetris-piece-updated", expect.any(Function));
     expect(socket.off).toHaveBeenCalledWith("game:rematch-requested", expect.any(Function));

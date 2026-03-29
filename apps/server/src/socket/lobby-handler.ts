@@ -240,16 +240,6 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
           socket.emit("game:private-state", { keyword: cmEngine.getKeyword()! });
         }
       }
-      if (room.gameType === "texas-holdem") {
-        const holdemEngine = gameManager.getHoldemEngine(room.id);
-        if (holdemEngine) {
-          const allHoleCards: Record<string, ReturnType<typeof holdemEngine.getHoleCards>> = {};
-          for (const p of room.players) {
-            allHoleCards[p.id] = holdemEngine.getHoleCards(p.id);
-          }
-          socket.emit("game:private-state", { allHoleCards });
-        }
-      }
     }
   });
 

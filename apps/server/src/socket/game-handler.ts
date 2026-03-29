@@ -9,7 +9,6 @@ import type {
   TetrisMove,
   TetrisPublicState,
   TetrisPlayerBoard,
-  HoldemPublicState,
   LiarDrawingPublicState,
   CatchMindPublicState,
   DrawPoint,
@@ -27,7 +26,6 @@ import { startCatchMindTimer, clearCatchMindTimer } from "../games/catch-mind-ti
 import { startTypingTicker, updateTypingTickerInterval, clearTypingTicker } from "../games/typing-ticker.js";
 import { isAdmin } from "../admin.js";
 
-const holdemRoundTimers: Map<string, NodeJS.Timeout> = new Map();
 const typingCountdownTimers: Map<string, NodeJS.Timeout> = new Map();
 
 // Tetris: per-room dirty buffers for opponent board throttling (200ms)
@@ -221,21 +219,6 @@ function sendPrivateStateToSpectators(io: IOServer, room: Room, gameManager: Gam
     }
   }
 
-  if (room.gameType === "texas-holdem") {
-    const holdemEngine = gameManager.getHoldemEngine(room.id);
-    if (holdemEngine) {
-      const allHoleCards: Record<string, ReturnType<typeof holdemEngine.getHoleCards>> = {};
-      for (const player of room.players) {
-        allHoleCards[player.id] = holdemEngine.getHoleCards(player.id);
-      }
-      for (const spectator of room.spectators) {
-        const spectatorSocket = io.sockets.sockets.get(spectator.id);
-        if (spectatorSocket) {
-          spectatorSocket.emit("game:private-state", { allHoleCards });
-        }
-      }
-    }
-  }
 }
 
 export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: GameManager, rankingStore: RankingStore) {
@@ -579,20 +562,6 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
       }
     }
 
-    // For holdem, send private hole cards
-    if (room.gameType === "texas-holdem") {
-      const holdemEngine = gameManager.getHoldemEngine(roomId);
-      if (holdemEngine) {
-        for (const player of room.players) {
-          const holeCards = holdemEngine.getHoleCards(player.id);
-          const playerSocket = io.sockets.sockets.get(player.id);
-          if (playerSocket) {
-            playerSocket.emit("game:private-state", { holeCards });
-          }
-        }
-      }
-    }
-
     // Send private state to spectators (they see all info)
     sendPrivateStateToSpectators(io, room, gameManager);
   });
@@ -731,61 +700,7 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
       cleanupTetrisFlush(roomId, io);
       clearTypingTicker(roomId);
 
-      if (room?.gameType === "texas-holdem") {
-        const holdemEngine = gameManager.getHoldemEngine(roomId);
-        const holdemState = result.state as HoldemPublicState;
-
-        if (holdemEngine) {
-          const activeCount = holdemEngine.getActivePlayerCount(holdemState);
-
-          if (activeCount <= 1) {
-            // Final game end — only 1 player left with chips
-            room.status = "finished";
-            io.to(roomId).emit("game:ended", result.result);
-            io.emit("lobby:room-updated", room);
-          } else {
-            // Round ended, more rounds to play
-            const nextRoundIn = 5000;
-            io.to(roomId).emit("game:round-ended", {
-              winners: holdemState.winners || [],
-              showdownCards: holdemState.showdownCards,
-              eliminatedPlayerIds: holdemState.eliminatedPlayerIds,
-              nextRoundIn,
-            });
-
-            // Schedule next round
-            const timer = setTimeout(() => {
-              holdemRoundTimers.delete(roomId);
-              const currentRoom = gameManager.getRoom(roomId);
-              if (!currentRoom || currentRoom.status !== "playing") return;
-
-              const currentState = gameManager.getGameState(roomId) as HoldemPublicState | null;
-              if (!currentState) return;
-
-              const { state: newState, holeCardsMap } = holdemEngine.startNewRound(currentState);
-              gameManager.setGameState(roomId, newState);
-
-              io.to(roomId).emit("game:started", newState);
-
-              // Send private hole cards to each player
-              for (const [playerId, holeCards] of holeCardsMap) {
-                const playerSocket = io.sockets.sockets.get(playerId);
-                if (playerSocket) {
-                  playerSocket.emit("game:private-state", { holeCards });
-                }
-              }
-
-              // Send all hole cards to spectators
-              const updatedRoom = gameManager.getRoom(roomId);
-              if (updatedRoom) {
-                sendPrivateStateToSpectators(io, updatedRoom, gameManager);
-              }
-            }, nextRoundIn);
-
-            holdemRoundTimers.set(roomId, timer);
-          }
-        }
-      } else {
+      {
         // Submit ranking for single-player games
         if (room?.gameType === "minesweeper" && result.result.winnerId) {
           const msEngine = gameManager.getMinesweeperEngine(roomId);
@@ -876,12 +791,6 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
       clearTimeout(typingCountdown);
       typingCountdownTimers.delete(roomId);
     }
-    const holdemTimer = holdemRoundTimers.get(roomId);
-    if (holdemTimer) {
-      clearTimeout(holdemTimer);
-      holdemRoundTimers.delete(roomId);
-    }
-
     const room = gameManager.resetRoom(roomId);
     if (room) {
       io.to(roomId).emit("game:rematch-requested", socket.id!);

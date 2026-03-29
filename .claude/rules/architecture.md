@@ -51,7 +51,6 @@ game-hub/
 │   ├── game-manager.ts      # GameType → GameEngine 매핑 + RoomStore write-through
 │   ├── gomoku-engine.ts
 │   ├── gomoku-timer.ts      # 오목 턴 타이머
-│   ├── holdem-engine.ts
 │   ├── minesweeper-engine.ts
 │   ├── tetris-engine.ts
 │   ├── tetris-ticker.ts     # 테트리스 서버 틱 타이머
@@ -103,7 +102,6 @@ game-hub/
 │   ├── request-board/       # 요청사항 게시판 UI (목록, 작성, 수락/거부/완료 처리)
 │   └── games/               # 게임별 UI
 │       ├── gomoku/
-│       ├── texas-holdem/
 │       ├── minesweeper/
 │       ├── tetris/
 │       ├── liar-drawing/
@@ -113,7 +111,6 @@ game-hub/
 └── lib/
     ├── socket.ts            # Socket.IO 클라이언트
     ├── game-registry.tsx    # GameType → lazy component 매핑
-    ├── hand-evaluator.ts    # 텍사스 홀덤 핸드 평가
     └── utils.ts
 ```
 

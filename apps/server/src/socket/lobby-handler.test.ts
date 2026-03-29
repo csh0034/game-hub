@@ -310,16 +310,6 @@ describe("setupLobbyHandler — lobby:create-room", () => {
     expect((io.emit as ReturnType<typeof vi.fn>)).toHaveBeenCalledWith("lobby:room-created", room);
   });
 
-  it("비활성화된 게임으로 방 생성 시 game:error를 발송한다", () => {
-    setupLobbyHandler(io as unknown as GameServer, socket1 as unknown as GameSocket, gameManager, chatStore);
-
-    const callback = vi.fn();
-    socket1._trigger("lobby:create-room", { gameType: "texas-holdem", name: "Holdem Room" }, callback);
-
-    expect(callback).not.toHaveBeenCalled();
-    expect((socket1.emit as ReturnType<typeof vi.fn>)).toHaveBeenCalledWith("game:error", "패치중");
-  });
-
   it("방 생성 시 소켓이 방에 조인한다", () => {
     setupLobbyHandler(io as unknown as GameServer, socket1 as unknown as GameSocket, gameManager, chatStore);
 

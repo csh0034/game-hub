@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { HelpCircle } from "lucide-react";
 import { useGame } from "@/hooks/use-game";
 import { useGameStore } from "@/stores/game-store";
 import { getSocket } from "@/lib/socket";
+import { GameHelpDialog } from "@/components/common/game-help-dialog";
 import type {
   TypingPublicState,
   TypingWord,
@@ -98,6 +100,7 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
   const [feedback, setFeedback] = useState<{ type: "miss" | "typo"; id: number } | null>(null);
   const [remainingTime, setRemainingTime] = useState(0);
   const [countdown, setCountdown] = useState<number | null>(null);
+  const [showHelp, setShowHelp] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const formRowRef = useRef<HTMLDivElement>(null);
   const feedbackTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
@@ -332,9 +335,18 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
               </>
             )}
           </div>
-          <span className="text-xs text-muted-foreground">
-            {gameState.difficulty === "beginner" ? "초급" : gameState.difficulty === "intermediate" ? "중급" : "고급"}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">
+              {gameState.difficulty === "beginner" ? "초급" : gameState.difficulty === "intermediate" ? "중급" : "고급"}
+            </span>
+            <button
+              onClick={() => setShowHelp(true)}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+              title="게임 도움말"
+            >
+              <HelpCircle className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* 단어 낙하 영역 */}
@@ -469,6 +481,39 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
           ))}
         </div>
       )}
+
+      <GameHelpDialog open={showHelp} onClose={() => setShowHelp(false)} title="타자 게임">
+        <div>
+          <h3 className="text-foreground font-semibold mb-1">게임 방법</h3>
+          <ul className="list-disc list-inside space-y-1">
+            <li>위에서 단어가 내려오면 입력창에 타이핑하고 Enter로 제출</li>
+            <li>정확히 일치하면 해당 단어가 제거된다</li>
+            <li>시간이 지날수록 낙하 속도와 출현 빈도가 증가한다</li>
+          </ul>
+        </div>
+        <div>
+          <h3 className="text-foreground font-semibold mb-1">점수</h3>
+          <ul className="list-disc list-inside space-y-1">
+            <li>2자: 100점, 3자: 200점, 4자: 350점, 5자: 500점</li>
+            <li>연속 정답 시 콤보 증가, 5콤보마다 보너스 점수</li>
+          </ul>
+        </div>
+        <div>
+          <h3 className="text-foreground font-semibold mb-1">목숨</h3>
+          <ul className="list-disc list-inside space-y-1">
+            <li>단어를 놓치면(하단 도달) 목숨 -1</li>
+            <li>오타는 콤보만 초기화, 목숨은 줄지 않음</li>
+            <li>목숨이 0이 되면 탈락</li>
+          </ul>
+        </div>
+        <div>
+          <h3 className="text-foreground font-semibold mb-1">승리 조건</h3>
+          <ul className="list-disc list-inside space-y-1">
+            <li>제한 시간 종료 또는 전원 탈락 시 게임 종료</li>
+            <li>최고 점수 플레이어가 승리</li>
+          </ul>
+        </div>
+      </GameHelpDialog>
     </div>
   );
 }

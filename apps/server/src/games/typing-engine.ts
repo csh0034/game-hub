@@ -55,6 +55,7 @@ export class TypingEngine implements GameEngine {
   private playerWords: Map<string, TypingWord[]> = new Map();
   private playerStates: Map<string, TypingPlayerState> = new Map();
   private startedAt = 0;
+  private lastClearedWordId: number | null = null;
 
   constructor(difficulty: TypingDifficulty = "beginner", timeLimit = 60, maxLives = 3) {
     this.difficulty = difficulty;
@@ -98,6 +99,7 @@ export class TypingEngine implements GameEngine {
       startedAt: this.startedAt,
       speedMultiplier: 1.0,
       spawnMultiplier: 1.0,
+      countingDown: true,
     };
   }
 
@@ -116,12 +118,15 @@ export class TypingEngine implements GameEngine {
     const submittedWord = typingMove.word.trim();
     const matchIndex = words.findIndex((w) => w.text === submittedWord);
 
+    this.lastClearedWordId = null;
+
     if (matchIndex === -1) {
       // 오타 — 콤보만 리셋 (목숨 차감 없음)
       ps.combo = 0;
     } else {
       // 정답 — 단어 제거, 점수 부여
       const word = words[matchIndex];
+      this.lastClearedWordId = word.id;
       words.splice(matchIndex, 1);
       const charLen = word.text.length;
       const baseScore = CHAR_SCORES[charLen] ?? charLen * 100;
@@ -150,9 +155,18 @@ export class TypingEngine implements GameEngine {
     const now = Date.now();
     const elapsed = now - typingState.startedAt;
     const timeUp = elapsed >= typingState.timeLimit * 1000;
-    const allDead = [...this.playerStates.values()].every((ps) => ps.status === "gameover");
+    const allPlayers = [...this.playerStates.values()];
+    const allDead = allPlayers.every((ps) => ps.status === "gameover");
+    const alivePlayers = allPlayers.filter((ps) => ps.status === "playing");
+    const isMultiplayer = allPlayers.length >= 2;
+    const lastManStanding = isMultiplayer && alivePlayers.length <= 1;
 
-    if (!timeUp && !allDead) return null;
+    if (!timeUp && !allDead && !lastManStanding) return null;
+
+    // last man standing: 생존자가 승자
+    if (lastManStanding && alivePlayers.length === 1) {
+      return { winnerId: alivePlayers[0].id, reason: "" };
+    }
 
     // 승리 판정: 최고 점수
     let bestScore = -1;
@@ -250,15 +264,17 @@ export class TypingEngine implements GameEngine {
       }
     }
 
-    const allDead = activePlayers.length === 0 ||
-      [...this.playerStates.values()].every((ps) => ps.status === "gameover");
+    const allPlayers = [...this.playerStates.values()];
+    const allDead = activePlayers.length === 0 || allPlayers.every((ps) => ps.status === "gameover");
+    const isMultiplayer = allPlayers.length >= 2;
+    const lastManStanding = isMultiplayer && activePlayers.length <= 1;
     const timeUp = now - this.startedAt >= this.timeLimit * 1000;
 
     return {
       spawnedWords,
       missedWordIds,
       updatedPlayers,
-      gameOver: allDead || timeUp,
+      gameOver: allDead || timeUp || lastManStanding,
     };
   }
 
@@ -268,6 +284,22 @@ export class TypingEngine implements GameEngine {
 
   getPlayerWords(playerId: string): TypingWord[] {
     return this.playerWords.get(playerId) ?? [];
+  }
+
+  getLastClearedWordId(): number | null {
+    return this.lastClearedWordId;
+  }
+
+  clearLastClearedWordId(): void {
+    this.lastClearedWordId = null;
+  }
+
+  getAllPlayerWords(): Record<string, TypingWord[]> {
+    const record: Record<string, TypingWord[]> = {};
+    for (const [id, words] of this.playerWords) {
+      record[id] = words.map((w) => ({ ...w }));
+    }
+    return record;
   }
 
   getAllPlayerStates(): Record<string, TypingPlayerState> {

@@ -38,6 +38,17 @@ describe("TypingEngine", () => {
       expect(ps.status).toBe("playing");
     });
 
+    it("초기 상태에 countingDown이 true다", () => {
+      const state = engine.initState(createPlayers(2));
+      expect(state.countingDown).toBe(true);
+    });
+
+    it("toPublicState에는 countingDown이 없다", () => {
+      engine.initState(createPlayers(2));
+      const state = engine.toPublicState();
+      expect(state.countingDown).toBeUndefined();
+    });
+
     it("1인 플레이도 가능하다", () => {
       const state = engine.initState(createPlayers(1));
       expect(Object.keys(state.players)).toHaveLength(1);
@@ -106,6 +117,75 @@ describe("TypingEngine", () => {
   describe("checkWin", () => {
     it("게임 진행 중이면 null을 반환한다", () => {
       const state = engine.initState(createPlayers(2));
+      const result = engine.checkWin(state);
+      expect(result).toBeNull();
+    });
+
+    it("멀티플레이에서 마지막 1명이 남으면 게임이 종료된다", () => {
+      engine = new TypingEngine("beginner", 60, 1);
+      const initState = engine.initState(createPlayers(2));
+
+      // player-1이 단어를 맞춰서 점수를 얻음
+      engine.tick();
+      const words1 = engine.getPlayerWords("player-1");
+      if (words1.length > 0) {
+        engine.processMove(initState, "player-1", { type: "submit", word: words1[0].text } as TypingMove);
+      }
+
+      // player-2를 탈락시키기 위해 단어 miss 처리
+      const words2 = engine.getPlayerWords("player-2");
+      for (const w of words2) { w.spawnedAt = 0; w.fallDurationMs = 0; }
+      engine.tick();
+
+      const state = engine.toPublicState();
+      expect(state.players["player-2"].status).toBe("gameover");
+      expect(state.players["player-1"].status).toBe("playing");
+
+      const result = engine.checkWin(state);
+      expect(result).not.toBeNull();
+      expect(result!.winnerId).toBe("player-1");
+    });
+
+    it("멀티플레이에서 동점이어도 생존자가 승리한다", () => {
+      engine = new TypingEngine("beginner", 60, 1);
+      engine.initState(createPlayers(2));
+
+      // 아무도 점수를 얻지 않은 상태에서 player-2 탈락
+      engine.tick();
+      const words2 = engine.getPlayerWords("player-2");
+      for (const w of words2) { w.spawnedAt = 0; w.fallDurationMs = 0; }
+      const words1 = engine.getPlayerWords("player-1");
+      for (const w of words1) { w.spawnedAt = Date.now(); w.fallDurationMs = 999999; }
+      engine.tick();
+
+      const state = engine.toPublicState();
+      expect(state.players["player-1"].score).toBe(0);
+      expect(state.players["player-2"].score).toBe(0);
+
+      const result = engine.checkWin(state);
+      expect(result).not.toBeNull();
+      expect(result!.winnerId).toBe("player-1");
+    });
+
+    it("멀티플레이에서 tick도 lastManStanding을 감지한다", () => {
+      engine = new TypingEngine("beginner", 60, 1);
+      engine.initState(createPlayers(2));
+
+      // player-2만 탈락시키기
+      engine.tick();
+      const words2 = engine.getPlayerWords("player-2");
+      for (const w of words2) { w.spawnedAt = 0; w.fallDurationMs = 0; }
+      // player-1의 단어는 건드리지 않음
+      const words1 = engine.getPlayerWords("player-1");
+      for (const w of words1) { w.spawnedAt = Date.now(); w.fallDurationMs = 999999; }
+
+      const tickResult = engine.tick();
+      expect(tickResult.gameOver).toBe(true);
+    });
+
+    it("솔로 플레이에서는 1명 남아도 종료되지 않는다", () => {
+      engine = new TypingEngine("beginner", 60, 3);
+      const state = engine.initState(createPlayers(1));
       const result = engine.checkWin(state);
       expect(result).toBeNull();
     });
@@ -261,6 +341,63 @@ describe("TypingEngine", () => {
       const { speedMult, spawnMult } = engine.getAcceleration(Date.now());
       expect(speedMult).toBe(1.0);
       expect(spawnMult).toBe(1.0);
+    });
+  });
+
+  describe("getLastClearedWordId", () => {
+    it("정답 입력 시 클리어된 단어 ID를 반환한다", () => {
+      const state = engine.initState(createPlayers(1));
+      engine.tick();
+      const words = engine.getPlayerWords("player-1");
+      if (words.length === 0) return;
+
+      const wordId = words[0].id;
+      engine.processMove(state, "player-1", { type: "submit", word: words[0].text } as TypingMove);
+      expect(engine.getLastClearedWordId()).toBe(wordId);
+    });
+
+    it("오타 입력 시 null을 반환한다", () => {
+      const state = engine.initState(createPlayers(1));
+      engine.processMove(state, "player-1", { type: "submit", word: "없는단어" } as TypingMove);
+      expect(engine.getLastClearedWordId()).toBeNull();
+    });
+
+    it("clearLastClearedWordId로 초기화된다", () => {
+      const state = engine.initState(createPlayers(1));
+      engine.tick();
+      const words = engine.getPlayerWords("player-1");
+      if (words.length === 0) return;
+
+      engine.processMove(state, "player-1", { type: "submit", word: words[0].text } as TypingMove);
+      engine.clearLastClearedWordId();
+      expect(engine.getLastClearedWordId()).toBeNull();
+    });
+  });
+
+  describe("getAllPlayerWords", () => {
+    it("모든 플레이어의 단어 목록을 반환한다", () => {
+      engine.initState(createPlayers(2));
+      engine.tick();
+
+      const allWords = engine.getAllPlayerWords();
+      expect(allWords).toHaveProperty("player-1");
+      expect(allWords).toHaveProperty("player-2");
+      // 동일한 단어가 각 플레이어에게 추가됨
+      if (allWords["player-1"].length > 0) {
+        expect(allWords["player-1"][0].text).toBe(allWords["player-2"][0].text);
+      }
+    });
+
+    it("반환된 단어는 원본과 독립적인 복사본이다", () => {
+      engine.initState(createPlayers(1));
+      engine.tick();
+
+      const allWords = engine.getAllPlayerWords();
+      const originalWords = engine.getPlayerWords("player-1");
+      if (allWords["player-1"].length > 0) {
+        allWords["player-1"][0].text = "수정됨";
+        expect(originalWords[0].text).not.toBe("수정됨");
+      }
     });
   });
 

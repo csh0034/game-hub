@@ -234,6 +234,12 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
           });
         }
       }
+      if (room.gameType === "typing") {
+        const typingEngine = gameManager.getTypingEngine(room.id);
+        if (typingEngine) {
+          socket.emit("game:typing-all-player-words", typingEngine.getAllPlayerWords());
+        }
+      }
       if (room.gameType === "catch-mind") {
         const cmEngine = gameManager.getCatchMindEngine(room.id);
         if (cmEngine) {

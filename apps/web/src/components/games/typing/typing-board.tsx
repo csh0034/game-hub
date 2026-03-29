@@ -6,6 +6,7 @@ import { useGame } from "@/hooks/use-game";
 import { useGameStore } from "@/stores/game-store";
 import { getSocket } from "@/lib/socket";
 import { GameHelpDialog } from "@/components/common/game-help-dialog";
+import { OpponentTypingBoard } from "./opponent-typing-board";
 import type {
   TypingPublicState,
   TypingWord,
@@ -52,11 +53,9 @@ function FallingWord({ word }: { word: TypingWord }) {
 function PlayerCard({
   player,
   isMe,
-  maxLives,
 }: {
   player: TypingPlayerState;
   isMe: boolean;
-  maxLives: number;
 }) {
   const isDead = player.status === "gameover";
   return (
@@ -78,7 +77,7 @@ function PlayerCard({
       <div className="flex items-center gap-3 text-xs tabular-nums shrink-0">
         <span title="점수" className="font-semibold text-primary">{player.score.toLocaleString()}</span>
         <span title="목숨">
-          {"❤️".repeat(player.lives)}{"🖤".repeat(maxLives - player.lives)}
+          {player.lives > 0 ? `❤️x${player.lives}` : "💀"}
         </span>
         {player.combo >= 3 && (
           <span title="콤보" className="text-amber-500 font-bold">{player.combo}x</span>
@@ -95,6 +94,8 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
 
   // 로컬 단어 목록 (서버 이벤트로 관리)
   const [words, setWords] = useState<TypingWord[]>([]);
+  // 상대방 / 전체 플레이어 단어 목록
+  const [allPlayerWords, setAllPlayerWords] = useState<Record<string, TypingWord[]>>({});
   const [players, setPlayers] = useState<Record<string, TypingPlayerState>>({});
   const [input, setInput] = useState("");
   const [feedback, setFeedback] = useState<{ type: "miss" | "typo"; id: number } | null>(null);
@@ -112,18 +113,28 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
   useEffect(() => {
     if (!socket) return;
 
-    const initFromState = (typingState: TypingPublicState) => {
+    const initFromState = (typingState: TypingPublicState, skipCountdown = false) => {
       if (!typingState.players) return;
       initializedRef.current = true;
       setPlayers(typingState.players);
       setWords([]);
       setInput("");
       setFeedback(null);
-      setCountdown(COUNTDOWN_SECONDS);
+      // 관전자가 중간 입장 시 카운트다운 건너뛰기
+      setCountdown(skipCountdown ? null : COUNTDOWN_SECONDS);
+      // 모든 플레이어의 단어 목록 초기화
+      const emptyWords: Record<string, TypingWord[]> = {};
+      for (const id of Object.keys(typingState.players)) {
+        emptyWords[id] = [];
+      }
+      setAllPlayerWords(emptyWords);
     };
 
     const onStarted = (state: unknown) => {
-      initFromState(state as TypingPublicState);
+      const typingState = state as TypingPublicState;
+      // countingDown이 false이면 이미 카운트다운이 끝난 게임 (관전자 중간 입장)
+      const skipCountdown = !typingState.countingDown;
+      initFromState(typingState, skipCountdown);
     };
 
     const onStateUpdated = (state: unknown) => {
@@ -138,17 +149,50 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
       // 서버-클라이언트 시간 차이 보정: 수신 시점을 spawnedAt으로 사용
       const now = Date.now();
       const adjusted = newWords.map((w) => ({ ...w, spawnedAt: now }));
-      setWords((prev) => [...prev, ...adjusted]);
+      // 내 단어 목록에 추가
+      if (!isSpectating) {
+        setWords((prev) => [...prev, ...adjusted]);
+      }
+      // 모든 플레이어 단어 목록에 추가
+      setAllPlayerWords((prev) => {
+        const next = { ...prev };
+        for (const id of Object.keys(next)) {
+          next[id] = [...(next[id] ?? []), ...adjusted.map((w) => ({ ...w }))];
+        }
+        return next;
+      });
     };
 
-    const onWordsMissed = (wordIds: number[]) => {
-      const idSet = new Set(wordIds);
-      setWords((prev) => prev.filter((w) => !idSet.has(w.id)));
-      setFeedback({ type: "miss", id: Date.now() });
-      if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
-      feedbackTimerRef.current = setTimeout(() => setFeedback(null), 800);
-      // 놓침 피드백 후 포커스 유지
-      requestAnimationFrame(() => inputRef.current?.focus());
+    const onWordsMissed = (data: { playerId: string; wordIds: number[] }) => {
+      const idSet = new Set(data.wordIds);
+      // 상대방 단어 목록에서 제거
+      setAllPlayerWords((prev) => {
+        const playerWords = prev[data.playerId];
+        if (!playerWords) return prev;
+        return { ...prev, [data.playerId]: playerWords.filter((w) => !idSet.has(w.id)) };
+      });
+      // 내 단어 + 피드백
+      if (data.playerId === myId) {
+        setWords((prev) => prev.filter((w) => !idSet.has(w.id)));
+        setFeedback({ type: "miss", id: Date.now() });
+        if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
+        feedbackTimerRef.current = setTimeout(() => setFeedback(null), 800);
+        requestAnimationFrame(() => inputRef.current?.focus());
+      }
+    };
+
+    const onWordCleared = (data: { playerId: string; wordId: number }) => {
+      // 상대방 단어 목록에서 제거 (내 단어는 클라이언트에서 이미 즉시 제거됨)
+      setAllPlayerWords((prev) => {
+        const playerWords = prev[data.playerId];
+        if (!playerWords) return prev;
+        return { ...prev, [data.playerId]: playerWords.filter((w) => w.id !== data.wordId) };
+      });
+    };
+
+    const onAllPlayerWords = (data: Record<string, TypingWord[]>) => {
+      // 관전 입장 시 현재 모든 플레이어 단어 초기화 (서버 spawnedAt 유지하여 실제 위치 반영)
+      setAllPlayerWords(data);
     };
 
     const onPlayerUpdated = (data: { playerId: string; player: TypingPlayerState }) => {
@@ -158,6 +202,7 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
     const onEnded = () => {
       // 게임 종료 시 단어 클리어
       setWords([]);
+      setAllPlayerWords({});
       setFeedback(null);
     };
 
@@ -165,6 +210,8 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
     socket.on("game:state-updated", onStateUpdated);
     socket.on("game:typing-words-spawned", onWordsSpawned);
     socket.on("game:typing-words-missed", onWordsMissed);
+    socket.on("game:typing-word-cleared", onWordCleared);
+    socket.on("game:typing-all-player-words", onAllPlayerWords);
     socket.on("game:typing-player-updated", onPlayerUpdated);
     socket.on("game:ended", onEnded);
 
@@ -172,7 +219,7 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
     // 마운트 시점에 이미 도착한 gameState가 있으면 초기화
     const current = useGameStore.getState().gameState as TypingPublicState | null;
     if (current?.players && !initializedRef.current) {
-      initFromState(current);
+      initFromState(current, !current.countingDown);
     }
 
     return () => {
@@ -181,10 +228,12 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
       socket.off("game:state-updated", onStateUpdated);
       socket.off("game:typing-words-spawned", onWordsSpawned);
       socket.off("game:typing-words-missed", onWordsMissed);
+      socket.off("game:typing-word-cleared", onWordCleared);
+      socket.off("game:typing-all-player-words", onAllPlayerWords);
       socket.off("game:typing-player-updated", onPlayerUpdated);
       socket.off("game:ended", onEnded);
     };
-  }, [socket]);
+  }, [socket, myId, isSpectating]);
 
   // 카운트다운 타이머
   useEffect(() => {
@@ -283,7 +332,7 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
   const isDead = myPlayer?.status === "gameover";
   const isGameOver = !!gameResult;
 
-  // 다른 플레이어 목록 (점수 높은 순)
+  // 상대 플레이어 목록 (점수 높은 순)
   const otherPlayers = useMemo(() => {
     return Object.values(players)
       .filter((p) => p.id !== myId)
@@ -295,9 +344,93 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
     return Object.values(players).sort((a, b) => b.score - a.score);
   }, [players]);
 
+  // 멀티플레이 여부
+  const isMultiplayer = Object.keys(players).length > 1;
+
   if (!gameState) return null;
 
   const isCountingDown = countdown !== null && countdown > 0;
+
+  // 관전자 뷰: 모든 플레이어 미니 보드를 그리드로 표시
+  if (isSpectating) {
+    const cols = Math.min(allPlayersSorted.length, 2);
+    return (
+      <div className="flex flex-col gap-4 p-4">
+        <style>{`
+          @keyframes typing-fall {
+            to { top: 100%; }
+          }
+        `}</style>
+
+        {/* 상단 정보바 */}
+        <div className="flex items-center justify-between bg-card border border-border rounded-lg px-4 py-2">
+          <div className="flex items-center gap-4 text-sm">
+            <span className={`font-bold tabular-nums ${!isCountingDown && remainingTime <= 10 ? "text-destructive animate-pulse" : "text-foreground"}`}>
+              ⏱ {isCountingDown ? gameState.timeLimit : remainingTime}초
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {gameState.difficulty === "beginner" ? "초급" : gameState.difficulty === "intermediate" ? "중급" : "고급"}
+            </span>
+          </div>
+        </div>
+
+        {isCountingDown ? (
+          <div className="flex items-center justify-center h-64 bg-card border border-border rounded-lg">
+            <div
+              key={countdown}
+              className="text-8xl font-black text-primary"
+              style={{ animation: "typing-countdown-pulse 0.6s ease-out" }}
+            >
+              {countdown}
+            </div>
+            <style>{`
+              @keyframes typing-countdown-pulse {
+                0% { transform: scale(0.5); opacity: 0; }
+                50% { transform: scale(1.2); opacity: 1; }
+                100% { transform: scale(1); opacity: 1; }
+              }
+            `}</style>
+          </div>
+        ) : isGameOver ? (
+          <div className="flex items-center justify-center h-64 bg-card border border-border rounded-lg">
+            <div className="text-center space-y-3 p-6">
+              <div className="text-3xl font-bold">
+                {gameResult.winnerId === null
+                  ? "무승부!"
+                  : `${players[gameResult.winnerId ?? ""]?.nickname ?? "???"} 승리!`}
+              </div>
+              <div className="space-y-1.5 mt-4">
+                {allPlayersSorted.map((p, i) => (
+                  <div
+                    key={p.id}
+                    className={`flex items-center justify-between gap-4 px-4 py-2 rounded text-sm ${
+                      i === 0 ? "bg-primary/10 text-primary font-bold" : ""
+                    }`}
+                  >
+                    <span className="truncate">{i + 1}. {p.nickname}</span>
+                    <span className="tabular-nums shrink-0">{p.score.toLocaleString()}점 · {p.wordsCleared}개</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div
+            className="grid gap-4 justify-center"
+            style={{ gridTemplateColumns: `repeat(${cols}, auto)` }}
+          >
+            {allPlayersSorted.map((p) => (
+              <OpponentTypingBoard
+                key={p.id}
+                words={allPlayerWords[p.id] ?? []}
+                player={p}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="flex gap-4 h-full">
@@ -331,11 +464,11 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
             <span className={`font-bold tabular-nums ${!isCountingDown && remainingTime <= 10 ? "text-destructive animate-pulse" : "text-foreground"}`}>
               ⏱ {isCountingDown ? gameState.timeLimit : remainingTime}초
             </span>
-            {!isSpectating && myPlayer && (
+            {myPlayer && (
               <>
                 <span className="text-primary font-semibold">{myPlayer.score.toLocaleString()}점</span>
                 <span>
-                  {"❤️".repeat(myPlayer.lives)}{"🖤".repeat(gameState.maxLives - (myPlayer?.lives ?? 0))}
+                  {myPlayer.lives > 0 ? `❤️x${myPlayer.lives}` : "💀"}
                 </span>
                 {myPlayer.combo >= 3 && (
                   <span className="text-amber-500 font-bold">{myPlayer.combo}x 콤보</span>
@@ -360,22 +493,10 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
         {/* 단어 낙하 영역 */}
         <div className="relative flex-1 bg-card border border-border rounded-lg overflow-hidden min-h-[400px]">
           {/* 단어들 — 게임 종료 시 숨김 */}
-          {!isSpectating && !isGameOver &&
+          {!isGameOver &&
             words.map((word) => (
               <FallingWord key={word.id} word={word} />
             ))}
-
-          {/* 관전자 모드: 순위판 */}
-          {isSpectating && !isGameOver && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-full max-w-md p-6 space-y-2">
-                <h3 className="text-lg font-semibold text-center mb-4">실시간 순위</h3>
-                {allPlayersSorted.map((p) => (
-                  <PlayerCard key={p.id} player={p} isMe={false} maxLives={gameState.maxLives} />
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* 놓침/오타 피드백 라벨 */}
           {feedback && !isGameOver && (
@@ -408,7 +529,7 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
           )}
 
           {/* 탈락 오버레이 — 게임 결과가 나오면 숨김 */}
-          {!isSpectating && isDead && !isGameOver && (
+          {isDead && !isGameOver && (
             <div className="absolute inset-0 bg-background/80 flex items-center justify-center z-10">
               <div className="text-center">
                 <div className="text-4xl font-bold text-destructive mb-2">탈락!</div>
@@ -426,7 +547,7 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
                     ? "게임 종료!"
                     : gameResult.winnerId === null
                       ? "무승부!"
-                      : gameResult.winnerId === myId || isSpectating
+                      : gameResult.winnerId === myId
                         ? `${players[gameResult.winnerId ?? ""]?.nickname ?? "???"} 승리!`
                         : "패배..."}
                 </div>
@@ -451,41 +572,58 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
         </div>
 
         {/* 입력창 */}
-        {!isSpectating && (
-          <form onSubmit={handleSubmit} className="mt-2">
-            <div ref={formRowRef} className="flex gap-2">
-              <input
-                ref={inputRef}
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                disabled={isDead || isGameOver || isCountingDown}
-                placeholder={isGameOver ? "게임 종료" : isDead ? "탈락했습니다" : isCountingDown ? "준비..." : "단어를 입력하세요..."}
-                className="flex-1 px-4 py-3 bg-card border border-border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary"
-                autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="off"
-                spellCheck={false}
-              />
-              <button
-                type="submit"
-                disabled={isDead || isGameOver || isCountingDown}
-                className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium disabled:opacity-50 hover:bg-primary/90 transition-colors"
-              >
-                입력
-              </button>
-            </div>
-          </form>
-        )}
+        <form onSubmit={handleSubmit} className="mt-2">
+          <div ref={formRowRef} className="flex gap-2">
+            <input
+              ref={inputRef}
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={isDead || isGameOver || isCountingDown}
+              placeholder={isGameOver ? "게임 종료" : isDead ? "탈락했습니다" : isCountingDown ? "준비..." : "단어를 입력하세요..."}
+              className="flex-1 px-4 py-3 bg-card border border-border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+            />
+            <button
+              type="submit"
+              disabled={isDead || isGameOver || isCountingDown}
+              className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium disabled:opacity-50 hover:bg-primary/90 transition-colors"
+            >
+              입력
+            </button>
+          </div>
+        </form>
       </div>
 
-      {/* 사이드: 플레이어 현황 */}
-      {!isSpectating && otherPlayers.length > 0 && (
+      {/* 사이드: 상대방 미니 보드 (멀티플레이 시) */}
+      {isMultiplayer && otherPlayers.length > 0 && !isGameOver && (
+        <div className="shrink-0 space-y-3">
+          <h3 className="text-sm font-semibold text-muted-foreground mb-1">참가자</h3>
+          <div
+            className="grid gap-3"
+            style={{ gridTemplateColumns: `repeat(${Math.min(otherPlayers.length, 2)}, auto)` }}
+          >
+            {otherPlayers.map((p) => (
+              <OpponentTypingBoard
+                key={p.id}
+                words={allPlayerWords[p.id] ?? []}
+                player={p}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 사이드: 플레이어 현황 (게임 결과 표시 시) */}
+      {isMultiplayer && otherPlayers.length > 0 && isGameOver && (
         <div className="w-56 shrink-0 space-y-2">
           <h3 className="text-sm font-semibold text-muted-foreground mb-1">참가자</h3>
           {otherPlayers.map((p) => (
-            <PlayerCard key={p.id} player={p} isMe={false} maxLives={gameState.maxLives} />
+            <PlayerCard key={p.id} player={p} isMe={false} />
           ))}
         </div>
       )}

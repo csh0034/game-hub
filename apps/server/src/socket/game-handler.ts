@@ -349,12 +349,9 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
           io.to(roomId).emit("game:typing-words-spawned", tickResult.spawnedWords);
         }
 
-        // 바닥 도달한 단어 → 해당 플레이어에게만
+        // 바닥 도달한 단어 → 모든 클라이언트에 브로드캐스트 (상대방 화면 동기화)
         for (const [playerId, missedIds] of tickResult.missedWordIds) {
-          const playerSocket = io.sockets.sockets.get(playerId);
-          if (playerSocket) {
-            playerSocket.emit("game:typing-words-missed", missedIds);
-          }
+          io.to(roomId).emit("game:typing-words-missed", { playerId, wordIds: missedIds });
         }
 
         // 변경된 플레이어 상태 → 모든 클라이언트에 브로드캐스트
@@ -683,6 +680,12 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
         const ps = typingEngine.getPlayerState(socket.id!);
         if (ps) {
           io.to(roomId).emit("game:typing-player-updated", { playerId: socket.id!, player: { ...ps } });
+        }
+        // 단어 클리어 시 모든 클라이언트에 브로드캐스트
+        const clearedWordId = typingEngine.getLastClearedWordId();
+        if (clearedWordId !== null) {
+          io.to(roomId).emit("game:typing-word-cleared", { playerId: socket.id!, wordId: clearedWordId });
+          typingEngine.clearLastClearedWordId();
         }
       }
     } else {

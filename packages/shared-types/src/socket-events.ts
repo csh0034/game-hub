@@ -97,7 +97,9 @@ export interface ServerToClientEvents {
   "game:tetris-player-updated": (data: TetrisPlayerUpdate) => void;
   "game:tetris-piece-updated": (data: TetrisPieceUpdate) => void;
   "game:typing-words-spawned": (words: TypingWord[]) => void;
-  "game:typing-words-missed": (wordIds: number[]) => void;
+  "game:typing-words-missed": (data: { playerId: string; wordIds: number[] }) => void;
+  "game:typing-word-cleared": (data: { playerId: string; wordId: number }) => void;
+  "game:typing-all-player-words": (data: Record<string, TypingWord[]>) => void;
   "game:typing-player-updated": (data: { playerId: string; player: TypingPlayerState }) => void;
   "game:player-left": (data: { playerId: string; nickname: string; willEnd: boolean }) => void;
   "game:rematch-requested": (playerId: string) => void;

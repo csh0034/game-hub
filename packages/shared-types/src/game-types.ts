@@ -357,6 +357,7 @@ export interface TypingPublicState {
   startedAt: number;
   speedMultiplier: number;
   spawnMultiplier: number;
+  countingDown?: boolean;
 }
 
 export interface TypingMove {

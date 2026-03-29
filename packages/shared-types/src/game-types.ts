@@ -1,4 +1,4 @@
-export type GameType = "gomoku" | "texas-holdem" | "minesweeper" | "tetris" | "liar-drawing" | "catch-mind";
+export type GameType = "gomoku" | "texas-holdem" | "minesweeper" | "tetris" | "liar-drawing" | "catch-mind" | "typing";
 
 export interface GameConfig {
   gameType: GameType;
@@ -61,6 +61,14 @@ export const GAME_CONFIGS: Record<GameType, GameConfig> = {
     icon: "🃏",
     disabled: true,
     disabledReason: "패치중",
+  },
+  typing: {
+    gameType: "typing",
+    name: "타자 게임",
+    description: "위에서 내려오는 단어를 빠르게 입력하여 제거하는 타자 레이스",
+    minPlayers: 1,
+    maxPlayers: 8,
+    icon: "⌨️",
   },
 };
 
@@ -366,8 +374,62 @@ export interface CatchMindMove {
   points?: DrawPoint[];
 }
 
-export type GameState = GomokuState | HoldemPublicState | MinesweeperPublicState | TetrisPublicState | LiarDrawingPublicState | CatchMindPublicState;
-export type GameMove = GomokuMove | HoldemMove | MinesweeperMove | TetrisMove | LiarDrawingMove | CatchMindMove;
+// Typing Game types
+export type TypingDifficulty = "beginner" | "intermediate" | "expert";
+
+export interface TypingDifficultyConfig {
+  minChars: number;
+  maxChars: number;
+  fallDurationMs: number;
+  maxWords: number;
+  spawnIntervalMs: number;
+  label: string;
+}
+
+export const TYPING_DIFFICULTY_CONFIGS: Record<TypingDifficulty, TypingDifficultyConfig> = {
+  beginner: { minChars: 2, maxChars: 3, fallDurationMs: 6000, maxWords: 5, spawnIntervalMs: 2000, label: "초급" },
+  intermediate: { minChars: 2, maxChars: 4, fallDurationMs: 4500, maxWords: 7, spawnIntervalMs: 1500, label: "중급" },
+  expert: { minChars: 2, maxChars: 5, fallDurationMs: 3000, maxWords: 10, spawnIntervalMs: 1000, label: "고급" },
+};
+
+export interface TypingWord {
+  id: number;
+  text: string;
+  spawnedAt: number;
+  fallDurationMs: number;
+  x: number; // 0~100 수평 위치 (퍼센트)
+}
+
+export type TypingPlayerStatus = "playing" | "gameover";
+
+export interface TypingPlayerState {
+  id: string;
+  nickname: string;
+  score: number;
+  lives: number;
+  combo: number;
+  wordsCleared: number;
+  status: TypingPlayerStatus;
+}
+
+export interface TypingPublicState {
+  players: Record<string, TypingPlayerState>;
+  words: TypingWord[];
+  difficulty: TypingDifficulty;
+  timeLimit: number;
+  maxLives: number;
+  startedAt: number;
+  speedMultiplier: number;
+  spawnMultiplier: number;
+}
+
+export interface TypingMove {
+  type: "submit";
+  word: string;
+}
+
+export type GameState = GomokuState | HoldemPublicState | MinesweeperPublicState | TetrisPublicState | LiarDrawingPublicState | CatchMindPublicState | TypingPublicState;
+export type GameMove = GomokuMove | HoldemMove | MinesweeperMove | TetrisMove | LiarDrawingMove | CatchMindMove | TypingMove;
 
 export interface GameResult {
   winnerId: string | null; // null = draw

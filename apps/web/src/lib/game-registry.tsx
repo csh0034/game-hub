@@ -13,6 +13,7 @@ const GAME_COMPONENTS: Record<GameType, React.LazyExoticComponent<ComponentType<
   gomoku: lazy(() => import("@/components/games/gomoku/gomoku-board")),
   minesweeper: lazy(() => import("@/components/games/minesweeper/minesweeper-board")),
   "texas-holdem": lazy(() => import("@/components/games/texas-holdem/holdem-table")),
+  typing: lazy(() => import("@/components/games/typing/typing-board")),
 };
 
 export function getGameComponent(gameType: GameType) {
@@ -25,6 +26,7 @@ const TetrisGame = GAME_COMPONENTS["tetris"];
 const GomokuGame = GAME_COMPONENTS["gomoku"];
 const MinesweeperGame = GAME_COMPONENTS["minesweeper"];
 const HoldemGame = GAME_COMPONENTS["texas-holdem"];
+const TypingGame = GAME_COMPONENTS["typing"];
 
 export function GameRenderer({ gameType, roomId, isSpectating }: { gameType: GameType; roomId: string; isSpectating?: boolean }) {
   switch (gameType) {
@@ -40,5 +42,7 @@ export function GameRenderer({ gameType, roomId, isSpectating }: { gameType: Gam
       return <MinesweeperGame roomId={roomId} isSpectating={isSpectating} />;
     case "texas-holdem":
       return <HoldemGame roomId={roomId} isSpectating={isSpectating} />;
+    case "typing":
+      return <TypingGame roomId={roomId} isSpectating={isSpectating} />;
   }
 }

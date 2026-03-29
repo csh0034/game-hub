@@ -27,6 +27,8 @@ function getQuickStartBadges(gameType: GameType): string[] | null {
       return ["60초", "3라운드"];
     case "catch-mind":
       return ["60초", "3라운드", "글자 수 힌트 OFF"];
+    case "typing":
+      return ["초급", "60초", "❤️×3"];
     default:
       return null;
   }
@@ -50,6 +52,9 @@ export function GameCardGrid({ onCreateRoom }: GameCardGridProps) {
     }
     if (gameType === "gomoku") {
       payload.gameOptions = { gomokuTurnTime: 30 };
+    }
+    if (gameType === "typing") {
+      payload.gameOptions = { typingDifficulty: "beginner", typingTimeLimit: 60, typingLives: 3 };
     }
     await onCreateRoom(payload);
   };

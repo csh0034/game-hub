@@ -1,7 +1,7 @@
 "use client";
 
 import type { Room } from "@game-hub/shared-types";
-import { GAME_CONFIGS, MAX_SPECTATORS, MINESWEEPER_DIFFICULTY_CONFIGS, TETRIS_DIFFICULTY_CONFIGS } from "@game-hub/shared-types";
+import { GAME_CONFIGS, MAX_SPECTATORS, MINESWEEPER_DIFFICULTY_CONFIGS, TETRIS_DIFFICULTY_CONFIGS, TYPING_DIFFICULTY_CONFIGS } from "@game-hub/shared-types";
 import { Users, Clock, Play, Eye, MessageCircle, MessageCircleOff } from "lucide-react";
 
 interface RoomListProps {
@@ -146,6 +146,13 @@ function getOptionsSummary(room: Room): string | null {
       if (opts?.catchMindRounds != null) parts.push(`${opts.catchMindRounds}라운드`);
       if (opts?.catchMindCharHint != null) parts.push(`힌트${opts.catchMindCharHint ? "ON" : "OFF"}`);
       return parts.length > 0 ? parts.join(" · ") : null;
+    }
+    case "typing": {
+      const diff = TYPING_DIFFICULTY_CONFIGS[opts?.typingDifficulty ?? "beginner"];
+      const parts: string[] = [diff.label];
+      parts.push(`${opts?.typingTimeLimit ?? 60}초`);
+      parts.push(`❤️×${opts?.typingLives ?? 3}`);
+      return parts.join(" · ");
     }
     default:
       return null;

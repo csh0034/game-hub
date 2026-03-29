@@ -24,9 +24,11 @@ import { startGomokuTimer, clearGomokuTimer } from "../games/gomoku-timer.js";
 import { startTetrisTicker, updateTetrisTickerInterval, clearTetrisTicker } from "../games/tetris-ticker.js";
 import { startLiarDrawingTimer, clearLiarDrawingTimer } from "../games/liar-drawing-timer.js";
 import { startCatchMindTimer, clearCatchMindTimer } from "../games/catch-mind-timer.js";
+import { startTypingTicker, updateTypingTickerInterval, clearTypingTicker } from "../games/typing-ticker.js";
 import { isAdmin } from "../admin.js";
 
 const holdemRoundTimers: Map<string, NodeJS.Timeout> = new Map();
+const typingCountdownTimers: Map<string, NodeJS.Timeout> = new Map();
 
 // Tetris: per-room dirty buffers for opponent board throttling (200ms)
 const tetrisDirtyBuffers: Map<string, Map<string, TetrisPlayerBoard>> = new Map();
@@ -333,6 +335,77 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
     startTetrisTicker(roomId, currentInterval, onTick);
   }
 
+  function startTypingServerTick(roomId: string) {
+    const typingEngine = gameManager.getTypingEngine(roomId);
+    if (!typingEngine) return;
+
+    // 3초 카운트다운 후 게임 시작 — startedAt을 카운트다운 종료 시점으로 재설정
+    const countdownTimer = setTimeout(() => {
+      typingCountdownTimers.delete(roomId);
+      const room = gameManager.getRoom(roomId);
+      if (!room || room.status !== "playing") return;
+
+      typingEngine.resetStartedAt();
+      const state = typingEngine.toPublicState();
+      gameManager.setGameState(roomId, state);
+      io.to(roomId).emit("game:state-updated", state);
+
+      let currentInterval = typingEngine.getSpawnIntervalMs();
+
+      const onTick = () => {
+        const room = gameManager.getRoom(roomId);
+        if (!room || room.status !== "playing") {
+          clearTypingTicker(roomId);
+          return;
+        }
+
+        const tickResult = typingEngine.tick();
+
+        // 새 단어 스폰 → 모든 클라이언트에 브로드캐스트
+        if (tickResult.spawnedWords.length > 0) {
+          io.to(roomId).emit("game:typing-words-spawned", tickResult.spawnedWords);
+        }
+
+        // 바닥 도달한 단어 → 해당 플레이어에게만
+        for (const [playerId, missedIds] of tickResult.missedWordIds) {
+          const playerSocket = io.sockets.sockets.get(playerId);
+          if (playerSocket) {
+            playerSocket.emit("game:typing-words-missed", missedIds);
+          }
+        }
+
+        // 변경된 플레이어 상태 → 모든 클라이언트에 브로드캐스트
+        for (const [playerId, playerState] of tickResult.updatedPlayers) {
+          io.to(roomId).emit("game:typing-player-updated", { playerId, player: playerState });
+        }
+
+        if (tickResult.gameOver) {
+          clearTypingTicker(roomId);
+          const state = typingEngine.toPublicState();
+          gameManager.setGameState(roomId, state);
+          const result = typingEngine.checkWin(state);
+          if (result) {
+            room.status = "finished";
+            io.to(roomId).emit("game:ended", result);
+            io.emit("lobby:room-updated", room);
+          }
+          return;
+        }
+
+        // 가속에 따라 틱 간격 업데이트
+        const newInterval = typingEngine.getSpawnIntervalMs();
+        if (Math.abs(newInterval - currentInterval) > 50) {
+          currentInterval = newInterval;
+          updateTypingTickerInterval(roomId, currentInterval, onTick);
+        }
+      };
+
+      startTypingTicker(roomId, currentInterval, onTick);
+    }, 3000);
+
+    typingCountdownTimers.set(roomId, countdownTimer);
+  }
+
   function startLiarDrawingTurnTimer(roomId: string) {
     const currentState = gameManager.getGameState(roomId) as LiarDrawingPublicState | null;
     if (!currentState || currentState.phase !== "drawing") return;
@@ -445,6 +518,10 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
 
     if (room.gameType === "tetris") {
       startTetrisServerTick(roomId);
+    }
+
+    if (room.gameType === "typing") {
+      startTypingServerTick(roomId);
     }
 
     // For liar-drawing, send private states and start role-reveal timer
@@ -630,6 +707,15 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
         }
       }
       tetrisEngine.clearDirty();
+    } else if (room?.gameType === "typing") {
+      // Typing: send only the updated player state, not full state
+      const typingEngine = gameManager.getTypingEngine(roomId);
+      if (typingEngine) {
+        const ps = typingEngine.getPlayerState(socket.id!);
+        if (ps) {
+          io.to(roomId).emit("game:typing-player-updated", { playerId: socket.id!, player: { ...ps } });
+        }
+      }
     } else {
       io.to(roomId).emit("game:state-updated", result.state);
     }
@@ -643,6 +729,7 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
       clearGomokuTimer(roomId);
       clearTetrisTicker(roomId);
       cleanupTetrisFlush(roomId, io);
+      clearTypingTicker(roomId);
 
       if (room?.gameType === "texas-holdem") {
         const holdemEngine = gameManager.getHoldemEngine(roomId);
@@ -783,6 +870,12 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
     cleanupTetrisFlush(roomId);
     clearLiarDrawingTimer(roomId);
     clearCatchMindTimer(roomId);
+    clearTypingTicker(roomId);
+    const typingCountdown = typingCountdownTimers.get(roomId);
+    if (typingCountdown) {
+      clearTimeout(typingCountdown);
+      typingCountdownTimers.delete(roomId);
+    }
     const holdemTimer = holdemRoundTimers.get(roomId);
     if (holdemTimer) {
       clearTimeout(holdemTimer);

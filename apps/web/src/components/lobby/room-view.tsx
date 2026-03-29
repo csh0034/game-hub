@@ -1,8 +1,8 @@
 "use client";
 
 import { Suspense, useEffect, useState, useCallback, useRef } from "react";
-import type { Room, ChatMessage, GameOptions, MinesweeperDifficulty, TetrisDifficulty } from "@game-hub/shared-types";
-import { GAME_CONFIGS, MAX_SPECTATORS, MAX_ROOM_NAME_LENGTH, MINESWEEPER_DIFFICULTY_CONFIGS, TETRIS_DIFFICULTY_CONFIGS } from "@game-hub/shared-types";
+import type { Room, ChatMessage, GameOptions, MinesweeperDifficulty, TetrisDifficulty, TypingDifficulty } from "@game-hub/shared-types";
+import { GAME_CONFIGS, MAX_SPECTATORS, MAX_ROOM_NAME_LENGTH, MINESWEEPER_DIFFICULTY_CONFIGS, TETRIS_DIFFICULTY_CONFIGS, TYPING_DIFFICULTY_CONFIGS } from "@game-hub/shared-types";
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { useGame } from "@/hooks/use-game";
 import { GameRenderer } from "@/lib/game-registry";
@@ -609,6 +609,59 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
                   </div>
                 </div>
               )}
+              {room.gameType === "typing" && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">난이도</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(Object.entries(TYPING_DIFFICULTY_CONFIGS) as [TypingDifficulty, typeof TYPING_DIFFICULTY_CONFIGS[TypingDifficulty]][]).map(([key, config]) => (
+                        <button
+                          key={key}
+                          onClick={() => handleOptionChange({ ...localOptions, typingDifficulty: key })}
+                          className={`p-2 rounded-lg border text-sm text-center transition-colors ${
+                            (localOptions.typingDifficulty ?? "beginner") === key
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border hover:border-border/80"
+                          }`}
+                        >
+                          <div className="font-medium">{config.label}</div>
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            {config.minChars}~{config.maxChars}자
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">제한 시간</label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="range"
+                        min={10}
+                        max={120}
+                        value={localOptions.typingTimeLimit ?? 60}
+                        onChange={(e) => handleOptionChange({ ...localOptions, typingTimeLimit: Number(e.target.value) })}
+                        className="flex-1"
+                      />
+                      <span className="text-sm font-semibold tabular-nums min-w-14 text-center text-primary bg-primary/10 rounded-md px-2 py-0.5">{localOptions.typingTimeLimit ?? 60}초</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">목숨</label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="range"
+                        min={1}
+                        max={10}
+                        value={localOptions.typingLives ?? 3}
+                        onChange={(e) => handleOptionChange({ ...localOptions, typingLives: Number(e.target.value) })}
+                        className="flex-1"
+                      />
+                      <span className="text-sm font-semibold tabular-nums min-w-14 text-center text-primary bg-primary/10 rounded-md px-2 py-0.5">❤️×{localOptions.typingLives ?? 3}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
               <div className="border-t border-border pt-3 mt-3">
                 <label className="block text-sm font-medium mb-1.5">관전 허용</label>
                 <div className="grid grid-cols-2 gap-2">
@@ -746,6 +799,25 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
                   </div>
                 </>
               )}
+              {room.gameType === "typing" && (() => {
+                const diff = TYPING_DIFFICULTY_CONFIGS[room.gameOptions?.typingDifficulty ?? "beginner"];
+                return (
+                  <>
+                    <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
+                      <span className="text-muted-foreground">난이도</span>
+                      <span className="font-medium">{diff.label} ({diff.minChars}~{diff.maxChars}자)</span>
+                    </div>
+                    <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
+                      <span className="text-muted-foreground">제한 시간</span>
+                      <span className="font-medium">{room.gameOptions?.typingTimeLimit ?? 60}초</span>
+                    </div>
+                    <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
+                      <span className="text-muted-foreground">목숨</span>
+                      <span className="font-medium">❤️×{room.gameOptions?.typingLives ?? 3}</span>
+                    </div>
+                  </>
+                );
+              })()}
               <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
                 <span className="text-muted-foreground">관전 허용</span>
                 <span className="font-medium">{room.gameOptions?.spectateEnabled ? "ON" : "OFF"}</span>

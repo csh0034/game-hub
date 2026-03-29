@@ -1,5 +1,5 @@
 import type { Room, CreateRoomPayload, JoinRoomPayload, GameOptions } from "./lobby-types";
-import type { GameState, GameMove, GameResult, HoldemPrivateState, LiarDrawingPrivateState, CatchMindPrivateState, Card, DrawPoint, TetrisPlayerUpdate, TetrisPieceUpdate } from "./game-types";
+import type { GameState, GameMove, GameResult, HoldemPrivateState, LiarDrawingPrivateState, CatchMindPrivateState, Card, DrawPoint, TetrisPlayerUpdate, TetrisPieceUpdate, TypingWord, TypingPlayerState } from "./game-types";
 import type { Player } from "./player-types";
 import type { FeatureRequest, CreateRequestPayload, ChangeStatusPayload, UpdateRequestPayload, ChangeLabelPayload } from "./request-types";
 import type { RankingKey, RankingEntry } from "./ranking-types";
@@ -96,6 +96,9 @@ export interface ServerToClientEvents {
   "game:clear-canvas": (data: { playerId: string }) => void;
   "game:tetris-player-updated": (data: TetrisPlayerUpdate) => void;
   "game:tetris-piece-updated": (data: TetrisPieceUpdate) => void;
+  "game:typing-words-spawned": (words: TypingWord[]) => void;
+  "game:typing-words-missed": (wordIds: number[]) => void;
+  "game:typing-player-updated": (data: { playerId: string; player: TypingPlayerState }) => void;
   "game:player-left": (data: { playerId: string; nickname: string; willEnd: boolean }) => void;
   "game:rematch-requested": (playerId: string) => void;
   "game:round-ended": (data: {

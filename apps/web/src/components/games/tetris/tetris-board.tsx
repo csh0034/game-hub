@@ -323,12 +323,18 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
     gameEndedRef.current = !!gameResult;
   }, [gameResult]);
 
+  const speedRaceBaseRef = useRef<number | null>(null);
+
   useEffect(() => {
-    if (!isSpeedRace || !startedAt) return;
+    if (!isSpeedRace || !startedAt) {
+      speedRaceBaseRef.current = null;
+      return;
+    }
+    speedRaceBaseRef.current = Date.now();
 
     const timer = setInterval(() => {
       if (gameEndedRef.current) return;
-      setElapsedTime(Date.now() - startedAt);
+      setElapsedTime(Date.now() - speedRaceBaseRef.current!);
     }, 100);
 
     return () => clearInterval(timer);

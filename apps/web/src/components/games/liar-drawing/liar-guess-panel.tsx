@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { LiarDrawingPublicState } from "@game-hub/shared-types";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
 
@@ -16,10 +16,15 @@ export function LiarGuessPanel({ state, myId, onGuess }: LiarGuessPanelProps) {
   const [showConfirm, setShowConfirm] = useState(false);
   const isLiar = state.liarId === myId;
 
+  const baseRef = useRef<{ localStart: number; key: number } | null>(null);
+
   useEffect(() => {
     if (!state.turnStartedAt) return;
+    if (!baseRef.current || baseRef.current.key !== state.turnStartedAt) {
+      baseRef.current = { localStart: Date.now(), key: state.turnStartedAt };
+    }
     const interval = setInterval(() => {
-      const elapsed = (Date.now() - state.turnStartedAt!) / 1000;
+      const elapsed = (Date.now() - baseRef.current!.localStart) / 1000;
       setRemainingTime(Math.max(0, 30 - elapsed));
     }, 200);
     return () => clearInterval(interval);

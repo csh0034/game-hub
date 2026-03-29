@@ -33,10 +33,18 @@ export default function MinesweeperBoard({ isSpectating }: GameComponentProps) {
 
   const state = gameState as MinesweeperPublicState | null;
 
-  useEffect(() => {
-    if (!state?.startedAt || state.status !== "playing") return;
+  const msBaseRef = useRef<number | null>(null);
 
-    const update = () => setElapsed(Math.floor((Date.now() - state.startedAt!) / 1000));
+  useEffect(() => {
+    if (!state?.startedAt || state.status !== "playing") {
+      msBaseRef.current = null;
+      return;
+    }
+    if (!msBaseRef.current) {
+      msBaseRef.current = Date.now();
+    }
+
+    const update = () => setElapsed(Math.floor((Date.now() - msBaseRef.current!) / 1000));
     update();
     const interval = setInterval(update, 1000);
     return () => clearInterval(interval);

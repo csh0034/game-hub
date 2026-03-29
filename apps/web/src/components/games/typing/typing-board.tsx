@@ -132,7 +132,10 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
     };
 
     const onWordsSpawned = (newWords: TypingWord[]) => {
-      setWords((prev) => [...prev, ...newWords]);
+      // 서버-클라이언트 시간 차이 보정: 수신 시점을 spawnedAt으로 사용
+      const now = Date.now();
+      const adjusted = newWords.map((w) => ({ ...w, spawnedAt: now }));
+      setWords((prev) => [...prev, ...adjusted]);
     };
 
     const onWordsMissed = (wordIds: number[]) => {
@@ -190,10 +193,15 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
   }, [countdown]);
 
   // 남은 시간 카운트다운
+  const typingBaseRef = useRef<{ localStart: number; key: number } | null>(null);
+
   useEffect(() => {
     if (!gameState?.startedAt || countdown !== null) return;
+    if (!typingBaseRef.current || typingBaseRef.current.key !== gameState.startedAt) {
+      typingBaseRef.current = { localStart: Date.now(), key: gameState.startedAt };
+    }
     const updateTimer = () => {
-      const elapsed = Date.now() - gameState.startedAt;
+      const elapsed = Date.now() - typingBaseRef.current!.localStart;
       const remaining = Math.max(gameState.timeLimit - Math.floor(elapsed / 1000), 0);
       setRemainingTime(remaining);
     };

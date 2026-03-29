@@ -197,9 +197,10 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
 
   // 남은 시간 카운트다운
   const typingBaseRef = useRef<{ localStart: number; key: number } | null>(null);
+  const allDead = Object.values(players).length > 0 && Object.values(players).every((p) => p.status === "gameover");
 
   useEffect(() => {
-    if (!gameState?.startedAt || countdown !== null) return;
+    if (!gameState?.startedAt || countdown !== null || allDead) return;
     if (!typingBaseRef.current || typingBaseRef.current.key !== gameState.startedAt) {
       typingBaseRef.current = { localStart: Date.now(), key: gameState.startedAt };
     }
@@ -211,7 +212,7 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
     updateTimer();
     const timer = setInterval(updateTimer, 200);
     return () => clearInterval(timer);
-  }, [gameState?.startedAt, gameState?.timeLimit, countdown]);
+  }, [gameState?.startedAt, gameState?.timeLimit, countdown, allDead]);
 
   // 단어 제출 처리 — DOM에서 직접 값 읽어 한글 IME 조합 상태와 무관하게 동작
   const doSubmit = useCallback(() => {
@@ -270,6 +271,13 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
     }
   }, [isSpectating, gameResult, countdown]);
 
+
+  // 게임 시작 시 화면 맨 위로 스크롤
+  useEffect(() => {
+    if (countdown === COUNTDOWN_SECONDS) {
+      window.scrollTo({ top: 0, behavior: "instant" });
+    }
+  }, [countdown]);
 
   const myPlayer = players[myId];
   const isDead = myPlayer?.status === "gameover";

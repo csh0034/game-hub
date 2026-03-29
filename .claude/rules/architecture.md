@@ -57,7 +57,9 @@ game-hub/
 │   ├── liar-drawing-engine.ts
 │   ├── liar-drawing-timer.ts # 라이어 드로잉 페이즈 타이머
 │   ├── catch-mind-engine.ts
-│   └── catch-mind-timer.ts   # 캐치마인드 그리기 타이머
+│   ├── catch-mind-timer.ts   # 캐치마인드 그리기 타이머
+│   ├── typing-engine.ts
+│   └── typing-ticker.ts      # 타자 게임 단어 스폰 타이머
 └── socket/
     ├── lobby-handler.ts     # lobby:* 이벤트 (방 CRUD, 방 이름 수정, 관전, 강퇴)
     ├── chat-handler.ts      # chat:* 이벤트 (ChatStore 사용)
@@ -101,6 +103,7 @@ game-hub/
 │   │   └── lobby-ranking-panel.tsx  # 로비 랭킹 패널 (게임/난이도 탭 + RankingCard)
 │   ├── request-board/       # 요청사항 게시판 UI (목록, 작성, 수락/거부/완료 처리)
 │   └── games/               # 게임별 UI
+│       ├── typing/
 │       ├── gomoku/
 │       ├── minesweeper/
 │       ├── tetris/

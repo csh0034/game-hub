@@ -12,6 +12,14 @@ export interface GameConfig {
 }
 
 export const GAME_CONFIGS: Record<GameType, GameConfig> = {
+  typing: {
+    gameType: "typing",
+    name: "타자 게임",
+    description: "위에서 내려오는 단어를 빠르게 입력하여 제거하는 타자 레이스",
+    minPlayers: 1,
+    maxPlayers: 8,
+    icon: "⌨️",
+  },
   "liar-drawing": {
     gameType: "liar-drawing",
     name: "라이어 드로잉",
@@ -51,14 +59,6 @@ export const GAME_CONFIGS: Record<GameType, GameConfig> = {
     minPlayers: 1,
     maxPlayers: 1,
     icon: "💣",
-  },
-  typing: {
-    gameType: "typing",
-    name: "타자 게임",
-    description: "위에서 내려오는 단어를 빠르게 입력하여 제거하는 타자 레이스",
-    minPlayers: 1,
-    maxPlayers: 8,
-    icon: "⌨️",
   },
 };
 

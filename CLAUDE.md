@@ -34,12 +34,12 @@ pnpm --filter web test:coverage           # 웹 테스트 + 커버리지
 
 | 게임 | 문서 |
 |------|------|
+| 타자 게임 (Typing) | `docs/games/typing.md` |
 | 라이어 드로잉 (Liar Drawing) | `docs/games/liar-drawing.md` |
 | 캐치마인드 (Catch Mind) | `docs/games/catch-mind.md` |
 | 테트리스 (Tetris) | `docs/games/tetris.md` |
 | 오목 (Gomoku) | `docs/games/gomoku.md` |
 | 지뢰찾기 (Minesweeper) | `docs/games/minesweeper.md` |
-| 타자 게임 (Typing) | `docs/games/typing.md` |
 
 ## 기능 문서
 

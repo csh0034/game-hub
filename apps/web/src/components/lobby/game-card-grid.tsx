@@ -15,7 +15,7 @@ interface GameCardGridProps {
   onCreateRoom: (payload: CreateRoomPayload) => Promise<Room>;
 }
 
-const NEW_GAMES: GameType[] = ["liar-drawing", "catch-mind"];
+const NEW_GAMES: GameType[] = ["typing"];
 
 function getQuickStartBadges(gameType: GameType): string[] | null {
   switch (gameType) {

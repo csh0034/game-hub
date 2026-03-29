@@ -115,6 +115,19 @@ export function RequestBoard({
       open: [], "in-progress": [], resolved: [], rejected: [], stopped: [],
     };
     for (const r of requests) result[r.status].push(r);
+
+    const statusTimeKey: Record<RequestStatus, keyof FeatureRequest> = {
+      open: "createdAt",
+      "in-progress": "inProgressAt",
+      resolved: "resolvedAt",
+      rejected: "rejectedAt",
+      stopped: "stoppedAt",
+    };
+    for (const status of Object.keys(result) as RequestStatus[]) {
+      const key = statusTimeKey[status];
+      result[status].sort((a, b) => ((b[key] as number) ?? 0) - ((a[key] as number) ?? 0));
+    }
+
     return result;
   }, [requests]);
 

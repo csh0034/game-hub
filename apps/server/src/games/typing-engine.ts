@@ -11,10 +11,7 @@ import type {
 } from "@game-hub/shared-types";
 import { TYPING_DIFFICULTY_CONFIGS } from "@game-hub/shared-types";
 import type { GameEngine } from "./engine-interface.js";
-import _WORD_BANK from "./data/typing-words.json" with { type: "json" };
-
-const WORD_BANK: Record<string, string[]> = _WORD_BANK;
-const ALL_WORDS = Object.values(WORD_BANK).flat();
+import ALL_WORDS from "./data/typing-words.json" with { type: "json" };
 
 // 콤보 보너스 점수 테이블
 const COMBO_BONUSES: [number, number][] = [

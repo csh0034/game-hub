@@ -29,7 +29,7 @@ function MiniFallingWord({ word }: { word: TypingWord }) {
       className="absolute pointer-events-none"
       style={{ left: `${word.x}%`, transform: "translateX(-50%)" }}
     >
-      <span className="bg-primary/80 text-primary-foreground px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap">
+      <span className="bg-primary/80 text-primary-foreground px-1.5 py-0.5 rounded text-[10px] font-normal whitespace-nowrap">
         {word.text}
       </span>
     </div>

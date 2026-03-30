@@ -42,7 +42,7 @@ function FallingWord({ word }: { word: TypingWord }) {
       className="absolute pointer-events-none"
       style={{ left: `${word.x}%`, transform: "translateX(-50%)" }}
     >
-      <span className="bg-primary/90 text-primary-foreground px-3 py-1 rounded-lg font-semibold text-base shadow-md whitespace-nowrap">
+      <span className="bg-primary/90 text-primary-foreground px-3 py-1 rounded-lg font-normal text-base shadow-md whitespace-nowrap">
         {word.text}
       </span>
     </div>
@@ -392,27 +392,54 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
             `}</style>
           </div>
         ) : isGameOver ? (
-          <div className="flex items-center justify-center h-64 bg-card border border-border rounded-lg">
-            <div className="text-center space-y-3 p-6">
-              <div className="text-3xl font-bold">
-                {gameResult.winnerId === null
-                  ? "무승부!"
-                  : `${players[gameResult.winnerId ?? ""]?.nickname ?? "???"} 승리!`}
+          <div className="flex items-center justify-center min-h-[16rem] bg-card border border-border rounded-lg">
+            <div className="typing-result-enter text-center w-full max-w-sm mx-4 py-6">
+              <div className="mb-5">
+                <div className="text-4xl mb-2">
+                  {gameResult.winnerId === null ? "🤝" : "🏆"}
+                </div>
+                <div className="text-2xl font-bold">
+                  {gameResult.winnerId === null
+                    ? "무승부!"
+                    : `${players[gameResult.winnerId ?? ""]?.nickname ?? "???"} 승리!`}
+                </div>
               </div>
-              <div className="space-y-1.5 mt-4">
-                {allPlayersSorted.map((p, i) => (
-                  <div
-                    key={p.id}
-                    className={`flex items-center justify-between gap-4 px-4 py-2 rounded text-sm ${
-                      i === 0 ? "bg-primary/10 text-primary font-bold" : ""
-                    }`}
-                  >
-                    <span className="truncate">{i + 1}. {p.nickname}</span>
-                    <span className="tabular-nums shrink-0">{p.score.toLocaleString()}점 · {p.wordsCleared}개</span>
-                  </div>
-                ))}
+              <div className="bg-muted/30 border border-border rounded-xl p-3 space-y-1.5">
+                {allPlayersSorted.map((p, i) => {
+                  const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}`;
+                  const isFirst = i === 0;
+                  return (
+                    <div
+                      key={p.id}
+                      className={`flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-sm ${
+                        isFirst
+                          ? "bg-primary/15 border border-primary/30 font-bold"
+                          : "bg-card/50"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2 truncate">
+                        <span className={`${i < 3 ? "text-lg" : "text-muted-foreground w-[28px] text-center"}`}>{medal}</span>
+                        <span className="truncate">{p.nickname}</span>
+                      </span>
+                      <span className="tabular-nums shrink-0 text-muted-foreground">
+                        <span className={isFirst ? "text-primary" : "text-foreground"}>{p.score.toLocaleString()}</span>
+                        <span className="text-xs ml-1">점</span>
+                        <span className="text-xs ml-2 text-muted-foreground">{p.wordsCleared}개</span>
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
+            <style>{`
+              .typing-result-enter {
+                animation: typing-result-pop 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+              }
+              @keyframes typing-result-pop {
+                0% { transform: scale(0.8); opacity: 0; }
+                100% { transform: scale(1); opacity: 1; }
+              }
+            `}</style>
           </div>
         ) : (
           <div
@@ -540,33 +567,66 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
 
           {/* 게임 결과 오버레이 */}
           {isGameOver && (
-            <div className="absolute inset-0 bg-background/80 flex items-center justify-center z-20">
-              <div className="text-center space-y-3 p-6">
-                <div className="text-3xl font-bold">
-                  {allPlayersSorted.length === 1
-                    ? "게임 종료!"
-                    : gameResult.winnerId === null
-                      ? "무승부!"
-                      : gameResult.winnerId === myId
-                        ? `${players[gameResult.winnerId ?? ""]?.nickname ?? "???"} 승리!`
-                        : "패배..."}
+            <div className="absolute inset-0 bg-background/90 backdrop-blur-sm flex items-center justify-center z-20">
+              <div className="typing-result-enter text-center w-full max-w-sm mx-4">
+                {/* 헤더 */}
+                <div className="mb-5">
+                  <div className="text-4xl mb-2">
+                    {allPlayersSorted.length === 1
+                      ? "🏁"
+                      : gameResult.winnerId === null
+                        ? "🤝"
+                        : gameResult.winnerId === myId
+                          ? "🏆"
+                          : "😢"}
+                  </div>
+                  <div className="text-2xl font-bold">
+                    {allPlayersSorted.length === 1
+                      ? "게임 종료!"
+                      : gameResult.winnerId === null
+                        ? "무승부!"
+                        : gameResult.winnerId === myId
+                          ? `${players[gameResult.winnerId ?? ""]?.nickname ?? "???"} 승리!`
+                          : "패배..."}
+                  </div>
                 </div>
-                <div className="space-y-1.5 mt-4">
-                  {allPlayersSorted.map((p, i) => (
-                    <div
-                      key={p.id}
-                      className={`flex items-center justify-between gap-4 px-4 py-2 rounded text-sm ${
-                        i === 0 ? "bg-primary/10 text-primary font-bold" : ""
-                      }`}
-                    >
-                      <span className="truncate">
-                        {i + 1}. {p.nickname}
-                      </span>
-                      <span className="tabular-nums shrink-0">{p.score.toLocaleString()}점 · {p.wordsCleared}개</span>
-                    </div>
-                  ))}
+                {/* 순위 목록 */}
+                <div className="bg-card/80 border border-border rounded-xl p-3 space-y-1.5">
+                  {allPlayersSorted.map((p, i) => {
+                    const isMe = p.id === myId;
+                    const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}`;
+                    return (
+                      <div
+                        key={p.id}
+                        className={`flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                          isMe
+                            ? "bg-primary/15 border border-primary/30 font-bold"
+                            : "bg-muted/30"
+                        }`}
+                      >
+                        <span className="flex items-center gap-2 truncate">
+                          <span className={`${i < 3 ? "text-lg" : "text-muted-foreground w-[28px] text-center"}`}>{medal}</span>
+                          <span className="truncate">{p.nickname}</span>
+                        </span>
+                        <span className="tabular-nums shrink-0 text-muted-foreground">
+                          <span className={isMe ? "text-primary" : "text-foreground"}>{p.score.toLocaleString()}</span>
+                          <span className="text-xs ml-1">점</span>
+                          <span className="text-xs ml-2 text-muted-foreground">{p.wordsCleared}개</span>
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
+              <style>{`
+                .typing-result-enter {
+                  animation: typing-result-pop 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+                }
+                @keyframes typing-result-pop {
+                  0% { transform: scale(0.8); opacity: 0; }
+                  100% { transform: scale(1); opacity: 1; }
+                }
+              `}</style>
             </div>
           )}
         </div>

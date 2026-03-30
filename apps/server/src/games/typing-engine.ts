@@ -157,16 +157,8 @@ export class TypingEngine implements GameEngine {
     const timeUp = elapsed >= typingState.timeLimit * 1000;
     const allPlayers = [...this.playerStates.values()];
     const allDead = allPlayers.every((ps) => ps.status === "gameover");
-    const alivePlayers = allPlayers.filter((ps) => ps.status === "playing");
-    const isMultiplayer = allPlayers.length >= 2;
-    const lastManStanding = isMultiplayer && alivePlayers.length <= 1;
 
-    if (!timeUp && !allDead && !lastManStanding) return null;
-
-    // last man standing: 생존자가 승자
-    if (lastManStanding && alivePlayers.length === 1) {
-      return { winnerId: alivePlayers[0].id, reason: "" };
-    }
+    if (!timeUp && !allDead) return null;
 
     // 승리 판정: 최고 점수
     let bestScore = -1;
@@ -266,15 +258,13 @@ export class TypingEngine implements GameEngine {
 
     const allPlayers = [...this.playerStates.values()];
     const allDead = activePlayers.length === 0 || allPlayers.every((ps) => ps.status === "gameover");
-    const isMultiplayer = allPlayers.length >= 2;
-    const lastManStanding = isMultiplayer && activePlayers.length <= 1;
     const timeUp = now - this.startedAt >= this.timeLimit * 1000;
 
     return {
       spawnedWords,
       missedWordIds,
       updatedPlayers,
-      gameOver: allDead || timeUp || lastManStanding,
+      gameOver: allDead || timeUp,
     };
   }
 

@@ -121,7 +121,7 @@ describe("TypingEngine", () => {
       expect(result).toBeNull();
     });
 
-    it("멀티플레이에서 마지막 1명이 남으면 게임이 종료된다", () => {
+    it("멀티플레이에서 1명이 남아도 게임이 계속된다", () => {
       engine = new TypingEngine("beginner", 60, 1);
       const initState = engine.initState(createPlayers(2));
 
@@ -141,21 +141,36 @@ describe("TypingEngine", () => {
       expect(state.players["player-2"].status).toBe("gameover");
       expect(state.players["player-1"].status).toBe("playing");
 
+      // 1명이 남아도 게임은 종료되지 않는다
       const result = engine.checkWin(state);
-      expect(result).not.toBeNull();
-      expect(result!.winnerId).toBe("player-1");
+      expect(result).toBeNull();
     });
 
-    it("멀티플레이에서 동점이어도 생존자가 승리한다", () => {
+    it("멀티플레이에서 1명이 남아도 tick이 게임을 종료하지 않는다", () => {
       engine = new TypingEngine("beginner", 60, 1);
       engine.initState(createPlayers(2));
 
-      // 아무도 점수를 얻지 않은 상태에서 player-2 탈락
+      // player-2만 탈락시키기
       engine.tick();
       const words2 = engine.getPlayerWords("player-2");
       for (const w of words2) { w.spawnedAt = 0; w.fallDurationMs = 0; }
       const words1 = engine.getPlayerWords("player-1");
       for (const w of words1) { w.spawnedAt = Date.now(); w.fallDurationMs = 999999; }
+
+      const tickResult = engine.tick();
+      expect(tickResult.gameOver).toBe(false);
+    });
+
+    it("동점이면 무승부를 반환한다", () => {
+      engine = new TypingEngine("beginner", 60, 1);
+      engine.initState(createPlayers(2));
+
+      // 아무도 점수를 얻지 않은 상태에서 모두 탈락
+      engine.tick();
+      for (const pid of ["player-1", "player-2"]) {
+        const words = engine.getPlayerWords(pid);
+        for (const w of words) { w.spawnedAt = 0; w.fallDurationMs = 0; }
+      }
       engine.tick();
 
       const state = engine.toPublicState();
@@ -164,23 +179,7 @@ describe("TypingEngine", () => {
 
       const result = engine.checkWin(state);
       expect(result).not.toBeNull();
-      expect(result!.winnerId).toBe("player-1");
-    });
-
-    it("멀티플레이에서 tick도 lastManStanding을 감지한다", () => {
-      engine = new TypingEngine("beginner", 60, 1);
-      engine.initState(createPlayers(2));
-
-      // player-2만 탈락시키기
-      engine.tick();
-      const words2 = engine.getPlayerWords("player-2");
-      for (const w of words2) { w.spawnedAt = 0; w.fallDurationMs = 0; }
-      // player-1의 단어는 건드리지 않음
-      const words1 = engine.getPlayerWords("player-1");
-      for (const w of words1) { w.spawnedAt = Date.now(); w.fallDurationMs = 999999; }
-
-      const tickResult = engine.tick();
-      expect(tickResult.gameOver).toBe(true);
+      expect(result!.winnerId).toBeNull(); // 동점 무승부
     });
 
     it("솔로 플레이에서는 1명 남아도 종료되지 않는다", () => {

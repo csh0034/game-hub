@@ -50,6 +50,7 @@ game-hub/
 │   ├── engine-interface.ts  # GameEngine 인터페이스
 │   ├── game-manager.ts      # GameType → GameEngine 매핑 + RoomStore write-through
 │   ├── gomoku-engine.ts
+│   ├── gomoku-renju-rule.ts # 오목 렌주룰 금수 판정 (장목/삼삼/사사)
 │   ├── gomoku-timer.ts      # 오목 턴 타이머
 │   ├── minesweeper-engine.ts
 │   ├── tetris-engine.ts

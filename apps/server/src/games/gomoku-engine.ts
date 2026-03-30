@@ -1,5 +1,6 @@
-import type { Player, GomokuState, GomokuMove, GameResult, GomokuFirstColor } from "@game-hub/shared-types";
+import type { Player, GomokuState, GomokuMove, GameResult, GomokuFirstColor, GomokuRuleType } from "@game-hub/shared-types";
 import type { GameEngine } from "./engine-interface.js";
+import { isForbiddenMove, getForbiddenMoves } from "./gomoku-renju-rule.js";
 
 export class GomokuEngine implements GameEngine {
   gameType = "gomoku" as const;
@@ -7,10 +8,12 @@ export class GomokuEngine implements GameEngine {
   maxPlayers = 2;
   private turnTimeSeconds: number;
   private firstColor: GomokuFirstColor;
+  private ruleType: GomokuRuleType;
 
-  constructor(turnTime: number = 30, firstColor: GomokuFirstColor = "host") {
+  constructor(turnTime: number = 30, firstColor: GomokuFirstColor = "host", ruleType: GomokuRuleType = "free") {
     this.turnTimeSeconds = turnTime;
     this.firstColor = firstColor;
+    this.ruleType = ruleType;
   }
 
   initState(players: Player[]): GomokuState {
@@ -33,6 +36,7 @@ export class GomokuEngine implements GameEngine {
       gameStartedAt: now,
       turnTimeSeconds: this.turnTimeSeconds,
       winLine: null,
+      forbiddenMoves: this.ruleType === "renju" ? [] : null,
     };
   }
 
@@ -42,16 +46,26 @@ export class GomokuEngine implements GameEngine {
     if (state.board[row][col] !== null) return state;
     if (state.players[state.currentTurn] !== playerId) return state;
 
+    // Renju: block forbidden moves for black
+    if (this.ruleType === "renju" && state.currentTurn === "black") {
+      if (isForbiddenMove(state.board, row, col)) return state;
+    }
+
     const newBoard = state.board.map((r) => [...r]);
     newBoard[row][col] = state.currentTurn;
+
+    const nextTurn = state.currentTurn === "black" ? "white" : "black";
 
     return {
       ...state,
       board: newBoard,
-      currentTurn: state.currentTurn === "black" ? "white" : "black",
+      currentTurn: nextTurn,
       lastMove: { row, col },
       moveCount: state.moveCount + 1,
       turnStartedAt: Date.now(),
+      forbiddenMoves: this.ruleType === "renju" && nextTurn === "black"
+        ? getForbiddenMoves(newBoard)
+        : state.forbiddenMoves,
     };
   }
 
@@ -84,12 +98,24 @@ export class GomokuEngine implements GameEngine {
         if (state.board[r][c] !== stone) break;
         cells.push({ row: r, col: c });
       }
-      if (cells.length >= 5) {
-        state.winLine = cells;
-        return {
-          winnerId: state.players[stone],
-          reason: `${stone === "black" ? "흑" : "백"}이 5목을 완성했습니다!`,
-        };
+
+      // Renju: black must have exactly 5 (overline is blocked in processMove, but defend here too)
+      if (this.ruleType === "renju" && stone === "black") {
+        if (cells.length === 5) {
+          state.winLine = cells;
+          return {
+            winnerId: state.players[stone],
+            reason: "흑이 5목을 완성했습니다!",
+          };
+        }
+      } else {
+        if (cells.length >= 5) {
+          state.winLine = cells;
+          return {
+            winnerId: state.players[stone],
+            reason: `${stone === "black" ? "흑" : "백"}이 ${cells.length}목을 완성했습니다!`,
+          };
+        }
       }
     }
 

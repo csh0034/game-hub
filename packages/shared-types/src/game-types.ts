@@ -63,6 +63,7 @@ export const GAME_CONFIGS: Record<GameType, GameConfig> = {
 };
 
 export type StoneColor = "black" | "white";
+export type GomokuRuleType = "free" | "renju";
 
 export interface GomokuState {
   board: (StoneColor | null)[][];
@@ -74,6 +75,7 @@ export interface GomokuState {
   gameStartedAt: number;
   turnTimeSeconds: number;
   winLine: { row: number; col: number }[] | null;
+  forbiddenMoves: { row: number; col: number }[] | null;
 }
 
 export interface GomokuMove {

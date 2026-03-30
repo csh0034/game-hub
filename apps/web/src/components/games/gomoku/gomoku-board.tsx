@@ -47,11 +47,15 @@ export default function GomokuBoard({ isSpectating }: GameComponentProps) {
 
   const isMyTurn = state.players[state.currentTurn] === socket?.id;
 
+  const isForbidden = (row: number, col: number) =>
+    state.forbiddenMoves?.some((m) => m.row === row && m.col === col) ?? false;
+
   const handleClick = (row: number, col: number) => {
     if (isSpectating) return;
     if (gameResult) return;
     if (!isMyTurn) return;
     if (state.board[row][col] !== null) return;
+    if (isForbidden(row, col)) return;
     const move: GomokuMove = { row, col };
     makeMove(move);
   };
@@ -156,7 +160,7 @@ export default function GomokuBoard({ isSpectating }: GameComponentProps) {
                   height: CELL_SIZE - 2,
                 }}
                 onClick={() => handleClick(row, col)}
-                disabled={!!gameResult || !isMyTurn || stone !== null}
+                disabled={!!gameResult || !isMyTurn || stone !== null || isForbidden(row, col)}
               >
                 {stone && (
                   <div
@@ -167,8 +171,13 @@ export default function GomokuBoard({ isSpectating }: GameComponentProps) {
                     } ${isLast ? "ring-2 ring-primary ring-offset-1 ring-offset-amber-700" : ""} ${isWinCell(row, col) ? "ring-2 ring-yellow-400 ring-offset-1 ring-offset-amber-700 scale-110" : ""}`}
                   />
                 )}
-                {!stone && isMyTurn && !gameResult && (
+                {!stone && isMyTurn && !gameResult && !isForbidden(row, col) && (
                   <div className="w-[30px] h-[30px] rounded-full mx-auto opacity-0 hover:opacity-30 transition-opacity bg-gray-500" />
+                )}
+                {!stone && !gameResult && (isSpectating || myColor === "black") && isForbidden(row, col) && (
+                  <div className="w-[24px] h-[24px] mx-auto flex items-center justify-center text-red-500 text-base font-extrabold drop-shadow-[0_0_2px_rgba(0,0,0,0.5)]">
+                    ✕
+                  </div>
                 )}
               </button>
             );
@@ -202,7 +211,7 @@ export default function GomokuBoard({ isSpectating }: GameComponentProps) {
           <ul className="list-disc list-inside space-y-1">
             <li>15×15 보드에서 흑과 백이 번갈아 돌을 놓는다</li>
             <li>흑이 먼저 시작한다</li>
-            <li>가로, 세로, 대각선으로 5개 이상 연속으로 놓으면 승리</li>
+            <li>가로, 세로, 대각선으로 5개 연속으로 놓으면 승리</li>
           </ul>
         </div>
         <div>
@@ -212,14 +221,27 @@ export default function GomokuBoard({ isSpectating }: GameComponentProps) {
             <li>시간 초과 시 상대에게 턴이 넘어간다</li>
           </ul>
         </div>
-        <div>
-          <h3 className="text-foreground font-semibold mb-1">특이 사항</h3>
-          <ul className="list-disc list-inside space-y-1">
-            <li>금수 규칙 없음 (삼삼, 사사 허용)</li>
-            <li>장목(6목 이상) 허용</li>
-            <li>225칸이 모두 차면 무승부</li>
-          </ul>
-        </div>
+        {state.forbiddenMoves !== null ? (
+          <div>
+            <h3 className="text-foreground font-semibold mb-1">렌주룰 (금수 규칙)</h3>
+            <ul className="list-disc list-inside space-y-1">
+              <li>흑은 삼삼(3-3), 사사(4-4), 장목(6목 이상) 금수</li>
+              <li>정확히 5목 완성 시 금수 예외 (승리)</li>
+              <li>백은 제한 없음 (6목 이상도 승리)</li>
+              <li>금수 위치는 ✕ 표시로 확인 가능</li>
+              <li>225칸이 모두 차면 무승부</li>
+            </ul>
+          </div>
+        ) : (
+          <div>
+            <h3 className="text-foreground font-semibold mb-1">특이 사항</h3>
+            <ul className="list-disc list-inside space-y-1">
+              <li>금수 규칙 없음 (삼삼, 사사 허용)</li>
+              <li>장목(6목 이상) 허용</li>
+              <li>225칸이 모두 차면 무승부</li>
+            </ul>
+          </div>
+        )}
       </GameHelpDialog>
     </div>
   );

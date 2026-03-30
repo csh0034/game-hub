@@ -122,7 +122,7 @@ function getOptionsSummary(room: Room): string | null {
   const opts = room.gameOptions;
   switch (room.gameType) {
     case "gomoku":
-      return `턴 ${opts?.gomokuTurnTime ?? 30}초 · ${(opts?.gomokuFirstColor ?? "host") === "host" ? "방장" : "상대"} 선공`;
+      return `턴 ${opts?.gomokuTurnTime ?? 30}초 · ${(opts?.gomokuFirstColor ?? "host") === "host" ? "방장" : "상대"} 선공 · ${(opts?.gomokuRuleType ?? "free") === "free" ? "자유룰" : "렌주룰"}`;
     case "minesweeper": {
       if (!opts?.minesweeperDifficulty) return null;
       const diff = MINESWEEPER_DIFFICULTY_CONFIGS[opts.minesweeperDifficulty];

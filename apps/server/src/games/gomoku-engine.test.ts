@@ -316,6 +316,7 @@ describe("GomokuEngine", () => {
         gameStartedAt: Date.now(),
         turnTimeSeconds: 30,
         winLine: null,
+        forbiddenMoves: null,
       };
 
       const result = engine.checkWin(drawState);
@@ -323,6 +324,196 @@ describe("GomokuEngine", () => {
       expect(result).not.toBeNull();
       expect(result!.winnerId).toBeNull();
       expect(result!.reason).toContain("무승부");
+    });
+  });
+
+  describe("free rule에서 forbiddenMoves", () => {
+    it("free rule에서 forbiddenMoves는 null이다", () => {
+      const state = engine.initState(mockPlayers);
+      expect(state.forbiddenMoves).toBeNull();
+    });
+  });
+});
+
+describe("GomokuEngine (renju rule)", () => {
+  let engine: GomokuEngine;
+
+  beforeEach(() => {
+    engine = new GomokuEngine(30, "host", "renju");
+  });
+
+  describe("initState", () => {
+    it("렌주룰에서 forbiddenMoves는 빈 배열이다", () => {
+      const state = engine.initState(mockPlayers);
+      expect(state.forbiddenMoves).toEqual([]);
+    });
+  });
+
+  describe("processMove", () => {
+    it("흑의 삼삼 금수를 차단한다", () => {
+      let s = engine.initState(mockPlayers);
+      // 삼삼 구성: 가로 (7,5)(7,6), 세로 (5,7)(6,7), (7,7)에 놓으면 삼삼
+      s = engine.processMove(s, "player1", { row: 7, col: 5 }); // 흑
+      s = engine.processMove(s, "player2", { row: 0, col: 0 }); // 백
+      s = engine.processMove(s, "player1", { row: 7, col: 6 }); // 흑
+      s = engine.processMove(s, "player2", { row: 0, col: 1 }); // 백
+      s = engine.processMove(s, "player1", { row: 5, col: 7 }); // 흑
+      s = engine.processMove(s, "player2", { row: 0, col: 2 }); // 백
+      s = engine.processMove(s, "player1", { row: 6, col: 7 }); // 흑
+      s = engine.processMove(s, "player2", { row: 0, col: 3 }); // 백
+
+      // 이제 흑 차례, (7,7)은 삼삼 금수
+      const before = s;
+      const after = engine.processMove(s, "player1", { row: 7, col: 7 });
+      expect(after).toBe(before); // 착수 거부
+    });
+
+    it("흑의 사사 금수를 차단한다", () => {
+      let s = engine.initState(mockPlayers);
+      // 사사 구성: 가로 (7,4)(7,5)(7,6), 세로 (4,7)(5,7)(6,7)
+      s = engine.processMove(s, "player1", { row: 7, col: 4 }); // 흑
+      s = engine.processMove(s, "player2", { row: 0, col: 0 }); // 백
+      s = engine.processMove(s, "player1", { row: 7, col: 5 }); // 흑
+      s = engine.processMove(s, "player2", { row: 0, col: 1 }); // 백
+      s = engine.processMove(s, "player1", { row: 7, col: 6 }); // 흑
+      s = engine.processMove(s, "player2", { row: 0, col: 2 }); // 백
+      s = engine.processMove(s, "player1", { row: 4, col: 7 }); // 흑
+      s = engine.processMove(s, "player2", { row: 0, col: 3 }); // 백
+      s = engine.processMove(s, "player1", { row: 5, col: 7 }); // 흑
+      s = engine.processMove(s, "player2", { row: 0, col: 4 }); // 백
+      s = engine.processMove(s, "player1", { row: 6, col: 7 }); // 흑
+      s = engine.processMove(s, "player2", { row: 0, col: 5 }); // 백
+
+      const before = s;
+      const after = engine.processMove(s, "player1", { row: 7, col: 7 });
+      expect(after).toBe(before); // 착수 거부
+    });
+
+    it("흑의 장목을 차단한다", () => {
+      let s = engine.initState(mockPlayers);
+      // 흑: (7,2)(7,3)(7,4)(7,5)(7,6) → (7,7)에 놓으면 6목
+      s = engine.processMove(s, "player1", { row: 7, col: 2 }); // 흑
+      s = engine.processMove(s, "player2", { row: 0, col: 0 }); // 백
+      s = engine.processMove(s, "player1", { row: 7, col: 3 }); // 흑
+      s = engine.processMove(s, "player2", { row: 0, col: 1 }); // 백
+      s = engine.processMove(s, "player1", { row: 7, col: 4 }); // 흑
+      s = engine.processMove(s, "player2", { row: 0, col: 2 }); // 백
+      s = engine.processMove(s, "player1", { row: 7, col: 5 }); // 흑
+      s = engine.processMove(s, "player2", { row: 0, col: 3 }); // 백
+      s = engine.processMove(s, "player1", { row: 7, col: 6 }); // 흑
+      s = engine.processMove(s, "player2", { row: 0, col: 4 }); // 백
+
+      const before = s;
+      const after = engine.processMove(s, "player1", { row: 7, col: 7 });
+      expect(after).toBe(before); // 장목 금수
+    });
+
+    it("5목 완성은 금수 예외로 허용한다", () => {
+      let s = engine.initState(mockPlayers);
+      // 흑 5목: (7,3)(7,4)(7,5)(7,6) + (7,7)
+      s = engine.processMove(s, "player1", { row: 7, col: 3 }); // 흑
+      s = engine.processMove(s, "player2", { row: 0, col: 0 }); // 백
+      s = engine.processMove(s, "player1", { row: 7, col: 4 }); // 흑
+      s = engine.processMove(s, "player2", { row: 0, col: 1 }); // 백
+      s = engine.processMove(s, "player1", { row: 7, col: 5 }); // 흑
+      s = engine.processMove(s, "player2", { row: 0, col: 2 }); // 백
+      s = engine.processMove(s, "player1", { row: 7, col: 6 }); // 흑
+      s = engine.processMove(s, "player2", { row: 0, col: 3 }); // 백
+
+      const after = engine.processMove(s, "player1", { row: 7, col: 7 });
+      expect(after).not.toBe(s); // 착수 성공
+      expect(after.board[7][7]).toBe("black");
+    });
+
+    it("백에게는 금수 규칙이 적용되지 않는다", () => {
+      let s = engine.initState(mockPlayers);
+      // 백으로 사사 구성
+      s = engine.processMove(s, "player1", { row: 14, col: 14 }); // 흑 (아무데나)
+      s = engine.processMove(s, "player2", { row: 7, col: 4 }); // 백
+      s = engine.processMove(s, "player1", { row: 14, col: 13 }); // 흑
+      s = engine.processMove(s, "player2", { row: 7, col: 5 }); // 백
+      s = engine.processMove(s, "player1", { row: 14, col: 12 }); // 흑
+      s = engine.processMove(s, "player2", { row: 7, col: 6 }); // 백
+      s = engine.processMove(s, "player1", { row: 14, col: 11 }); // 흑
+      s = engine.processMove(s, "player2", { row: 4, col: 7 }); // 백
+      s = engine.processMove(s, "player1", { row: 14, col: 10 }); // 흑
+      s = engine.processMove(s, "player2", { row: 5, col: 7 }); // 백
+      s = engine.processMove(s, "player1", { row: 14, col: 9 }); // 흑
+      s = engine.processMove(s, "player2", { row: 6, col: 7 }); // 백
+      s = engine.processMove(s, "player1", { row: 14, col: 8 }); // 흑
+
+      // 백 차례, (7,7)에 놓으면 사사이지만 백이라 허용
+      const after = engine.processMove(s, "player2", { row: 7, col: 7 });
+      expect(after).not.toBe(s);
+      expect(after.board[7][7]).toBe("white");
+    });
+
+    it("흑 차례 전에 forbiddenMoves를 갱신한다", () => {
+      let s = engine.initState(mockPlayers);
+      // 삼삼 구성의 일부 배치
+      s = engine.processMove(s, "player1", { row: 7, col: 5 }); // 흑
+      s = engine.processMove(s, "player2", { row: 0, col: 0 }); // 백
+      s = engine.processMove(s, "player1", { row: 7, col: 6 }); // 흑
+      s = engine.processMove(s, "player2", { row: 0, col: 1 }); // 백
+      s = engine.processMove(s, "player1", { row: 5, col: 7 }); // 흑
+      s = engine.processMove(s, "player2", { row: 0, col: 2 }); // 백
+      s = engine.processMove(s, "player1", { row: 6, col: 7 }); // 흑
+      // 백 차례 후 흑 차례가 되면 forbiddenMoves 갱신
+      s = engine.processMove(s, "player2", { row: 0, col: 3 });
+
+      expect(s.forbiddenMoves).not.toBeNull();
+      expect(s.forbiddenMoves).toContainEqual({ row: 7, col: 7 });
+    });
+  });
+
+  describe("checkWin", () => {
+    it("렌주룰에서 흑 5목은 승리한다", () => {
+      let s = engine.initState(mockPlayers);
+      const blackMoves = [
+        { row: 7, col: 3 },
+        { row: 7, col: 4 },
+        { row: 7, col: 5 },
+        { row: 7, col: 6 },
+        { row: 7, col: 7 },
+      ];
+      const whiteMoves = [
+        { row: 8, col: 3 },
+        { row: 8, col: 4 },
+        { row: 8, col: 5 },
+        { row: 8, col: 6 },
+      ];
+
+      for (let i = 0; i < 5; i++) {
+        s = engine.processMove(s, "player1", blackMoves[i]);
+        if (i < 4) {
+          s = engine.processMove(s, "player2", whiteMoves[i]);
+        }
+      }
+
+      const result = engine.checkWin(s);
+      expect(result).not.toBeNull();
+      expect(result!.winnerId).toBe("player1");
+    });
+
+    it("렌주룰에서 백 6목 이상도 승리한다", () => {
+      let s = engine.initState(mockPlayers);
+      // 백 6목 구성
+      s = engine.processMove(s, "player1", { row: 14, col: 14 }); // 흑
+      s = engine.processMove(s, "player2", { row: 7, col: 2 }); // 백
+      s = engine.processMove(s, "player1", { row: 14, col: 13 }); // 흑
+      s = engine.processMove(s, "player2", { row: 7, col: 3 }); // 백
+      s = engine.processMove(s, "player1", { row: 14, col: 12 }); // 흑
+      s = engine.processMove(s, "player2", { row: 7, col: 4 }); // 백
+      s = engine.processMove(s, "player1", { row: 14, col: 11 }); // 흑
+      s = engine.processMove(s, "player2", { row: 7, col: 5 }); // 백
+      s = engine.processMove(s, "player1", { row: 14, col: 10 }); // 흑
+      s = engine.processMove(s, "player2", { row: 7, col: 6 }); // 백
+      s = engine.processMove(s, "player1", { row: 14, col: 9 }); // 흑
+      s = engine.processMove(s, "player2", { row: 7, col: 7 }); // 백 6목
+
+      const result = engine.checkWin(s);
+      expect(result).not.toBeNull();
+      expect(result!.winnerId).toBe("player2");
     });
   });
 });

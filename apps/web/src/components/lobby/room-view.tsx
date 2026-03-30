@@ -454,6 +454,27 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
                       ))}
                     </div>
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">게임 규칙</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {([["free", "자유룰"], ["renju", "렌주룰"]] as const).map(([key, label]) => (
+                        <button
+                          key={key}
+                          onClick={() => handleOptionChange({ ...localOptions, gomokuRuleType: key })}
+                          className={`p-2 rounded-lg border text-sm text-center transition-colors ${
+                            (localOptions.gomokuRuleType ?? "free") === key
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border hover:border-border/80"
+                          }`}
+                        >
+                          <div className="font-medium">{label}</div>
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            {key === "free" ? "금수 없음" : "흑 금수 적용"}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </>
               )}
               {room.gameType === "minesweeper" && (
@@ -735,6 +756,10 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
                   <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
                     <span className="text-muted-foreground">흑돌 (선공)</span>
                     <span className="font-medium">{(room.gameOptions?.gomokuFirstColor ?? "host") === "host" ? "방장" : "상대"}</span>
+                  </div>
+                  <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
+                    <span className="text-muted-foreground">게임 규칙</span>
+                    <span className="font-medium">{(room.gameOptions?.gomokuRuleType ?? "free") === "free" ? "자유룰" : "렌주룰"}</span>
                   </div>
                 </>
               )}

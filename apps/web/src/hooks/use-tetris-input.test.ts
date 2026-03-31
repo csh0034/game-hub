@@ -16,16 +16,16 @@ describe("useTetrisInput", () => {
     vi.useRealTimers();
   });
 
-  function pressKey(key: string) {
-    window.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
+  function pressKey(code: string) {
+    window.dispatchEvent(new KeyboardEvent("keydown", { code, bubbles: true }));
   }
 
-  function releaseKey(key: string) {
-    window.dispatchEvent(new KeyboardEvent("keyup", { key, bubbles: true }));
+  function releaseKey(code: string) {
+    window.dispatchEvent(new KeyboardEvent("keyup", { code, bubbles: true }));
   }
 
-  function pressKeyRepeat(key: string) {
-    window.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, repeat: true }));
+  function pressKeyRepeat(code: string) {
+    window.dispatchEvent(new KeyboardEvent("keydown", { code, bubbles: true, repeat: true }));
   }
 
   it("첫 키 입력 시 즉시 onMove를 호출한다", () => {
@@ -90,7 +90,7 @@ describe("useTetrisInput", () => {
   it("hard-drop은 onInstantMove를 호출하고 반복하지 않는다", () => {
     renderHook(() => useTetrisInput({ enabled: true, onMove, onInstantMove }));
 
-    pressKey(" ");
+    pressKey("Space");
     expect(onInstantMove).toHaveBeenCalledTimes(1);
     expect(onInstantMove).toHaveBeenCalledWith("hard-drop");
     expect(onMove).not.toHaveBeenCalled();
@@ -102,7 +102,7 @@ describe("useTetrisInput", () => {
   it("hold는 onInstantMove를 호출한다", () => {
     renderHook(() => useTetrisInput({ enabled: true, onMove, onInstantMove }));
 
-    pressKey("c");
+    pressKey("KeyC");
     expect(onInstantMove).toHaveBeenCalledWith("hold");
   });
 
@@ -148,5 +148,14 @@ describe("useTetrisInput", () => {
     expect(onMove).toHaveBeenCalledTimes(2);
 
     releaseKey("ArrowDown");
+  });
+
+  it("한글 IME 활성 시에도 Space 키가 동작한다", () => {
+    renderHook(() => useTetrisInput({ enabled: true, onMove, onInstantMove }));
+
+    // IME 활성 시 e.key는 "Process"이지만 e.code는 "Space"
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Process", code: "Space", bubbles: true }));
+    expect(onInstantMove).toHaveBeenCalledTimes(1);
+    expect(onInstantMove).toHaveBeenCalledWith("hard-drop");
   });
 });

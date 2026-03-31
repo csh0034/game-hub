@@ -8,19 +8,18 @@ const SOFT_DROP_ARR = 33;
 const DAS_MOVE_TYPES = new Set<TetrisMoveType>(["move-left", "move-right", "soft-drop"]);
 const INSTANT_MOVE_TYPES = new Set<TetrisMoveType>(["hard-drop", "hold"]);
 
-const KEY_MAP: Record<string, TetrisMoveType> = {
+// e.code 기반 매핑 — 한글 IME 활성 시 e.key가 "Process"로 변환되는 문제 방지
+const CODE_MAP: Record<string, TetrisMoveType> = {
   ArrowLeft: "move-left",
   ArrowRight: "move-right",
   ArrowDown: "soft-drop",
   ArrowUp: "rotate-cw",
-  x: "rotate-cw",
-  X: "rotate-cw",
-  z: "rotate-ccw",
-  Z: "rotate-ccw",
-  " ": "hard-drop",
-  c: "hold",
-  C: "hold",
-  Shift: "hold",
+  KeyX: "rotate-cw",
+  KeyZ: "rotate-ccw",
+  Space: "hard-drop",
+  KeyC: "hold",
+  ShiftLeft: "hold",
+  ShiftRight: "hold",
 };
 
 interface KeyState {
@@ -59,7 +58,7 @@ export function useTetrisInput(options: {
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      const moveType = KEY_MAP[e.key];
+      const moveType = CODE_MAP[e.code];
       if (!moveType) return;
       e.preventDefault();
 
@@ -67,7 +66,7 @@ export function useTetrisInput(options: {
       if (e.repeat) return;
 
       // Clean up any existing timers for this key
-      clearKeyTimers(e.key);
+      clearKeyTimers(e.code);
 
       if (INSTANT_MOVE_TYPES.has(moveType)) {
         optionsRef.current.onInstantMove(moveType);
@@ -79,14 +78,14 @@ export function useTetrisInput(options: {
         optionsRef.current.onMove(moveType);
         const arrMs = moveType === "soft-drop" ? SOFT_DROP_ARR : ARR_INTERVAL;
         const dasTimer = setTimeout(() => {
-          const keyState = pressedKeys.get(e.key);
+          const keyState = pressedKeys.get(e.code);
           if (!keyState) return;
           keyState.dasTimer = null;
           keyState.arrTimer = setInterval(() => {
             optionsRef.current.onMove(moveType);
           }, arrMs);
         }, DAS_DELAY);
-        pressedKeys.set(e.key, { dasTimer, arrTimer: null });
+        pressedKeys.set(e.code, { dasTimer, arrTimer: null });
       } else {
         // Rotation: fire once, no repeat
         optionsRef.current.onMove(moveType);
@@ -94,7 +93,7 @@ export function useTetrisInput(options: {
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
-      clearKeyTimers(e.key);
+      clearKeyTimers(e.code);
     };
 
     const handleBlur = () => {

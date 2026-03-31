@@ -14,19 +14,29 @@ function MiniFallingWord({ word }: { word: TypingWord }) {
   useEffect(() => {
     const el = divRef.current;
     if (!el) return;
+    const board = el.offsetParent as HTMLElement | null;
+    if (!board) return;
+    const boardH = board.clientHeight;
     const now = Date.now();
     const elapsed = (now - word.spawnedAt) / 1000;
     const total = word.fallDurationMs / 1000;
     const remaining = Math.max(total - elapsed, 0);
-    const startPct = Math.min((elapsed / total) * 100, 100);
-    el.style.top = `${startPct}%`;
-    el.style.animation = `typing-fall ${remaining}s linear forwards`;
+    const startY = Math.min(elapsed / total, 1) * boardH;
+
+    const anim = el.animate(
+      [
+        { transform: `translateX(-50%) translateY(${startY}px)` },
+        { transform: `translateX(-50%) translateY(${boardH}px)` },
+      ],
+      { duration: remaining * 1000, fill: "forwards", easing: "linear" },
+    );
+    return () => anim.cancel();
   }, [word.spawnedAt, word.fallDurationMs]);
 
   return (
     <div
       ref={divRef}
-      className="absolute pointer-events-none"
+      className="absolute top-0 pointer-events-none"
       style={{ left: `${word.x}%`, transform: "translateX(-50%)" }}
     >
       <span className="inline-block bg-gradient-to-b from-sky-400 to-blue-500 text-white px-1.5 py-0.5 rounded-full text-[10px] font-medium whitespace-nowrap shadow-[0_0_6px_rgba(56,189,248,0.3)]">

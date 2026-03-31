@@ -1,5 +1,5 @@
 import type { Room, CreateRoomPayload, JoinRoomPayload, GameOptions } from "./lobby-types";
-import type { GameState, GameMove, GameResult, LiarDrawingPrivateState, CatchMindPrivateState, DrawPoint, TetrisPlayerUpdate, TetrisPieceUpdate, TypingWord, TypingPlayerState } from "./game-types";
+import type { GameState, GameMove, GameResult, LiarDrawingPrivateState, CatchMindPrivateState, DrawPoint, TetrisPlayerUpdate, TetrisPieceUpdate, TypingWord, TypingPlayerState, TypingTickResult } from "./game-types";
 import type { Player } from "./player-types";
 import type { FeatureRequest, CreateRequestPayload, ChangeStatusPayload, UpdateRequestPayload, ChangeLabelPayload } from "./request-types";
 import type { RankingKey, RankingEntry } from "./ranking-types";
@@ -96,8 +96,7 @@ export interface ServerToClientEvents {
   "game:clear-canvas": (data: { playerId: string }) => void;
   "game:tetris-player-updated": (data: TetrisPlayerUpdate) => void;
   "game:tetris-piece-updated": (data: TetrisPieceUpdate) => void;
-  "game:typing-words-spawned": (words: TypingWord[]) => void;
-  "game:typing-words-missed": (data: { playerId: string; wordIds: number[] }) => void;
+  "game:typing-tick-result": (data: TypingTickResult) => void;
   "game:typing-word-cleared": (data: { playerId: string; wordId: number }) => void;
   "game:typing-all-player-words": (data: Record<string, TypingWord[]>) => void;
   "game:typing-player-updated": (data: { playerId: string; player: TypingPlayerState }) => void;

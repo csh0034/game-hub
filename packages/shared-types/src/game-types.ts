@@ -362,6 +362,12 @@ export interface TypingPublicState {
   countingDown?: boolean;
 }
 
+export interface TypingTickResult {
+  spawnedWords: TypingWord[];
+  missed: Record<string, number[]>;
+  updatedPlayers: Record<string, TypingPlayerState>;
+}
+
 export interface TypingMove {
   type: "submit";
   word: string;

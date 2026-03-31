@@ -256,8 +256,7 @@ export class TypingEngine implements GameEngine {
       }
     }
 
-    const allPlayers = [...this.playerStates.values()];
-    const allDead = activePlayers.length === 0 || allPlayers.every((ps) => ps.status === "gameover");
+    const allDead = activePlayers.length === 0;
     const timeUp = now - this.startedAt >= this.timeLimit * 1000;
 
     return {

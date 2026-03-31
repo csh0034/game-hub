@@ -344,19 +344,13 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
 
         const tickResult = typingEngine.tick();
 
-        // 새 단어 스폰 → 모든 클라이언트에 브로드캐스트
-        if (tickResult.spawnedWords.length > 0) {
-          io.to(roomId).emit("game:typing-words-spawned", tickResult.spawnedWords);
-        }
-
-        // 바닥 도달한 단어 → 모든 클라이언트에 브로드캐스트 (상대방 화면 동기화)
-        for (const [playerId, missedIds] of tickResult.missedWordIds) {
-          io.to(roomId).emit("game:typing-words-missed", { playerId, wordIds: missedIds });
-        }
-
-        // 변경된 플레이어 상태 → 모든 클라이언트에 브로드캐스트
-        for (const [playerId, playerState] of tickResult.updatedPlayers) {
-          io.to(roomId).emit("game:typing-player-updated", { playerId, player: playerState });
+        // 틱 결과를 단일 이벤트로 배치 전송
+        if (tickResult.spawnedWords.length > 0 || tickResult.missedWordIds.size > 0) {
+          io.to(roomId).emit("game:typing-tick-result", {
+            spawnedWords: tickResult.spawnedWords,
+            missed: Object.fromEntries(tickResult.missedWordIds),
+            updatedPlayers: Object.fromEntries(tickResult.updatedPlayers),
+          });
         }
 
         if (tickResult.gameOver) {

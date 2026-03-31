@@ -11,6 +11,7 @@ import type {
   TypingPublicState,
   TypingWord,
   TypingPlayerState,
+  TypingTickResult,
 } from "@game-hub/shared-types";
 
 const COUNTDOWN_SECONDS = 3;
@@ -20,26 +21,36 @@ interface TypingBoardProps {
   isSpectating?: boolean;
 }
 
-// 낙하 단어 컴포넌트 — ref를 사용해 마운트 후 DOM에 직접 animation 적용
+// 낙하 단어 컴포넌트 — Web Animations API + transform으로 GPU 가속 낙하
 function FallingWord({ word }: { word: TypingWord }) {
   const divRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const el = divRef.current;
     if (!el) return;
+    const board = el.offsetParent as HTMLElement | null;
+    if (!board) return;
+    const boardH = board.clientHeight;
     const now = Date.now();
     const elapsed = (now - word.spawnedAt) / 1000;
     const total = word.fallDurationMs / 1000;
     const remaining = Math.max(total - elapsed, 0);
-    const startPct = Math.min((elapsed / total) * 100, 100);
-    el.style.top = `${startPct}%`;
-    el.style.animation = `typing-fall ${remaining}s linear forwards`;
+    const startY = Math.min(elapsed / total, 1) * boardH;
+
+    const anim = el.animate(
+      [
+        { transform: `translateX(-50%) translateY(${startY}px)` },
+        { transform: `translateX(-50%) translateY(${boardH}px)` },
+      ],
+      { duration: remaining * 1000, fill: "forwards", easing: "linear" },
+    );
+    return () => anim.cancel();
   }, [word.spawnedAt, word.fallDurationMs]);
 
   return (
     <div
       ref={divRef}
-      className="absolute pointer-events-none"
+      className="absolute top-0 pointer-events-none"
       style={{ left: `${word.x}%`, transform: "translateX(-50%)" }}
     >
       <span className="inline-block bg-gradient-to-b from-sky-400 to-blue-500 text-white px-3.5 py-1 rounded-full font-bold text-base tracking-widest shadow-[0_0_12px_rgba(56,189,248,0.4)] whitespace-nowrap border border-sky-300/30" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}>
@@ -145,39 +156,43 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
       }
     };
 
-    const onWordsSpawned = (newWords: TypingWord[]) => {
-      // 서버-클라이언트 시간 차이 보정: 수신 시점을 spawnedAt으로 사용
-      const now = Date.now();
-      const adjusted = newWords.map((w) => ({ ...w, spawnedAt: now }));
-      // 내 단어 목록에 추가
-      if (!isSpectating) {
-        setWords((prev) => [...prev, ...adjusted]);
-      }
-      // 모든 플레이어 단어 목록에 추가
-      setAllPlayerWords((prev) => {
-        const next = { ...prev };
-        for (const id of Object.keys(next)) {
-          next[id] = [...(next[id] ?? []), ...adjusted.map((w) => ({ ...w }))];
+    const onTickResult = (data: TypingTickResult) => {
+      // 새 단어 스폰 처리
+      if (data.spawnedWords.length > 0) {
+        const now = Date.now();
+        const adjusted = data.spawnedWords.map((w) => ({ ...w, spawnedAt: now }));
+        if (!isSpectating) {
+          setWords((prev) => [...prev, ...adjusted]);
         }
-        return next;
-      });
-    };
+        setAllPlayerWords((prev) => {
+          const next = { ...prev };
+          for (const id of Object.keys(next)) {
+            next[id] = [...(next[id] ?? []), ...adjusted];
+          }
+          return next;
+        });
+      }
 
-    const onWordsMissed = (data: { playerId: string; wordIds: number[] }) => {
-      const idSet = new Set(data.wordIds);
-      // 상대방 단어 목록에서 제거
-      setAllPlayerWords((prev) => {
-        const playerWords = prev[data.playerId];
-        if (!playerWords) return prev;
-        return { ...prev, [data.playerId]: playerWords.filter((w) => !idSet.has(w.id)) };
-      });
-      // 내 단어 + 피드백
-      if (data.playerId === myId) {
-        setWords((prev) => prev.filter((w) => !idSet.has(w.id)));
-        setFeedback({ type: "miss", id: Date.now() });
-        if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
-        feedbackTimerRef.current = setTimeout(() => setFeedback(null), 800);
-        requestAnimationFrame(() => inputRef.current?.focus());
+      // 놓친 단어 처리
+      for (const [playerId, wordIds] of Object.entries(data.missed)) {
+        const idSet = new Set(wordIds);
+        setAllPlayerWords((prev) => {
+          const playerWords = prev[playerId];
+          if (!playerWords) return prev;
+          return { ...prev, [playerId]: playerWords.filter((w) => !idSet.has(w.id)) };
+        });
+        if (playerId === myId) {
+          setWords((prev) => prev.filter((w) => !idSet.has(w.id)));
+          setFeedback({ type: "miss", id: Date.now() });
+          if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
+          feedbackTimerRef.current = setTimeout(() => setFeedback(null), 800);
+          requestAnimationFrame(() => inputRef.current?.focus());
+        }
+      }
+
+      // 변경된 플레이어 상태 처리
+      for (const [playerId, player] of Object.entries(data.updatedPlayers)) {
+        setPlayers((prev) => ({ ...prev, [playerId]: player }));
       }
     };
 
@@ -208,8 +223,7 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
 
     socket.on("game:started", onStarted);
     socket.on("game:state-updated", onStateUpdated);
-    socket.on("game:typing-words-spawned", onWordsSpawned);
-    socket.on("game:typing-words-missed", onWordsMissed);
+    socket.on("game:typing-tick-result", onTickResult);
     socket.on("game:typing-word-cleared", onWordCleared);
     socket.on("game:typing-all-player-words", onAllPlayerWords);
     socket.on("game:typing-player-updated", onPlayerUpdated);
@@ -226,8 +240,7 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
       initializedRef.current = false;
       socket.off("game:started", onStarted);
       socket.off("game:state-updated", onStateUpdated);
-      socket.off("game:typing-words-spawned", onWordsSpawned);
-      socket.off("game:typing-words-missed", onWordsMissed);
+      socket.off("game:typing-tick-result", onTickResult);
       socket.off("game:typing-word-cleared", onWordCleared);
       socket.off("game:typing-all-player-words", onAllPlayerWords);
       socket.off("game:typing-player-updated", onPlayerUpdated);
@@ -356,12 +369,6 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
     const cols = Math.min(allPlayersSorted.length, 2);
     return (
       <div className="flex flex-col gap-4 p-4">
-        <style>{`
-          @keyframes typing-fall {
-            to { top: 100%; }
-          }
-        `}</style>
-
         {/* 상단 정보바 */}
         <div className="flex items-center justify-between bg-gradient-to-r from-slate-900 to-slate-800 border border-slate-700/50 rounded-xl px-5 py-2.5 shadow-lg">
           <div className="flex items-center gap-4 text-sm">
@@ -387,13 +394,6 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
               {countdown}
             </div>
             <div className="mt-4 text-slate-400 text-sm font-medium tracking-wider">준비하세요!</div>
-            <style>{`
-              @keyframes typing-countdown-pulse {
-                0% { transform: scale(0.5); opacity: 0; }
-                50% { transform: scale(1.2); opacity: 1; }
-                100% { transform: scale(1); opacity: 1; }
-              }
-            `}</style>
           </div>
         ) : isGameOver ? (
           <div className="flex items-center justify-center min-h-[16rem] bg-gradient-to-b from-slate-950 to-slate-900 border border-slate-700/40 rounded-xl">
@@ -435,15 +435,6 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
                 })}
               </div>
             </div>
-            <style>{`
-              .typing-result-enter {
-                animation: typing-result-pop 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-              }
-              @keyframes typing-result-pop {
-                0% { transform: scale(0.8); opacity: 0; }
-                100% { transform: scale(1); opacity: 1; }
-              }
-            `}</style>
           </div>
         ) : (
           <div
@@ -465,28 +456,6 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
 
   return (
     <div className="flex gap-4 h-full">
-      <style>{`
-        @keyframes typing-fall {
-          to { top: 100%; }
-        }
-        @keyframes typing-shake {
-          0%, 100% { transform: translateX(0); }
-          20% { transform: translateX(-6px); }
-          40% { transform: translateX(6px); }
-          60% { transform: translateX(-4px); }
-          80% { transform: translateX(4px); }
-        }
-        @keyframes typing-flash {
-          0%, 100% { opacity: 0; }
-          50% { opacity: 1; }
-        }
-        @keyframes typing-countdown-pulse {
-          0% { transform: scale(0.5); opacity: 0; }
-          50% { transform: scale(1.2); opacity: 1; }
-          100% { transform: scale(1); opacity: 1; }
-        }
-      `}</style>
-
       {/* 메인 게임 영역 */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* 상단 정보바 */}
@@ -639,15 +608,6 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
                   })}
                 </div>
               </div>
-              <style>{`
-                .typing-result-enter {
-                  animation: typing-result-pop 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-                }
-                @keyframes typing-result-pop {
-                  0% { transform: scale(0.8); opacity: 0; }
-                  100% { transform: scale(1); opacity: 1; }
-                }
-              `}</style>
             </div>
           )}
         </div>

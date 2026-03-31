@@ -68,7 +68,7 @@ export default function GomokuBoard({ isSpectating }: GameComponentProps) {
   return (
     <div className="flex flex-col items-center gap-4">
       {/* 상단 패널: 플레이어 정보 + 타이머 */}
-      <div className="w-full flex items-stretch gap-3" style={{ maxWidth: BOARD_PX }}>
+      <div className="w-full relative flex items-stretch gap-3" style={{ width: BOARD_PX }}>
         {/* 흑 플레이어 */}
         <div className={`flex-1 flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all ${
           !gameResult && state.currentTurn === "black"
@@ -117,7 +117,7 @@ export default function GomokuBoard({ isSpectating }: GameComponentProps) {
         {/* 도움말 버튼 */}
         <button
           onClick={() => setShowHelp(true)}
-          className="self-center text-slate-500 hover:text-white transition-colors"
+          className="absolute -right-8 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
           title="게임 도움말"
         >
           <HelpCircle className="w-5 h-5" />

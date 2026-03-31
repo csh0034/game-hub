@@ -156,7 +156,7 @@ export function RequestBoard({
           onChange={(e) => setTitle(e.target.value)}
           placeholder="요청 제목 (최대 100자)"
           maxLength={100}
-          className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+          className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neon-cyan/50 focus:border-neon-cyan/30"
         />
         <textarea
           value={description}
@@ -164,7 +164,7 @@ export function RequestBoard({
           placeholder="상세 설명 (최대 1000자)"
           maxLength={1000}
           rows={3}
-          className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+          className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neon-cyan/50 focus:border-neon-cyan/30 resize-none"
         />
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
@@ -186,7 +186,7 @@ export function RequestBoard({
           <button
             type="submit"
             disabled={!title.trim() || !description.trim() || isSubmitting}
-            className="flex items-center gap-2 bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:cursor-not-allowed"
+            className="flex items-center gap-2 bg-neon-cyan/90 hover:bg-neon-cyan disabled:bg-muted disabled:text-muted-foreground text-background px-4 py-2 rounded-lg text-sm font-medium transition-all disabled:cursor-not-allowed hover:shadow-[0_0_10px_rgba(0,229,255,0.2)]"
           >
             <Send className="w-4 h-4" />
             등록

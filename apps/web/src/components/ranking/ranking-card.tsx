@@ -56,10 +56,11 @@ export default function RankingCard({ gameType, difficulty, myNickname, socket, 
   };
 
   return (
-    <div className="bg-card border border-border rounded-xl p-6">
-      <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-        <Trophy className="w-5 h-5 text-yellow-500" />
-        랭킹 ({DIFFICULTY_LABELS[difficulty] ?? difficulty})
+    <div className="bg-card border border-border rounded-xl p-6 neon-border-hover">
+      <h2 className="text-lg font-semibold font-[family-name:var(--font-display)] mb-3 flex items-center gap-2">
+        <Trophy className="w-5 h-5 text-neon-yellow" />
+        <span className="tracking-wide">RANKING</span>
+        <span className="text-sm text-muted-foreground font-normal">({DIFFICULTY_LABELS[difficulty] ?? difficulty})</span>
       </h2>
 
       {entries.length === 0 ? (
@@ -74,7 +75,7 @@ export default function RankingCard({ gameType, difficulty, myNickname, socket, 
               <div
                 key={entry.id}
                 className={`flex flex-col rounded-lg px-3 py-1.5 text-sm ${
-                  isMe ? "bg-primary/10 text-primary font-semibold" : "bg-secondary/50"
+                  isMe ? "bg-neon-cyan/10 text-neon-cyan font-semibold border border-neon-cyan/20" : "bg-secondary/50"
                 }`}
               >
                 <div className="flex items-center gap-2 min-w-0">
@@ -85,7 +86,7 @@ export default function RankingCard({ gameType, difficulty, myNickname, socket, 
                   {isAdmin && (
                     <button
                       onClick={() => setDeleteTarget({ entryId: entry.id, nickname: entry.nickname })}
-                      className="shrink-0 p-0.5 rounded hover:bg-red-500/20 text-muted-foreground hover:text-red-500 transition-colors"
+                      className="shrink-0 p-0.5 rounded hover:bg-neon-pink/20 text-muted-foreground hover:text-neon-pink transition-colors"
                       title="기록 삭제"
                     >
                       <X className="w-3.5 h-3.5" />
@@ -102,7 +103,7 @@ export default function RankingCard({ gameType, difficulty, myNickname, socket, 
 
           {myBest && myRank && (
             <div className="border-t border-border mt-2 pt-2 text-sm text-muted-foreground text-center">
-              내 최고: {formatScore(gameType, myBest.score)} (#{myRank})
+              내 최고: <span className="text-neon-cyan">{formatScore(gameType, myBest.score)}</span> (#{myRank})
             </div>
           )}
         </div>

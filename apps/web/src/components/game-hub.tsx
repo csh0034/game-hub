@@ -428,9 +428,9 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
             <div className="flex items-center gap-1 border-b border-border">
               <Link
                 href="/lobby"
-                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                className={`px-4 py-2.5 text-sm font-medium font-[family-name:var(--font-display)] tracking-wide border-b-2 transition-all ${
                   activeTab === "lobby"
-                    ? "border-primary text-primary"
+                    ? "border-neon-cyan text-neon-cyan"
                     : "border-transparent text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -438,15 +438,15 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
               </Link>
               <Link
                 href="/request"
-                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                className={`px-4 py-2.5 text-sm font-medium font-[family-name:var(--font-display)] tracking-wide border-b-2 transition-all ${
                   activeTab === "requests"
-                    ? "border-primary text-primary"
+                    ? "border-neon-cyan text-neon-cyan"
                     : "border-transparent text-muted-foreground hover:text-foreground"
                 }`}
               >
                 요청사항
                 {requests.filter((r) => r.status === "open").length > 0 && (
-                  <span className="ml-1.5 px-1.5 py-0.5 text-xs rounded-full bg-primary/15 text-primary">
+                  <span className="ml-1.5 px-1.5 py-0.5 text-xs rounded-full bg-neon-pink/15 text-neon-pink">
                     {requests.filter((r) => r.status === "open").length}
                   </span>
                 )}
@@ -455,13 +455,13 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
                 <>
                   <button
                     onClick={() => setAnnounceOpen(true)}
-                    className="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-muted-foreground hover:text-foreground transition-colors"
+                    className="px-4 py-2.5 text-sm font-medium font-[family-name:var(--font-display)] tracking-wide border-b-2 border-transparent text-muted-foreground hover:text-neon-cyan transition-all"
                   >
                     공지하기
                   </button>
                   <button
                     onClick={() => setPlacardOpen(true)}
-                    className="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-muted-foreground hover:text-foreground transition-colors"
+                    className="px-4 py-2.5 text-sm font-medium font-[family-name:var(--font-display)] tracking-wide border-b-2 border-transparent text-muted-foreground hover:text-neon-cyan transition-all"
                   >
                     플랜카드
                   </button>
@@ -470,7 +470,7 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
             </div>
 
             {placardText && (
-              <div className="px-4 py-3 rounded-lg bg-primary/10 border border-primary/20 text-sm text-center font-medium">
+              <div className="px-4 py-3 rounded-lg bg-neon-cyan/5 border border-neon-cyan/20 text-sm text-center font-medium text-neon-cyan/90 shadow-[0_0_15px_rgba(0,229,255,0.05)]">
                 {placardText}
               </div>
             )}
@@ -480,7 +480,7 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
                 <section>
                   <div className="flex items-center justify-between mb-6">
                     <div>
-                      <h1 className="text-3xl font-bold">빠른 시작</h1>
+                      <h1 className="text-3xl font-bold font-[family-name:var(--font-display)] tracking-wide">빠른 시작</h1>
                       <p className="text-muted-foreground mt-1">
                         게임을 클릭하면 기본 설정으로 바로 방이 만들어집니다
                       </p>
@@ -490,7 +490,7 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
                 </section>
 
                 <section>
-                  <h2 className="text-2xl font-bold mb-4">방 목록</h2>
+                  <h2 className="text-2xl font-bold font-[family-name:var(--font-display)] tracking-wide mb-4">방 목록</h2>
                   <RoomList rooms={rooms} onJoinRoom={wrappedJoinRoom} onSpectateRoom={wrappedSpectateRoom} />
                 </section>
               </>

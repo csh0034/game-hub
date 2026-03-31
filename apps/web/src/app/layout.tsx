@@ -1,6 +1,28 @@
 import type { Metadata } from "next";
+import { Chakra_Petch, Noto_Sans_KR, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
+
+const chakraPetch = Chakra_Petch({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-chakra",
+  display: "swap",
+});
+
+const notoSansKR = Noto_Sans_KR({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-noto",
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-jb-mono",
+  display: "swap",
+});
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://54.180.133.95:3000/";
 const SITE_TITLE = "Game Hub";
@@ -47,7 +69,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ko" className="dark">
+    <html lang="ko" className={`dark ${notoSansKR.variable} ${chakraPetch.variable} ${jetbrainsMono.variable}`}>
       <body className="min-h-screen antialiased">
         <Toaster
           position="top-right"
@@ -55,8 +77,9 @@ export default function RootLayout({
           toastOptions={{
             style: {
               background: "var(--color-card)",
-              border: "1px solid var(--color-border)",
+              border: "1px solid rgba(0, 229, 255, 0.15)",
               color: "var(--color-foreground)",
+              boxShadow: "0 0 15px rgba(0, 229, 255, 0.05)",
             },
           }}
         />

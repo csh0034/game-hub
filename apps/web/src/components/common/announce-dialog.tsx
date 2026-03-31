@@ -38,10 +38,10 @@ export function AnnounceDialog({ open, onClose, onSubmit }: AnnounceDialogProps)
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/60 z-50" onClick={handleClose} />
+      <div className="fixed inset-0 bg-black/70 z-50" onClick={handleClose} />
       <div className="fixed inset-0 z-50 flex items-start justify-center pt-[30vh] p-4">
-        <div className="bg-card border border-border rounded-xl p-6 w-full max-w-sm shadow-2xl">
-          <h2 className="text-lg font-bold mb-4">공지하기</h2>
+        <div className="bg-card border border-neon-cyan/20 rounded-xl p-6 w-full max-w-sm shadow-[0_0_30px_rgba(0,229,255,0.08)]">
+          <h2 className="text-lg font-bold font-[family-name:var(--font-display)] mb-4">공지하기</h2>
 
           <textarea
             autoFocus
@@ -49,7 +49,7 @@ export function AnnounceDialog({ open, onClose, onSubmit }: AnnounceDialogProps)
             onChange={(e) => setMessage(e.target.value.slice(0, 200))}
             placeholder="공지 내용을 입력하세요"
             rows={3}
-            className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-sm resize-none focus:outline-none focus:ring-2 focus:ring-neon-cyan/50 focus:border-neon-cyan/30"
           />
           <p className="text-xs text-muted-foreground text-right mt-1">
             {message.length}/200
@@ -65,7 +65,7 @@ export function AnnounceDialog({ open, onClose, onSubmit }: AnnounceDialogProps)
             <button
               onClick={handleSubmit}
               disabled={!message.trim()}
-              className="px-4 py-2 rounded-lg text-sm font-medium bg-primary hover:bg-primary/90 text-primary-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 rounded-lg text-sm font-medium bg-neon-cyan/90 hover:bg-neon-cyan text-background transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_0_10px_rgba(0,229,255,0.2)]"
             >
               전송
             </button>

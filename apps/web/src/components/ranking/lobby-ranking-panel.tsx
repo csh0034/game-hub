@@ -34,10 +34,10 @@ export default function LobbyRankingPanel({ myNickname, socket, isAdmin }: Lobby
           <button
             key={g.type}
             onClick={() => handleGameChange(i)}
-            className={`flex-1 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+            className={`flex-1 rounded-lg px-3 py-1.5 text-sm font-medium transition-all ${
               i === gameIndex
-                ? "bg-primary text-primary-foreground"
-                : "bg-secondary/50 text-muted-foreground hover:bg-secondary"
+                ? "bg-neon-cyan/15 text-neon-cyan border border-neon-cyan/30 shadow-[0_0_8px_rgba(0,229,255,0.1)]"
+                : "bg-secondary/50 text-muted-foreground hover:bg-secondary border border-transparent"
             }`}
           >
             {g.label}
@@ -50,10 +50,10 @@ export default function LobbyRankingPanel({ myNickname, socket, isAdmin }: Lobby
           <button
             key={d}
             onClick={() => setDifficultyIndex(i)}
-            className={`flex-1 rounded-lg px-2 py-1 text-xs font-medium transition-colors ${
+            className={`flex-1 rounded-lg px-2 py-1 text-xs font-medium transition-all ${
               i === difficultyIndex
-                ? "bg-primary text-primary-foreground"
-                : "bg-secondary/50 text-muted-foreground hover:bg-secondary"
+                ? "bg-neon-cyan/15 text-neon-cyan border border-neon-cyan/30"
+                : "bg-secondary/50 text-muted-foreground hover:bg-secondary border border-transparent"
             }`}
           >
             {DIFFICULTY_LABELS[d] ?? d}

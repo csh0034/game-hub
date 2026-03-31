@@ -14,7 +14,7 @@ export function RoomList({ rooms, onJoinRoom, onSpectateRoom }: RoomListProps) {
   if (rooms.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground border border-border rounded-xl">
-        <p className="text-lg">열린 방이 없습니다</p>
+        <p className="text-lg font-[family-name:var(--font-display)]">열린 방이 없습니다</p>
         <p className="text-sm mt-1">새 방을 만들어보세요!</p>
       </div>
     );
@@ -34,7 +34,7 @@ export function RoomList({ rooms, onJoinRoom, onSpectateRoom }: RoomListProps) {
         return (
           <div
             key={room.id}
-            className="flex items-center justify-between bg-card px-4 py-3 hover:bg-secondary/30 transition-colors border-t border-border first:border-t-0"
+            className="flex items-center justify-between bg-card px-4 py-3 hover:bg-neon-cyan/[0.03] transition-colors border-t border-border first:border-t-0"
           >
             <div className="flex items-center gap-4">
               <span className="text-2xl">{config.icon}</span>
@@ -45,7 +45,7 @@ export function RoomList({ rooms, onJoinRoom, onSpectateRoom }: RoomListProps) {
                     {config.name}
                   </span>
                   {isPlaying && (
-                    <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded flex items-center gap-1">
+                    <span className="text-xs bg-neon-pink/15 text-neon-pink px-2 py-0.5 rounded flex items-center gap-1">
                       <Play className="w-3 h-3" /> 게임 중
                     </span>
                   )}
@@ -60,12 +60,12 @@ export function RoomList({ rooms, onJoinRoom, onSpectateRoom }: RoomListProps) {
                       <Eye className="w-3 h-3" />
                       {room.spectators.length}/{MAX_SPECTATORS}
                       {room.gameOptions?.spectateChatEnabled ? (
-                        <MessageCircle className="w-3 h-3 text-amber-500" />
+                        <MessageCircle className="w-3 h-3 text-neon-yellow" />
                       ) : (
                         <MessageCircleOff className="w-3 h-3 text-muted-foreground/50" />
                       )}
                       {spectateInGameEnabled && (
-                        <Play className="w-3 h-3 text-green-500" />
+                        <Play className="w-3 h-3 text-neon-green" />
                       )}
                     </span>
                   )}
@@ -97,7 +97,7 @@ export function RoomList({ rooms, onJoinRoom, onSpectateRoom }: RoomListProps) {
               {canSpectate && onSpectateRoom && (
                 <button
                   onClick={() => onSpectateRoom(room.id)}
-                  className="border border-border hover:bg-secondary text-foreground px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
+                  className="border border-border hover:border-neon-cyan/30 hover:bg-neon-cyan/5 text-foreground px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1"
                 >
                   <Eye className="w-3.5 h-3.5" />
                   관전
@@ -106,7 +106,7 @@ export function RoomList({ rooms, onJoinRoom, onSpectateRoom }: RoomListProps) {
               <button
                 onClick={() => onJoinRoom(room.id)}
                 disabled={isFull || isPlaying}
-                className="bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:cursor-not-allowed"
+                className="bg-neon-cyan/90 hover:bg-neon-cyan disabled:bg-muted disabled:text-muted-foreground text-background px-4 py-2 rounded-lg text-sm font-bold transition-all disabled:cursor-not-allowed hover:shadow-[0_0_12px_rgba(0,229,255,0.3)] font-[family-name:var(--font-display)]"
               >
                 {isFull ? "만원" : isPlaying ? "진행 중" : "참가"}
               </button>

@@ -72,18 +72,18 @@ export function GameCardGrid({ onCreateRoom }: GameCardGridProps) {
       {games.map((game) => (
         <div key={game.gameType}>
           {game.gameType === "minesweeper" ? (
-            <div className="group relative w-full h-full bg-card border border-border rounded-xl p-6 text-left transition-all duration-300">
+            <div className="group relative w-full h-full bg-card border border-border rounded-xl p-6 text-left transition-all duration-300 neon-border-hover">
               <div className="relative">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-4xl">{game.icon}</span>
                 </div>
-                <h3 className="text-lg font-semibold mb-3">{game.name}</h3>
+                <h3 className="text-lg font-semibold font-[family-name:var(--font-display)] mb-3">{game.name}</h3>
                 <div className="grid grid-cols-3 gap-2">
                   {(Object.entries(MINESWEEPER_DIFFICULTY_CONFIGS) as [MinesweeperDifficulty, typeof MINESWEEPER_DIFFICULTY_CONFIGS[MinesweeperDifficulty]][]).map(([key, config]) => (
                     <button
                       key={key}
                       onClick={() => handleMinesweeperCreate(key)}
-                      className="p-2 rounded-lg border border-border bg-background text-sm text-center hover:border-primary/50 hover:bg-primary/10 transition-colors"
+                      className="p-2 rounded-lg border border-border bg-background text-sm text-center hover:border-neon-cyan/50 hover:bg-neon-cyan/5 hover:shadow-[0_0_10px_rgba(0,229,255,0.1)] transition-all"
                     >
                       <div className="font-medium">{config.label}</div>
                       <div className="text-xs text-muted-foreground mt-0.5">
@@ -102,24 +102,24 @@ export function GameCardGrid({ onCreateRoom }: GameCardGridProps) {
             <button
               onClick={() => handleQuickCreate(game.gameType)}
               disabled={game.disabled}
-              className={`group relative w-full h-full bg-card border border-border rounded-xl p-6 text-left transition-all duration-300 ${game.disabled ? "opacity-60 cursor-default" : "hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5"}`}
+              className={`group relative w-full h-full bg-card border border-border rounded-xl p-6 text-left transition-all duration-300 ${game.disabled ? "opacity-50 cursor-default" : "neon-border-hover hover:shadow-[0_0_20px_rgba(0,229,255,0.08)]"}`}
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute inset-0 bg-gradient-to-br from-neon-cyan/5 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="relative">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-4xl">{game.icon}</span>
                   {game.disabled && (
-                    <span className="text-xs font-semibold bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded-full">
+                    <span className="text-xs font-semibold bg-neon-yellow/15 text-neon-yellow px-2 py-0.5 rounded-full">
                       {game.disabledReason ?? "점검중"}
                     </span>
                   )}
                   {!game.disabled && NEW_GAMES.includes(game.gameType) && (
-                    <span className="text-xs font-bold bg-emerald-500 text-white px-2 py-0.5 rounded-full animate-pulse">
+                    <span className="text-xs font-bold bg-neon-green/20 text-neon-green px-2 py-0.5 rounded-full animate-pulse">
                       NEW
                     </span>
                   )}
                 </div>
-                <h3 className="text-lg font-semibold mb-1">{game.name}</h3>
+                <h3 className="text-lg font-semibold font-[family-name:var(--font-display)] mb-1">{game.name}</h3>
                 <p className="text-sm text-muted-foreground mb-3 line-clamp-2 min-h-10">{game.description}</p>
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                   <Users className="w-3 h-3" />
@@ -133,10 +133,10 @@ export function GameCardGrid({ onCreateRoom }: GameCardGridProps) {
                   const badges = getQuickStartBadges(game.gameType);
                   if (!badges) return null;
                   return (
-                    <div className="flex items-center gap-1.5 text-xs text-primary/70 mt-2 flex-wrap">
+                    <div className="flex items-center gap-1.5 text-xs text-neon-cyan/70 mt-2 flex-wrap">
                       <Zap className="w-3 h-3 shrink-0" />
                       {badges.map((badge) => (
-                        <span key={badge} className="bg-primary/15 text-primary px-1.5 py-0.5 rounded font-medium">
+                        <span key={badge} className="bg-neon-cyan/10 text-neon-cyan/80 px-1.5 py-0.5 rounded font-medium">
                           {badge}
                         </span>
                       ))}
@@ -152,16 +152,16 @@ export function GameCardGrid({ onCreateRoom }: GameCardGridProps) {
         <div key={game.name}>
           <button
             disabled
-            className="group relative w-full h-full bg-card border border-border rounded-xl p-6 text-left transition-all duration-300 opacity-60 cursor-default"
+            className="group relative w-full h-full bg-card border border-border rounded-xl p-6 text-left transition-all duration-300 opacity-40 cursor-default"
           >
             <div className="relative">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-4xl">{game.icon}</span>
-                <span className="text-xs font-semibold bg-primary/20 text-primary px-2 py-0.5 rounded-full">
+                <span className="text-xs font-semibold bg-neon-purple/15 text-neon-purple px-2 py-0.5 rounded-full">
                   오픈 예정
                 </span>
               </div>
-              <h3 className="text-lg font-semibold mb-1">{game.name}</h3>
+              <h3 className="text-lg font-semibold font-[family-name:var(--font-display)] mb-1">{game.name}</h3>
               <p className="text-sm text-muted-foreground mb-3 line-clamp-2 min-h-10">{game.description}</p>
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Users className="w-3 h-3" />

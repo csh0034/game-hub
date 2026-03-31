@@ -36,16 +36,16 @@ export function AnnouncementOverlay({
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/60 z-50" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/70 z-50" onClick={onClose} />
       <div className="fixed inset-0 z-50 flex items-start justify-center pt-[25vh] p-4" onClick={onClose}>
-        <div className="bg-card border-2 border-indigo-500 rounded-2xl p-8 w-full max-w-md shadow-2xl shadow-indigo-500/20" onClick={(e) => e.stopPropagation()}>
+        <div className="bg-card border-2 border-neon-purple/50 rounded-2xl p-8 w-full max-w-md shadow-[0_0_40px_rgba(168,85,247,0.15)]" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-3">
-              <div className="flex-shrink-0 w-11 h-11 rounded-full bg-indigo-500/20 flex items-center justify-center">
-                <Megaphone className="w-6 h-6 text-indigo-400" />
+              <div className="flex-shrink-0 w-11 h-11 rounded-full bg-neon-purple/15 flex items-center justify-center">
+                <Megaphone className="w-6 h-6 text-neon-purple" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-indigo-400">공지사항</h2>
+                <h2 className="text-xl font-bold font-[family-name:var(--font-display)] text-neon-purple tracking-wide">공지사항</h2>
                 <span className="text-xs text-muted-foreground">{receivedAt ? formatDateTime(receivedAt) : ""}</span>
               </div>
             </div>
@@ -65,7 +65,7 @@ export function AnnouncementOverlay({
           <div className="flex justify-end mt-6">
             <button
               onClick={onClose}
-              className="px-5 py-2.5 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white transition-colors"
+              className="px-5 py-2.5 rounded-lg text-sm font-medium bg-neon-purple hover:bg-neon-purple/90 text-white transition-all shadow-[0_0_12px_rgba(168,85,247,0.2)] hover:shadow-[0_0_18px_rgba(168,85,247,0.3)]"
             >
               확인
             </button>

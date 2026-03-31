@@ -61,6 +61,7 @@ pnpm --filter web test:coverage           # 웹 테스트 + 커버리지
 |------|------|
 | README (사용자용 프로젝트 소개) | `README.md` |
 | 용어사전 | `docs/glossary.md` |
+| 디자인 | `docs/design.md` |
 
 ## 규칙 문서
 

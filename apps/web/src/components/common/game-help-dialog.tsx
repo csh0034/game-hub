@@ -35,14 +35,14 @@ export function GameHelpDialog({ open, onClose, title, children }: GameHelpDialo
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/60 z-50" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/70 z-50" onClick={onClose} />
       <div className="fixed inset-0 z-50 flex items-start justify-center pt-[25vh] p-4">
-        <div className="bg-card border border-border rounded-xl p-6 w-full max-w-md shadow-2xl">
+        <div className="bg-card border border-neon-cyan/20 rounded-xl p-6 w-full max-w-md shadow-[0_0_30px_rgba(0,229,255,0.08)]">
           <div className="flex items-center gap-3 mb-4">
-            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center">
-              <HelpCircle className="w-5 h-5 text-primary" />
+            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-neon-cyan/10 flex items-center justify-center">
+              <HelpCircle className="w-5 h-5 text-neon-cyan" />
             </div>
-            <h2 className="text-lg font-bold">{title}</h2>
+            <h2 className="text-lg font-bold font-[family-name:var(--font-display)]">{title}</h2>
           </div>
 
           <div className="ml-[52px] space-y-4 text-sm text-muted-foreground">{children}</div>

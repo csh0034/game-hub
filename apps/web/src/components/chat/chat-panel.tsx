@@ -106,9 +106,9 @@ export function ChatPanel({
   };
 
   return (
-    <div className="flex flex-col h-full bg-card border border-border rounded-xl overflow-hidden">
+    <div className="flex flex-col h-full bg-card border border-border rounded-xl overflow-hidden neon-border-hover">
       <div className="px-4 py-2.5 border-b border-border">
-        <h3 className="text-sm font-semibold">채팅</h3>
+        <h3 className="text-sm font-semibold font-[family-name:var(--font-display)] tracking-wide text-neon-cyan/80">CHAT</h3>
       </div>
 
       <div className="relative flex-1 min-h-0">
@@ -128,7 +128,7 @@ export function ChatPanel({
             if (isSystem) {
               return (
                 <div key={msg.id ?? idx} className="text-center py-1">
-                  <span className="text-xs text-primary bg-primary/10 px-2.5 py-1 rounded-full">
+                  <span className="text-xs text-neon-cyan/80 bg-neon-cyan/10 px-2.5 py-1 rounded-full">
                     {msg.message}
                   </span>
                 </div>
@@ -142,15 +142,15 @@ export function ChatPanel({
                     <span className="text-muted-foreground text-xs mr-1">
                       {formatDateTime(msg.timestamp)}
                     </span>
-                    {msg.isSpectator && <span className="text-xs text-amber-500 mr-1">[관전]</span>}
-                    <span className={`font-semibold ${msg.isAdmin ? "text-red-400" : "text-sky-400"}`}>
+                    {msg.isSpectator && <span className="text-xs text-neon-yellow mr-1">[관전]</span>}
+                    <span className={`font-semibold ${msg.isAdmin ? "text-neon-pink" : "text-neon-cyan"}`}>
                       {msg.nickname}
                     </span>
                   </>
                 ) : (
                   <>
-                    {msg.isSpectator && <span className="text-xs text-amber-500 mr-1">[관전]</span>}
-                    <span className={`font-semibold ${msg.isAdmin ? "text-red-400" : ""}`}>
+                    {msg.isSpectator && <span className="text-xs text-neon-yellow mr-1">[관전]</span>}
+                    <span className={`font-semibold ${msg.isAdmin ? "text-neon-pink" : ""}`}>
                       {msg.nickname}
                     </span>
                     <span className="text-muted-foreground text-xs ml-1">
@@ -161,13 +161,13 @@ export function ChatPanel({
                 {isAdmin && onDeleteMessage && msg.id && (
                   <button
                     onClick={() => setDeleteTargetId(msg.id)}
-                    className="ml-1 opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 transition-opacity"
+                    className="ml-1 opacity-0 group-hover:opacity-100 text-neon-pink/70 hover:text-neon-pink transition-opacity"
                     title="메시지 삭제"
                   >
                     <Trash2 className="w-3 h-3 inline" />
                   </button>
                 )}
-                <p className={`${isMe ? "text-sky-400/90" : "text-foreground"} break-words`}>
+                <p className={`${isMe ? "text-neon-cyan/80" : "text-foreground"} break-words`}>
                   {msg.message}
                 </p>
               </div>
@@ -178,12 +178,12 @@ export function ChatPanel({
 
       <form onSubmit={handleSubmit} className="relative flex gap-2 px-3 py-2.5 border-t border-border">
         {showMentionDropdown && filteredPlayers.length > 0 && (
-          <div className="absolute bottom-full left-0 right-0 mb-1 bg-card border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto z-50">
+          <div className="absolute bottom-full left-0 right-0 mb-1 bg-card border border-neon-cyan/20 rounded-lg shadow-[0_0_15px_rgba(0,229,255,0.1)] max-h-48 overflow-y-auto z-50">
             {filteredPlayers.map((player, idx) => (
               <button
                 key={player.nickname}
                 type="button"
-                className={`w-full text-left px-3 py-2 text-sm hover:bg-secondary/50 ${idx === mentionIndex ? "bg-secondary/50" : ""}`}
+                className={`w-full text-left px-3 py-2 text-sm hover:bg-neon-cyan/5 ${idx === mentionIndex ? "bg-neon-cyan/5 text-neon-cyan" : ""}`}
                 onMouseDown={(e) => {
                   e.preventDefault();
                   handleSelectMention(player.nickname);
@@ -224,12 +224,12 @@ export function ChatPanel({
           placeholder={placeholder}
           maxLength={500}
           disabled={disabled}
-          className="flex-1 bg-secondary/50 rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 bg-secondary/50 rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-neon-cyan/50 placeholder:text-muted-foreground disabled:opacity-50 disabled:cursor-not-allowed border border-transparent focus:border-neon-cyan/30 transition-all"
         />
         <button
           type="submit"
           disabled={disabled || !input.trim()}
-          className="bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground text-primary-foreground p-2 rounded-lg transition-colors disabled:cursor-not-allowed"
+          className="bg-neon-cyan/90 hover:bg-neon-cyan disabled:bg-muted disabled:text-muted-foreground text-background p-2 rounded-lg transition-all disabled:cursor-not-allowed hover:shadow-[0_0_10px_rgba(0,229,255,0.2)]"
         >
           <Send className="w-4 h-4" />
         </button>

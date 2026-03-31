@@ -44,7 +44,7 @@ export function LiarGuessPanel({ state, myId, onGuess }: LiarGuessPanelProps) {
   if (isLiar) {
     return (
       <div className="flex flex-col items-center gap-4 py-8">
-        <div className="text-lg font-bold text-destructive">당신이 라이어로 지목되었습니다!</div>
+        <div className="text-lg font-display font-bold text-accent text-glow-pink">당신이 라이어로 지목되었습니다!</div>
         <div className="text-sm text-muted-foreground">
           주제: <span className="font-bold text-foreground">{state.category}</span>
         </div>
@@ -85,7 +85,7 @@ export function LiarGuessPanel({ state, myId, onGuess }: LiarGuessPanelProps) {
 
   return (
     <div className="flex flex-col items-center gap-4 py-8">
-      <div className="text-lg font-bold">라이어가 제시어를 추측 중입니다...</div>
+      <div className="text-lg font-display font-bold">라이어가 제시어를 추측 중입니다...</div>
       <div className="text-2xl font-mono font-bold">
         <span className={remainingTime <= 5 ? "text-destructive" : ""}>{Math.ceil(remainingTime)}초</span>
       </div>

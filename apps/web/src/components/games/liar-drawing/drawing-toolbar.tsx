@@ -41,7 +41,7 @@ export function DrawingToolbar({
   disabled,
 }: DrawingToolbarProps) {
   return (
-    <div className={`flex flex-col gap-2 p-2 bg-card border border-border rounded-lg ${disabled ? "opacity-50 pointer-events-none" : ""}`}>
+    <div className={`flex flex-col gap-2 p-2 bg-card border border-border rounded-lg neon-border ${disabled ? "opacity-50 pointer-events-none" : ""}`}>
       <div className="flex gap-1">
         <button
           onClick={() => onToolChange("pen")}

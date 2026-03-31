@@ -30,7 +30,7 @@ export function RoundResult({ state }: RoundResultProps) {
 
   return (
     <div className="flex flex-col items-center gap-4 py-6">
-      <div className="text-lg font-bold">라운드 {state.roundNumber} 결과</div>
+      <div className="text-lg font-display font-bold tracking-wide">라운드 {state.roundNumber} 결과</div>
 
       <div className="space-y-2 text-center">
         <div>
@@ -42,7 +42,7 @@ export function RoundResult({ state }: RoundResultProps) {
         {guessers.length > 0 ? (
           <div className="space-y-1">
             {guessers.map(({ player, rank }) => (
-              <div key={player?.id} className="text-green-500">
+              <div key={player?.id} className="text-success">
                 {rank}: <span className="font-bold">{player?.nickname}</span>
               </div>
             ))}
@@ -52,8 +52,8 @@ export function RoundResult({ state }: RoundResultProps) {
         )}
       </div>
 
-      <div className="border border-border rounded-lg p-3 min-w-[200px]">
-        <div className="text-sm font-medium mb-2 text-center">라운드 점수</div>
+      <div className="border border-border rounded-lg p-3 min-w-[200px] bg-card/50 neon-border">
+        <div className="text-sm font-display font-medium mb-2 text-center tracking-wide">라운드 점수</div>
         <div className="space-y-1">
           {state.players.map((player) => {
             const roundScore = state.roundScores[player.id] || 0;
@@ -64,7 +64,7 @@ export function RoundResult({ state }: RoundResultProps) {
                 <span>
                   {player.nickname}
                   {player.id === state.drawerId && <span className="text-primary ml-1">(출제자)</span>}
-                  {rankTag && <span className="text-green-500 ml-1">({rankTag})</span>}
+                  {rankTag && <span className="text-success ml-1">({rankTag})</span>}
                 </span>
                 <span className={roundScore > 0 ? "text-primary font-bold" : roundScore < 0 ? "text-destructive font-bold" : "text-muted-foreground"}>
                   {roundScore > 0 ? `+${roundScore}` : roundScore < 0 ? `${roundScore}` : "0"}

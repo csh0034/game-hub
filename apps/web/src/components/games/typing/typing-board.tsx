@@ -53,7 +53,7 @@ function FallingWord({ word }: { word: TypingWord }) {
       className="absolute top-0 pointer-events-none"
       style={{ left: `${word.x}%`, transform: "translateX(-50%)" }}
     >
-      <span className="inline-block bg-gradient-to-b from-sky-400 to-blue-500 text-white px-3.5 py-1 rounded-full font-bold text-base tracking-widest shadow-[0_0_12px_rgba(56,189,248,0.4)] whitespace-nowrap border border-sky-300/30" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}>
+      <span className="inline-block bg-gradient-to-b from-neon-cyan to-neon-purple text-white px-3.5 py-1 rounded-full font-bold text-base tracking-widest shadow-[0_0_12px_rgba(0,229,255,0.4)] whitespace-nowrap border border-primary/30" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}>
         {word.text}
       </span>
     </div>
@@ -73,9 +73,9 @@ function PlayerCard({
     <div
       className={`flex items-center justify-between p-2.5 rounded-xl border text-sm transition-all ${
         isDead
-          ? "border-red-500/20 bg-red-950/20 opacity-50"
+          ? "border-accent/20 bg-accent/5 opacity-50"
           : isMe
-            ? "border-sky-400/40 bg-sky-950/20"
+            ? "border-primary/40 bg-primary/5"
             : "border-border/50 bg-card/50"
       }`}
     >
@@ -83,15 +83,15 @@ function PlayerCard({
         <span className={`font-medium truncate ${isDead ? "line-through text-muted-foreground" : ""}`}>
           {isMe ? `${player.nickname} (나)` : player.nickname}
         </span>
-        {isDead && <span className="text-red-400 text-xs font-bold">탈락</span>}
+        {isDead && <span className="text-accent text-xs font-bold">탈락</span>}
       </div>
       <div className="flex items-center gap-3 text-xs tabular-nums shrink-0">
-        <span title="점수" className="font-semibold text-sky-400">{player.score.toLocaleString()}</span>
+        <span title="점수" className="font-semibold text-primary">{player.score.toLocaleString()}</span>
         <span title="목숨">
           {player.lives > 0 ? `❤️x${player.lives}` : "💀"}
         </span>
         {player.combo >= 3 && (
-          <span title="콤보" className="text-amber-400 font-bold">{player.combo}x</span>
+          <span title="콤보" className="text-neon-yellow font-bold">{player.combo}x</span>
         )}
       </div>
     </div>
@@ -370,45 +370,45 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
     return (
       <div className="flex flex-col gap-4 p-4">
         {/* 상단 정보바 */}
-        <div className="flex items-center justify-between bg-gradient-to-r from-slate-900 to-slate-800 border border-slate-700/50 rounded-xl px-5 py-2.5 shadow-lg">
+        <div className="flex items-center justify-between bg-card border border-border/50 rounded-xl px-5 py-2.5 neon-glow-cyan">
           <div className="flex items-center gap-4 text-sm">
-            <div className={`flex items-center gap-1.5 font-bold tabular-nums ${!isCountingDown && remainingTime <= 10 ? "text-red-400 animate-pulse" : "text-white"}`}>
+            <div className={`flex items-center gap-1.5 font-mono font-bold tabular-nums ${!isCountingDown && remainingTime <= 10 ? "text-accent animate-pulse" : "text-foreground"}`}>
               <span className="text-lg">⏱</span>
               <span className="text-lg">{isCountingDown ? gameState.timeLimit : remainingTime}</span>
-              <span className="text-xs text-slate-400">초</span>
+              <span className="text-xs text-muted-foreground">초</span>
             </div>
-            <div className="w-px h-5 bg-slate-600" />
-            <span className="text-xs px-2.5 py-1 rounded-full bg-slate-700/80 text-slate-300 font-medium">
+            <div className="w-px h-5 bg-border" />
+            <span className="text-xs px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground font-display font-medium tracking-wide">
               {gameState.difficulty === "beginner" ? "초급" : gameState.difficulty === "intermediate" ? "중급" : "고급"}
             </span>
           </div>
         </div>
 
         {isCountingDown ? (
-          <div className="flex flex-col items-center justify-center h-64 bg-gradient-to-b from-slate-950 to-slate-900 border border-slate-700/40 rounded-xl">
+          <div className="flex flex-col items-center justify-center h-64 bg-gradient-to-b from-background to-card border border-border/40 rounded-xl neon-border">
             <div
               key={countdown}
-              className="text-9xl font-black text-sky-400 drop-shadow-[0_0_30px_rgba(56,189,248,0.5)]"
+              className="text-9xl font-display font-black text-primary drop-shadow-[0_0_30px_rgba(0,229,255,0.5)]"
               style={{ animation: "typing-countdown-pulse 0.6s ease-out" }}
             >
               {countdown}
             </div>
-            <div className="mt-4 text-slate-400 text-sm font-medium tracking-wider">준비하세요!</div>
+            <div className="mt-4 text-muted-foreground text-sm font-display font-medium tracking-wider">준비하세요!</div>
           </div>
         ) : isGameOver ? (
-          <div className="flex items-center justify-center min-h-[16rem] bg-gradient-to-b from-slate-950 to-slate-900 border border-slate-700/40 rounded-xl">
+          <div className="flex items-center justify-center min-h-[16rem] bg-gradient-to-b from-background to-card border border-border/40 rounded-xl neon-border">
             <div className="typing-result-enter text-center w-full max-w-sm mx-4 py-6">
               <div className="mb-6">
                 <div className="text-5xl mb-3">
                   {gameResult.winnerId === null ? "🤝" : "🏆"}
                 </div>
-                <div className="text-2xl font-black tracking-tight">
+                <div className="text-2xl font-display font-black tracking-tight">
                   {gameResult.winnerId === null
                     ? "무승부!"
                     : `${players[gameResult.winnerId ?? ""]?.nickname ?? "???"} 승리!`}
                 </div>
               </div>
-              <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-3 space-y-2">
+              <div className="bg-card/60 border border-border/50 rounded-2xl p-3 space-y-2">
                 {allPlayersSorted.map((p, i) => {
                   const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}`;
                   const isFirst = i === 0;
@@ -417,18 +417,18 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
                       key={p.id}
                       className={`flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl text-sm ${
                         isFirst
-                          ? "bg-sky-500/15 border border-sky-400/30 font-bold"
-                          : "bg-slate-700/30"
+                          ? "bg-primary/10 border border-primary/30 font-bold"
+                          : "bg-secondary/30"
                       }`}
                     >
                       <span className="flex items-center gap-2 truncate">
                         <span className={`${i < 3 ? "text-lg" : "text-muted-foreground w-[28px] text-center"}`}>{medal}</span>
                         <span className="truncate">{p.nickname}</span>
                       </span>
-                      <span className="tabular-nums shrink-0 text-slate-400">
-                        <span className={isFirst ? "text-sky-400" : "text-white"}>{p.score.toLocaleString()}</span>
+                      <span className="tabular-nums shrink-0 text-muted-foreground">
+                        <span className={isFirst ? "text-primary" : "text-foreground"}>{p.score.toLocaleString()}</span>
                         <span className="text-xs ml-1">점</span>
-                        <span className="text-xs ml-2 text-slate-500">{p.wordsCleared}개</span>
+                        <span className="text-xs ml-2 text-muted-foreground">{p.wordsCleared}개</span>
                       </span>
                     </div>
                   );
@@ -461,19 +461,19 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
         {/* 상단 정보바 */}
         <div className="flex items-center justify-between bg-gradient-to-r from-slate-900 to-slate-800 border border-slate-700/50 rounded-xl px-5 py-2.5 mb-3 shadow-lg">
           <div className="flex items-center gap-5 text-sm">
-            <div className={`flex items-center gap-1.5 font-bold tabular-nums ${!isCountingDown && remainingTime <= 10 ? "text-red-400 animate-pulse" : "text-white"}`}>
+            <div className={`flex items-center gap-1.5 font-mono font-bold tabular-nums ${!isCountingDown && remainingTime <= 10 ? "text-accent animate-pulse" : "text-foreground"}`}>
               <span className="text-lg">⏱</span>
               <span className="text-lg">{isCountingDown ? gameState.timeLimit : remainingTime}</span>
-              <span className="text-xs text-slate-400">초</span>
+              <span className="text-xs text-muted-foreground">초</span>
             </div>
             {myPlayer && (
               <>
-                <div className="w-px h-5 bg-slate-600" />
+                <div className="w-px h-5 bg-border" />
                 <div className="flex items-center gap-1.5">
-                  <span className="text-xl font-bold text-sky-400 tabular-nums">{myPlayer.score.toLocaleString()}</span>
-                  <span className="text-xs text-slate-400">점</span>
+                  <span className="text-xl font-bold text-primary tabular-nums">{myPlayer.score.toLocaleString()}</span>
+                  <span className="text-xs text-muted-foreground">점</span>
                 </div>
-                <div className="w-px h-5 bg-slate-600" />
+                <div className="w-px h-5 bg-border" />
                 <span className="text-base">
                   {myPlayer.lives > 0
                     ? Array.from({ length: myPlayer.lives }, (_, i) => <span key={i}>❤️</span>)
@@ -481,20 +481,20 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
                 </span>
                 {myPlayer.combo >= 3 && (
                   <>
-                    <div className="w-px h-5 bg-slate-600" />
-                    <span className="text-amber-400 font-bold text-base tabular-nums">{myPlayer.combo}x<span className="text-xs ml-0.5 font-normal text-amber-400/70">콤보</span></span>
+                    <div className="w-px h-5 bg-border" />
+                    <span className="text-neon-yellow font-bold text-base tabular-nums">{myPlayer.combo}x<span className="text-xs ml-0.5 font-normal text-neon-yellow/70">콤보</span></span>
                   </>
                 )}
               </>
             )}
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-xs px-2.5 py-1 rounded-full bg-slate-700/80 text-slate-300 font-medium">
+            <span className="text-xs px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground font-display font-medium tracking-wide">
               {gameState.difficulty === "beginner" ? "초급" : gameState.difficulty === "intermediate" ? "중급" : "고급"}
             </span>
             <button
               onClick={() => setShowHelp(true)}
-              className="text-slate-400 hover:text-white transition-colors"
+              className="text-muted-foreground hover:text-primary transition-colors"
               title="게임 도움말"
             >
               <HelpCircle className="w-5 h-5" />
@@ -503,7 +503,7 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
         </div>
 
         {/* 단어 낙하 영역 */}
-        <div className="relative flex-1 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 border border-slate-700/40 rounded-xl overflow-hidden min-h-[400px] shadow-inner">
+        <div className="relative flex-1 bg-gradient-to-b from-background via-card to-background border border-border/40 rounded-xl overflow-hidden min-h-[400px] shadow-inner neon-border">
           {/* 위험 구역 그라데이션 (하단) */}
           <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-red-900/25 to-transparent pointer-events-none z-[1]" />
           <div className="absolute bottom-0 left-0 right-0 h-px bg-red-500/30 z-[1]" />
@@ -524,7 +524,7 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
               <span className={`px-4 py-1.5 rounded-full text-xs font-bold shadow-lg ${
                 feedback.type === "miss"
                   ? "bg-red-500/90 text-white shadow-red-500/30"
-                  : "bg-amber-500/90 text-white shadow-amber-500/30"
+                  : "bg-neon-yellow/90 text-primary-foreground shadow-neon-yellow/30"
               }`}>
                 {feedback.type === "miss" ? "놓침! -❤️" : "오타!"}
               </span>
@@ -533,31 +533,31 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
 
           {/* 카운트다운 오버레이 — 게임 영역 내부 */}
           {isCountingDown && (
-            <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-sm flex flex-col items-center justify-center z-30">
+            <div className="absolute inset-0 bg-background/85 backdrop-blur-sm flex flex-col items-center justify-center z-30">
               <div
                 key={countdown}
-                className="text-9xl font-black text-sky-400 drop-shadow-[0_0_30px_rgba(56,189,248,0.5)]"
+                className="text-9xl font-display font-black text-primary drop-shadow-[0_0_30px_rgba(0,229,255,0.5)]"
                 style={{ animation: "typing-countdown-pulse 0.6s ease-out" }}
               >
                 {countdown}
               </div>
-              <div className="mt-4 text-slate-400 text-sm font-medium tracking-wider">준비하세요!</div>
+              <div className="mt-4 text-muted-foreground text-sm font-display font-medium tracking-wider">준비하세요!</div>
             </div>
           )}
 
           {/* 탈락 오버레이 — 게임 결과가 나오면 숨김 */}
           {isDead && !isGameOver && (
-            <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center z-10">
+            <div className="absolute inset-0 bg-background/85 backdrop-blur-sm flex items-center justify-center z-10">
               <div className="text-center">
-                <div className="text-5xl font-black text-red-400 mb-3 drop-shadow-[0_0_20px_rgba(248,113,113,0.4)]">탈락!</div>
-                <div className="text-slate-400 text-sm">다른 플레이어의 진행을 지켜보세요</div>
+                <div className="text-5xl font-display font-black text-accent mb-3 drop-shadow-[0_0_20px_rgba(255,45,111,0.4)] text-glow-pink">탈락!</div>
+                <div className="text-muted-foreground text-sm">다른 플레이어의 진행을 지켜보세요</div>
               </div>
             </div>
           )}
 
           {/* 게임 결과 오버레이 */}
           {isGameOver && (
-            <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center z-20">
+            <div className="absolute inset-0 bg-background/90 backdrop-blur-sm flex items-center justify-center z-20">
               <div className="typing-result-enter text-center w-full max-w-sm mx-4">
                 {/* 헤더 */}
                 <div className="mb-6">
@@ -570,7 +570,7 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
                           ? "🏆"
                           : "😢"}
                   </div>
-                  <div className="text-2xl font-black tracking-tight">
+                  <div className="text-2xl font-display font-black tracking-tight">
                     {allPlayersSorted.length === 1
                       ? "게임 종료!"
                       : gameResult.winnerId === null
@@ -581,7 +581,7 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
                   </div>
                 </div>
                 {/* 순위 목록 */}
-                <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-3 space-y-2">
+                <div className="bg-card/60 border border-border/50 rounded-2xl p-3 space-y-2">
                   {allPlayersSorted.map((p, i) => {
                     const isMe = p.id === myId;
                     const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}`;
@@ -590,8 +590,8 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
                         key={p.id}
                         className={`flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl text-sm transition-colors ${
                           isMe
-                            ? "bg-sky-500/15 border border-sky-400/30 font-bold"
-                            : "bg-slate-700/30"
+                            ? "bg-primary/10 border border-primary/30 font-bold"
+                            : "bg-secondary/30"
                         }`}
                       >
                         <span className="flex items-center gap-2 truncate">
@@ -599,9 +599,9 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
                           <span className="truncate">{p.nickname}</span>
                         </span>
                         <span className="tabular-nums shrink-0 text-slate-400">
-                          <span className={isMe ? "text-sky-400" : "text-white"}>{p.score.toLocaleString()}</span>
+                          <span className={isMe ? "text-primary" : "text-foreground"}>{p.score.toLocaleString()}</span>
                           <span className="text-xs ml-1">점</span>
-                          <span className="text-xs ml-2 text-slate-500">{p.wordsCleared}개</span>
+                          <span className="text-xs ml-2 text-muted-foreground">{p.wordsCleared}개</span>
                         </span>
                       </div>
                     );
@@ -623,7 +623,7 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
               onKeyDown={handleKeyDown}
               disabled={isDead || isGameOver || isCountingDown}
               placeholder={isGameOver ? "게임 종료" : isDead ? "탈락했습니다" : isCountingDown ? "준비..." : "단어를 입력하세요..."}
-              className="flex-1 px-5 py-3.5 bg-slate-900 border border-slate-700/50 rounded-xl text-base text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-400/60 focus:border-sky-400/40 transition-all shadow-inner"
+              className="flex-1 px-5 py-3.5 bg-card border border-border/50 rounded-xl text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/60 focus:border-primary/40 transition-all shadow-inner"
               autoComplete="off"
               autoCorrect="off"
               autoCapitalize="off"
@@ -632,7 +632,7 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
             <button
               type="submit"
               disabled={isDead || isGameOver || isCountingDown}
-              className="px-6 py-3.5 bg-gradient-to-r from-sky-500 to-blue-600 text-white rounded-xl font-semibold disabled:opacity-40 hover:from-sky-400 hover:to-blue-500 transition-all shadow-lg shadow-sky-500/20"
+              className="px-6 py-3.5 bg-gradient-to-r from-neon-cyan to-neon-purple text-primary-foreground rounded-xl font-display font-semibold tracking-wide disabled:opacity-40 hover:shadow-[0_0_20px_rgba(0,229,255,0.3)] transition-all shadow-lg shadow-primary/20"
             >
               입력
             </button>
@@ -643,7 +643,7 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
       {/* 사이드: 상대방 미니 보드 (멀티플레이 시) */}
       {isMultiplayer && otherPlayers.length > 0 && !isGameOver && (
         <div className="shrink-0 space-y-3">
-          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">참가자</h3>
+          <h3 className="text-xs font-display font-semibold text-muted-foreground uppercase tracking-wider mb-2">참가자</h3>
           <div
             className="grid gap-3"
             style={{ gridTemplateColumns: `repeat(${Math.min(otherPlayers.length, 2)}, auto)` }}
@@ -662,7 +662,7 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
       {/* 사이드: 플레이어 현황 (게임 결과 표시 시) */}
       {isMultiplayer && otherPlayers.length > 0 && isGameOver && (
         <div className="w-56 shrink-0 space-y-2">
-          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">참가자</h3>
+          <h3 className="text-xs font-display font-semibold text-muted-foreground uppercase tracking-wider mb-2">참가자</h3>
           {otherPlayers.map((p) => (
             <PlayerCard key={p.id} player={p} isMe={false} />
           ))}

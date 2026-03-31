@@ -26,7 +26,7 @@ export function RoundResult({ state }: RoundResultProps) {
 
   return (
     <div className="flex flex-col items-center gap-4 py-6">
-      <div className="text-lg font-bold">라운드 {state.roundNumber} 결과</div>
+      <div className="text-lg font-display font-bold tracking-wide">라운드 {state.roundNumber} 결과</div>
 
       <div className="space-y-2 text-center">
         {state.keyword && (
@@ -42,7 +42,7 @@ export function RoundResult({ state }: RoundResultProps) {
           <div>
             지목된 플레이어: <span className="font-bold">{accused.nickname}</span>
             {liarCaught ? (
-              <span className="ml-1 text-green-500">- 라이어 적중!</span>
+              <span className="ml-1 text-success">- 라이어 적중!</span>
             ) : (
               <span className="ml-1 text-destructive">- 오답!</span>
             )}
@@ -57,14 +57,14 @@ export function RoundResult({ state }: RoundResultProps) {
             {state.liarGuessCorrect ? (
               <span className="ml-1 text-destructive">- 정답! 라이어 역전!</span>
             ) : (
-              <span className="ml-1 text-green-500">- 오답!</span>
+              <span className="ml-1 text-success">- 오답!</span>
             )}
           </div>
         )}
       </div>
 
-      <div className="border border-border rounded-lg p-3 min-w-[200px]">
-        <div className="text-sm font-medium mb-2 text-center">라운드 점수</div>
+      <div className="border border-border rounded-lg p-3 min-w-[200px] bg-card/50 neon-border">
+        <div className="text-sm font-display font-medium mb-2 text-center tracking-wide">라운드 점수</div>
         <div className="space-y-1">
           {state.players.map((player) => {
             const roundScore = state.roundScores[player.id] || 0;

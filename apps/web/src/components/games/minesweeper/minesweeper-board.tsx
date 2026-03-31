@@ -140,12 +140,12 @@ export default function MinesweeperBoard({ isSpectating }: GameComponentProps) {
 
       {/* Header */}
       <div className="flex items-center justify-between w-full max-w-sm px-2">
-        <div className="flex items-center gap-1.5 text-lg font-mono font-bold bg-card border border-border text-primary px-3 py-1.5 rounded-lg">
+        <div className="flex items-center gap-1.5 text-lg font-mono font-bold bg-card border border-border text-primary px-3 py-1.5 rounded-lg neon-glow-cyan">
           <span className="text-base">🚩</span>
           {String(remainingMines).padStart(3, "0")}
         </div>
         <div />
-        <div className="flex items-center gap-1.5 text-lg font-mono font-bold bg-card border border-border text-primary px-3 py-1.5 rounded-lg">
+        <div className="flex items-center gap-1.5 text-lg font-mono font-bold bg-card border border-border text-primary px-3 py-1.5 rounded-lg neon-glow-cyan">
           <span className="text-base">⏱</span>
           {String(elapsed).padStart(3, "0")}
         </div>
@@ -153,7 +153,7 @@ export default function MinesweeperBoard({ isSpectating }: GameComponentProps) {
 
       {/* Board */}
       <div
-        className="relative grid border border-zinc-500 bg-zinc-500"
+        className="relative grid border border-border bg-border"
         style={{
           gridTemplateColumns: `repeat(${state.cols}, ${cellSize}px)`,
           gridTemplateRows: `repeat(${state.rows}, ${cellSize}px)`,
@@ -173,10 +173,10 @@ export default function MinesweeperBoard({ isSpectating }: GameComponentProps) {
               key={`${r}-${c}`}
               className={`flex items-center justify-center font-bold select-none transition-colors duration-75 ${
                 cell.status === "revealed"
-                  ? "bg-zinc-700 text-foreground"
+                  ? "bg-muted text-foreground"
                   : isPressed
-                    ? "bg-zinc-600"
-                    : "bg-zinc-400 hover:bg-zinc-350 active:bg-zinc-500 text-zinc-900"
+                    ? "bg-secondary"
+                    : "bg-[#2a3150] hover:bg-[#323b5c] active:bg-secondary text-foreground/80"
               }`}
               style={{ width: cellSize, height: cellSize, fontSize: cellSize > 30 ? 14 : 11 }}
               onMouseDown={(e) => {
@@ -234,7 +234,7 @@ export default function MinesweeperBoard({ isSpectating }: GameComponentProps) {
         {/* Game result overlay */}
         {state.status !== "playing" && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 gap-3">
-            <span className={`text-3xl font-bold drop-shadow-lg ${state.status === "won" ? "text-primary" : "text-destructive"}`}>
+            <span className={`text-3xl font-display font-bold drop-shadow-lg ${state.status === "won" ? "text-primary text-glow-cyan" : "text-destructive text-glow-pink"}`}>
               {state.status === "won" ? "CLEAR!" : "GAME OVER"}
             </span>
             {gameResult?.rankingResult && gameResult.rankingResult.rank != null && (

@@ -37,18 +37,18 @@ export function RoleReveal({ privateState, category, roundNumber, totalRounds }:
 
         {isLiar ? (
           <div className="space-y-2">
-            <div className="text-3xl font-bold text-destructive">당신은 라이어입니다!</div>
+            <div className="text-3xl font-display font-bold text-accent text-glow-pink">당신은 라이어입니다!</div>
             <div className="text-sm text-muted-foreground">제시어를 모르지만 주제에 맞게 그려야 합니다</div>
           </div>
         ) : (
           <div className="space-y-2">
             <div className="text-sm text-muted-foreground">제시어</div>
-            <div className="text-3xl font-bold text-primary">{privateState?.keyword}</div>
+            <div className="text-3xl font-display font-bold text-primary text-glow-cyan">{privateState?.keyword}</div>
           </div>
         )}
       </div>
 
-      <div className="text-2xl font-mono font-bold text-muted-foreground">{countdown}</div>
+      <div className="text-2xl font-mono font-bold text-primary">{countdown}</div>
       <div className="text-sm text-muted-foreground">곧 그리기가 시작됩니다...</div>
     </div>
   );

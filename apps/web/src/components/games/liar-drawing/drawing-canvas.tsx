@@ -171,7 +171,7 @@ export function DrawingCanvas({
       width={CANVAS_SIZE}
       height={CANVAS_SIZE}
       style={{ width: size, height: size }}
-      className={`border border-border rounded bg-white ${canDraw ? "cursor-crosshair" : "cursor-default"}`}
+      className={`border border-border rounded bg-white neon-border ${canDraw ? "cursor-crosshair" : "cursor-default"}`}
       onMouseDown={handleStart}
       onMouseMove={handleMove}
       onMouseUp={handleEnd}

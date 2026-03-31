@@ -72,27 +72,27 @@ export default function GomokuBoard({ isSpectating }: GameComponentProps) {
         {/* 흑 플레이어 */}
         <div className={`flex-1 flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all ${
           !gameResult && state.currentTurn === "black"
-            ? "bg-slate-800 border-slate-600 shadow-lg shadow-slate-900/50"
-            : "bg-slate-900/50 border-slate-700/30 opacity-60"
+            ? "bg-card border-primary/30 neon-glow-cyan"
+            : "bg-card/50 border-border/30 opacity-60"
         }`}>
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-600 to-gray-950 shadow-md border border-gray-600 shrink-0" />
           <div className="min-w-0">
-            <div className={`text-sm font-bold truncate ${state.currentTurn === "black" ? "text-white" : "text-slate-400"}`}>
+            <div className={`text-sm font-display font-bold truncate ${state.currentTurn === "black" ? "text-foreground" : "text-muted-foreground"}`}>
               흑{myColor === "black" ? " (나)" : ""}
             </div>
             {!gameResult && state.currentTurn === "black" && (
-              <div className="text-[10px] text-emerald-400 font-medium">착수 중</div>
+              <div className="text-[10px] text-success font-medium">착수 중</div>
             )}
           </div>
         </div>
 
         {/* 중앙 타이머 + 정보 */}
-        <div className="flex flex-col items-center justify-center px-4 py-1 bg-slate-900 border border-slate-700/50 rounded-xl min-w-[100px]">
-          <div className={`text-2xl font-black tabular-nums leading-tight ${remainingTime <= 5 ? "text-red-400 animate-pulse" : "text-white"}`}>
+        <div className="flex flex-col items-center justify-center px-4 py-1 bg-card border border-border/50 rounded-xl min-w-[100px] neon-glow-cyan">
+          <div className={`text-2xl font-mono font-black tabular-nums leading-tight ${remainingTime <= 5 ? "text-accent animate-pulse" : "text-foreground"}`}>
             {Math.round(remainingTime)}
-            <span className="text-xs font-normal text-slate-400 ml-0.5">초</span>
+            <span className="text-xs font-normal text-muted-foreground ml-0.5">초</span>
           </div>
-          <div className="text-[10px] text-slate-500 tabular-nums">
+          <div className="text-[10px] text-muted-foreground font-mono tabular-nums">
             {String(Math.floor(elapsedTime / 60)).padStart(2, "0")}:{String(elapsedTime % 60).padStart(2, "0")} · {state.moveCount}수
           </div>
         </div>
@@ -100,15 +100,15 @@ export default function GomokuBoard({ isSpectating }: GameComponentProps) {
         {/* 백 플레이어 */}
         <div className={`flex-1 flex items-center justify-end gap-3 px-4 py-2.5 rounded-xl border transition-all ${
           !gameResult && state.currentTurn === "white"
-            ? "bg-slate-800 border-slate-600 shadow-lg shadow-slate-900/50"
-            : "bg-slate-900/50 border-slate-700/30 opacity-60"
+            ? "bg-card border-primary/30 neon-glow-cyan"
+            : "bg-card/50 border-border/30 opacity-60"
         }`}>
           <div className="min-w-0 text-right">
-            <div className={`text-sm font-bold truncate ${state.currentTurn === "white" ? "text-white" : "text-slate-400"}`}>
+            <div className={`text-sm font-display font-bold truncate ${state.currentTurn === "white" ? "text-foreground" : "text-muted-foreground"}`}>
               백{myColor === "white" ? " (나)" : ""}
             </div>
             {!gameResult && state.currentTurn === "white" && (
-              <div className="text-[10px] text-emerald-400 font-medium">착수 중</div>
+              <div className="text-[10px] text-success font-medium">착수 중</div>
             )}
           </div>
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-white to-gray-200 shadow-md border border-gray-300 shrink-0" />
@@ -117,7 +117,7 @@ export default function GomokuBoard({ isSpectating }: GameComponentProps) {
         {/* 도움말 버튼 */}
         <button
           onClick={() => setShowHelp(true)}
-          className="absolute -right-8 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+          className="absolute -right-8 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
           title="게임 도움말"
         >
           <HelpCircle className="w-5 h-5" />
@@ -126,10 +126,10 @@ export default function GomokuBoard({ isSpectating }: GameComponentProps) {
 
       {/* 턴 표시 바 */}
       {!gameResult && (
-        <div className={`px-4 py-1.5 rounded-full text-xs font-semibold ${
+        <div className={`px-4 py-1.5 rounded-full text-xs font-display font-semibold tracking-wide ${
           isMyTurn
-            ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-            : "bg-slate-800 text-slate-400 border border-slate-700/50"
+            ? "bg-primary/10 text-primary border border-primary/30 text-glow-cyan"
+            : "bg-card text-muted-foreground border border-border/50"
         }`}>
           {isMyTurn ? "내 차례입니다" : "상대 차례입니다"}
         </div>
@@ -243,15 +243,15 @@ export default function GomokuBoard({ isSpectating }: GameComponentProps) {
 
       {/* 게임 결과 */}
       {gameResult && (
-        <div className="gomoku-result-enter w-full text-center py-4 px-6 rounded-xl border" style={{ maxWidth: BOARD_PX }}>
-          <div className={`inline-flex items-center gap-2 px-5 py-2 rounded-full text-lg font-black ${
+        <div className="gomoku-result-enter w-full text-center py-4 px-6 rounded-xl border border-border bg-card/80 neon-glow-cyan" style={{ maxWidth: BOARD_PX }}>
+          <div className={`inline-flex items-center gap-2 px-5 py-2 rounded-full text-lg font-display font-black ${
             isSpectating
-              ? "bg-sky-500/15 text-sky-400 border border-sky-500/30"
+              ? "bg-primary/10 text-primary border border-primary/30"
               : gameResult.winnerId === socket?.id
-                ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                ? "bg-success/10 text-success border border-success/30"
                 : gameResult.winnerId === null
-                  ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
-                  : "bg-red-500/15 text-red-400 border border-red-500/30"
+                  ? "bg-neon-yellow/10 text-neon-yellow border border-neon-yellow/30"
+                  : "bg-accent/10 text-accent border border-accent/30"
           }`}>
             <span className="text-2xl">
               {isSpectating
@@ -268,7 +268,7 @@ export default function GomokuBoard({ isSpectating }: GameComponentProps) {
                   ? "무승부"
                   : "패배"}
           </div>
-          <p className="text-sm text-slate-400 mt-2">{gameResult.reason}</p>
+          <p className="text-sm text-muted-foreground mt-2">{gameResult.reason}</p>
           <style>{`
             .gomoku-result-enter {
               animation: gomoku-result-pop 0.4s cubic-bezier(0.16, 1, 0.3, 1);

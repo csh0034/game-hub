@@ -120,7 +120,7 @@ function FinalResult({ state, myId }: { state: LiarDrawingPublicState; myId: str
 
   return (
     <div className="flex flex-col items-center gap-6 py-8">
-      <div className="text-2xl font-bold">최종 결과</div>
+      <div className="text-2xl font-display font-bold tracking-wide text-glow-cyan">최종 결과</div>
 
       {isDraw ? (
         <div className="text-lg text-muted-foreground">동점 무승부!</div>
@@ -130,7 +130,7 @@ function FinalResult({ state, myId }: { state: LiarDrawingPublicState; myId: str
         </div>
       )}
 
-      <div className="border border-border rounded-lg p-4 min-w-[250px]">
+      <div className="border border-border rounded-lg p-4 min-w-[250px] bg-card/50 neon-border">
         {sortedPlayers.map((player, index) => (
           <div
             key={player.id}

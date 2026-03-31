@@ -23,7 +23,7 @@ export function VotingPanel({ state, myId, onVote, isSpectating }: VotingPanelPr
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <div className="text-lg font-bold">라이어를 찾아주세요!</div>
+      <div className="text-lg font-display font-bold tracking-wide text-glow-cyan">라이어를 찾아주세요!</div>
       <div className="text-sm text-muted-foreground">
         투표 현황: {state.votedPlayerIds.length} / {state.players.length}
       </div>

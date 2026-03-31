@@ -34,9 +34,9 @@ export function RoleReveal({ privateState, drawerNickname, isDrawer, isSpectatin
       <div className="text-center space-y-4">
         {isDrawer ? (
           <div className="space-y-2">
-            <div className="text-2xl font-bold text-primary">당신이 출제자입니다!</div>
+            <div className="text-2xl font-display font-bold text-primary text-glow-cyan">당신이 출제자입니다!</div>
             <div className="text-sm text-muted-foreground">제시어</div>
-            <div className="text-3xl font-bold text-primary">{privateState?.keyword}</div>
+            <div className="text-3xl font-display font-bold text-primary text-glow-cyan">{privateState?.keyword}</div>
             <div className="text-sm text-muted-foreground">그림으로 표현하세요 (글자/숫자 금지)</div>
           </div>
         ) : (
@@ -46,7 +46,7 @@ export function RoleReveal({ privateState, drawerNickname, isDrawer, isSpectatin
             </div>
             {!isSpectating && (
               <>
-                <div className="text-2xl font-bold">채팅으로 정답을 맞추세요!</div>
+                <div className="text-2xl font-display font-bold">채팅으로 정답을 맞추세요!</div>
                 {keywordLength !== null && (
                   <div className="text-sm text-muted-foreground">
                     글자수: <span className="font-bold text-foreground tracking-widest">{"○".repeat(keywordLength)}</span>
@@ -58,7 +58,7 @@ export function RoleReveal({ privateState, drawerNickname, isDrawer, isSpectatin
         )}
       </div>
 
-      <div className="text-2xl font-mono font-bold text-muted-foreground">{countdown}</div>
+      <div className="text-2xl font-mono font-bold text-primary">{countdown}</div>
       <div className="text-sm text-muted-foreground">곧 그리기가 시작됩니다...</div>
     </div>
   );

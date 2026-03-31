@@ -145,7 +145,7 @@ const PlayerBoard = memo(function PlayerBoard({
       {/* Hold */}
       {!compact && (
         <div className="flex flex-col items-center gap-1">
-          <span className="text-xs text-muted-foreground font-medium">HOLD</span>
+          <span className="text-xs text-muted-foreground font-display font-medium tracking-wider">HOLD</span>
           <MiniPiecePreview type={board.holdPiece} size={previewSize} />
         </div>
       )}
@@ -182,7 +182,7 @@ const PlayerBoard = memo(function PlayerBoard({
           )}
           {board.status === "gameover" && !resultOverlay && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded">
-              <span className={`text-white font-bold ${compact ? "text-xs" : "text-lg"}`}>GAME OVER</span>
+              <span className={`text-foreground font-display font-bold ${compact ? "text-xs" : "text-lg"}`}>GAME OVER</span>
             </div>
           )}
           {resultOverlay}
@@ -192,7 +192,7 @@ const PlayerBoard = memo(function PlayerBoard({
       {/* Info panel */}
       <div className="flex flex-col gap-2">
         <div className="flex flex-col items-center gap-1">
-          <span className={`${textSm} text-muted-foreground font-medium`}>NEXT</span>
+          <span className={`${textSm} text-muted-foreground font-display font-medium tracking-wider`}>NEXT</span>
           {board.nextPieces.map((type, i) => (
             <MiniPiecePreview key={i} type={type} size={previewSize} />
           ))}
@@ -201,11 +201,11 @@ const PlayerBoard = memo(function PlayerBoard({
           {isSpeedRace ? (
             <>
               <div>
-                <div className={`${textSm} text-muted-foreground`}>TIME</div>
+                <div className={`${textSm} text-muted-foreground font-display tracking-wider`}>TIME</div>
                 <div className={`${textLg} font-bold font-mono`}>{((elapsedTime ?? 0) / 1000).toFixed(1)}초</div>
               </div>
               <div>
-                <div className={`${textSm} text-muted-foreground`}>LINES</div>
+                <div className={`${textSm} text-muted-foreground font-display tracking-wider`}>LINES</div>
                 <div className={`${textLg} font-bold font-mono`}>{board.linesCleared}/{SPEED_RACE_TARGET_LINES}</div>
               </div>
               <div className="w-full bg-secondary/50 rounded-full h-2 mt-1">
@@ -215,49 +215,49 @@ const PlayerBoard = memo(function PlayerBoard({
                 />
               </div>
               <div>
-                <div className={`${textSm} text-muted-foreground`}>LEVEL</div>
+                <div className={`${textSm} text-muted-foreground font-display tracking-wider`}>LEVEL</div>
                 <div className={`${textLg} font-bold font-mono`}>{board.level}</div>
               </div>
             </>
           ) : (
             <>
               <div>
-                <div className={`${textSm} text-muted-foreground`}>SCORE</div>
+                <div className={`${textSm} text-muted-foreground font-display tracking-wider`}>SCORE</div>
                 <div className={`${textLg} font-bold font-mono`}>{board.score.toLocaleString()}</div>
               </div>
               <div>
-                <div className={`${textSm} text-muted-foreground`}>LEVEL</div>
+                <div className={`${textSm} text-muted-foreground font-display tracking-wider`}>LEVEL</div>
                 <div className={`${textLg} font-bold font-mono`}>{board.level}</div>
               </div>
               {dropInterval != null && (
                 <div>
-                  <div className={`${textSm} text-muted-foreground`}>SPEED</div>
+                  <div className={`${textSm} text-muted-foreground font-display tracking-wider`}>SPEED</div>
                   <div className={`${textLg} font-bold font-mono`}>{(dropInterval / 1000).toFixed(2)}s</div>
                 </div>
               )}
               <div>
-                <div className={`${textSm} text-muted-foreground`}>LINES</div>
+                <div className={`${textSm} text-muted-foreground font-display tracking-wider`}>LINES</div>
                 <div className={`${textLg} font-bold font-mono`}>{board.linesCleared}</div>
               </div>
             </>
           )}
           {board.pendingGarbage > 0 && (
             <div>
-              <div className={`${textSm} text-red-400`}>GARBAGE</div>
+              <div className={`${textSm} text-red-400 font-display tracking-wider`}>GARBAGE</div>
               <div className={`${textLg} font-bold font-mono text-red-400`}>{board.pendingGarbage}</div>
             </div>
           )}
           {board.combo > 1 && (
             <div>
-              <div className={`${textSm} text-yellow-400`}>COMBO</div>
-              <div className={`${textLg} font-bold font-mono text-yellow-400`}>{board.combo}</div>
+              <div className={`${textSm} text-neon-yellow font-display tracking-wider`}>COMBO</div>
+              <div className={`${textLg} font-bold font-mono text-neon-yellow`}>{board.combo}</div>
             </div>
           )}
           {board.backToBack && (
-            <div className={`${textSm} text-blue-400 font-bold`}>B2B</div>
+            <div className={`${textSm} text-neon-purple font-display font-bold tracking-wider`}>B2B</div>
           )}
           {board.lastClearType && (
-            <div className={`${textSm} text-green-400 font-bold uppercase`}>
+            <div className={`${textSm} text-success font-display font-bold uppercase tracking-wider`}>
               {board.lastClearType.replace(/-/g, " ")}
             </div>
           )}
@@ -433,12 +433,12 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
       const clearTime = gameResult.completionTimeMs ?? elapsedTime;
       return (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded gap-2">
-          <span className="text-3xl font-bold text-yellow-400 drop-shadow-lg">CLEAR!</span>
+          <span className="text-3xl font-display font-bold text-neon-yellow drop-shadow-lg text-glow-cyan">CLEAR!</span>
           <span className="text-sm text-white/80">
             클리어 시간: {(clearTime / 1000).toFixed(1)}초
           </span>
           {gameResult.rankingResult && gameResult.rankingResult.rank != null && (
-            <span className="text-sm text-yellow-400 font-bold">
+            <span className="text-sm text-neon-yellow font-bold">
               {gameResult.rankingResult.isNewRecord ? "🏆 새로운 1위!" : `전체 ${gameResult.rankingResult.rank}위`}
             </span>
           )}
@@ -452,7 +452,7 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
     if (isSpeedRace) {
       return (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded gap-2">
-          <span className="text-3xl font-bold text-red-400 drop-shadow-lg">GAME OVER</span>
+          <span className="text-3xl font-display font-bold text-accent drop-shadow-lg text-glow-pink">GAME OVER</span>
           <span className="text-sm text-white/80">
             {myBoard?.linesCleared ?? 0}/{SPEED_RACE_TARGET_LINES}줄
           </span>
@@ -463,12 +463,12 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
     // Classic solo: 기존 오버레이
     return (
       <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded gap-2">
-        <span className="text-3xl font-bold text-red-400 drop-shadow-lg">GAME OVER</span>
+        <span className="text-3xl font-display font-bold text-accent drop-shadow-lg text-glow-pink">GAME OVER</span>
         <span className="text-sm text-white/80">
           점수: {myScore.toLocaleString()}
         </span>
         {gameResult.rankingResult && gameResult.rankingResult.rank != null && (
-          <span className="text-sm text-yellow-400 font-bold">
+          <span className="text-sm text-neon-yellow font-bold">
             {gameResult.rankingResult.isNewRecord ? "🏆 새로운 1위!" : `전체 ${gameResult.rankingResult.rank}위`}
           </span>
         )}
@@ -483,13 +483,13 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
     let titleColor: string;
     if (isWinner) {
       title = "WIN!";
-      titleColor = "text-yellow-400";
+      titleColor = "text-neon-yellow";
     } else if (isDraw) {
       title = "DRAW";
-      titleColor = "text-gray-300";
+      titleColor = "text-muted-foreground";
     } else {
       title = "GAME OVER";
-      titleColor = "text-red-400";
+      titleColor = "text-accent";
     }
 
     const detail = isSpeedRace
@@ -498,7 +498,7 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
 
     return (
       <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded gap-2">
-        <span className={`text-3xl font-bold ${titleColor} drop-shadow-lg`}>{title}</span>
+        <span className={`text-3xl font-display font-bold ${titleColor} drop-shadow-lg`}>{title}</span>
         <span className="text-sm text-white/80">{detail}</span>
       </div>
     );

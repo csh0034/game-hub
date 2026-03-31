@@ -12,37 +12,60 @@ interface DrawingPhaseProps {
   myId: string;
   keyword: string | null;
   isSpectating?: boolean;
+  liarNickname?: string;
 }
 
-export function DrawingPhase({ state, socket, myId, keyword, isSpectating }: DrawingPhaseProps) {
+export function DrawingPhase({ state, socket, myId, keyword, isSpectating, liarNickname }: DrawingPhaseProps) {
   const currentDrawerId = state.drawOrder[state.currentDrawerIndex];
   const isMyTurn = currentDrawerId === myId;
   const currentDrawer = state.players.find((p) => p.id === currentDrawerId);
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <div className="flex items-center gap-4">
-        <div className="text-sm">
-          그리는 중: <span className="font-bold">{currentDrawer?.nickname}</span>
-          {isMyTurn && <span className="ml-1 text-primary">(내 차례)</span>}
+      {/* 상단 정보 바 */}
+      <div className="flex items-center gap-3 px-5 py-2.5 rounded-xl border border-border/50 bg-card/60 neon-glow-cyan w-full max-w-[520px]">
+        {/* 그리는 사람 */}
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-base">🎨</span>
+          <div className="min-w-0">
+            <div className="text-[10px] font-display text-muted-foreground tracking-wider uppercase leading-none">그리는 중</div>
+            <div className={`text-sm font-bold truncate ${isMyTurn ? "text-primary" : "text-foreground"}`}>
+              {currentDrawer?.nickname}{isMyTurn && " (나)"}
+            </div>
+          </div>
         </div>
-        <TurnTimer turnStartedAt={state.turnStartedAt} drawTimeSeconds={state.drawTimeSeconds} />
-        <div className="text-xs text-muted-foreground">
-          {state.currentDrawerIndex + 1} / {state.drawOrder.length}
-        </div>
-      </div>
 
-      <div className="flex items-center gap-2 text-sm">
-        <span className="text-muted-foreground">주제:</span>
-        <span className="font-bold">{state.category}</span>
-        {keyword ? (
-          <>
-            <span className="text-muted-foreground ml-2">제시어:</span>
-            <span className="font-bold text-primary">{keyword}</span>
-          </>
-        ) : (
-          <span className="ml-2 text-destructive font-medium">라이어</span>
-        )}
+        <div className="w-px h-8 bg-border shrink-0" />
+
+        {/* 주제 + 제시어/라이어 */}
+        <div className="flex-1 min-w-0">
+          <div className="text-[10px] font-display text-muted-foreground tracking-wider uppercase leading-none">
+            주제: {state.category}
+          </div>
+          {isSpectating && liarNickname ? (
+            <div className="flex items-center gap-3 text-sm">
+              <span className="font-display font-bold text-primary truncate">{keyword}</span>
+              <span className="text-xs px-2.5 py-1 rounded-full bg-accent/15 text-accent font-display font-medium shrink-0">🎭 라이어: {liarNickname}</span>
+            </div>
+          ) : keyword ? (
+            <div className="text-sm font-display font-bold text-primary text-glow-cyan truncate">{keyword}</div>
+          ) : (
+            <div className="text-sm font-display font-bold text-accent">라이어</div>
+          )}
+        </div>
+
+        <div className="w-px h-8 bg-border shrink-0" />
+
+        {/* 턴 진행 */}
+        <div className="text-center shrink-0">
+          <div className="text-[10px] font-display text-muted-foreground tracking-wider uppercase leading-none">턴</div>
+          <div className="text-sm font-mono font-bold tabular-nums">{state.currentDrawerIndex + 1}/{state.drawOrder.length}</div>
+        </div>
+
+        <div className="w-px h-8 bg-border shrink-0" />
+
+        {/* 타이머 */}
+        <TurnTimer turnStartedAt={state.turnStartedAt} drawTimeSeconds={state.drawTimeSeconds} />
       </div>
 
       {/* Key by currentDrawerIndex so the sub-component remounts and resets state */}
@@ -55,7 +78,7 @@ export function DrawingPhase({ state, socket, myId, keyword, isSpectating }: Dra
         currentDrawerId={currentDrawerId}
       />
 
-      {!isMyTurn && (
+      {!isMyTurn && !isSpectating && (
         <div className="text-xs text-muted-foreground">다른 플레이어가 그리는 것을 관전 중입니다</div>
       )}
     </div>
@@ -78,9 +101,26 @@ function TurnTimer({ turnStartedAt, drawTimeSeconds }: { turnStartedAt: number |
     return () => clearInterval(interval);
   }, [turnStartedAt, drawTimeSeconds]);
 
+  const pct = (remainingTime / drawTimeSeconds) * 100;
+  const isUrgent = remainingTime <= 5;
+  const isWarning = remainingTime <= 10 && !isUrgent;
+
   return (
-    <div className="text-sm font-mono">
-      <span className={remainingTime <= 5 ? "text-destructive font-bold" : ""}>{Math.ceil(remainingTime)}초</span>
+    <div className="flex flex-col items-center gap-1 shrink-0 min-w-[52px]">
+      <div className={`text-xl font-mono font-black tabular-nums leading-none ${
+        isUrgent ? "text-accent animate-pulse" : isWarning ? "text-neon-yellow" : "text-foreground"
+      }`}>
+        {Math.ceil(remainingTime)}
+      </div>
+      <div className="text-[10px] font-display text-muted-foreground tracking-wider">초</div>
+      <div className="w-full h-0.5 rounded-full bg-border overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all duration-200 ${
+            isUrgent ? "bg-accent" : isWarning ? "bg-neon-yellow" : "bg-primary"
+          }`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
     </div>
   );
 }
@@ -190,7 +230,7 @@ function DrawingTurn({ state, socket, isMyTurn, currentDrawerId }: DrawingTurnPr
       {showCompleteDialog && (
         <>
           <div className="fixed inset-0 bg-black/60 z-50" onClick={() => setShowCompleteDialog(false)} />
-          <div className="fixed inset-0 z-50 flex items-start justify-center pt-[30vh] p-4">
+          <div className="fixed inset-0 z-50 flex items-start justify-center pt-[20vh] p-4">
             <div className="bg-card border border-border rounded-xl p-6 w-full max-w-sm shadow-2xl">
               <h2 className="text-lg font-bold mb-2">그리기를 마치시겠습니까?</h2>
               <p className="text-sm text-muted-foreground mb-6">

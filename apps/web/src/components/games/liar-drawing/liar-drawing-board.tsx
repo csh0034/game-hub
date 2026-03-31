@@ -37,10 +37,21 @@ export default function LiarDrawingBoard({ isSpectating }: GameComponentProps) {
             category={state.category}
             roundNumber={state.roundNumber}
             totalRounds={state.totalRounds}
+            isSpectating={isSpectating}
+            liarNickname={isSpectating && liarPrivateState?.liarId ? state.players.find((p) => p.id === liarPrivateState.liarId)?.nickname : undefined}
           />
         );
       case "drawing":
-        return <DrawingPhase state={state} socket={socket} myId={myId} keyword={liarPrivateState?.keyword ?? null} isSpectating={isSpectating} />;
+        return (
+          <DrawingPhase
+            state={state}
+            socket={socket}
+            myId={myId}
+            keyword={liarPrivateState?.keyword ?? null}
+            isSpectating={isSpectating}
+            liarNickname={isSpectating && liarPrivateState?.liarId ? state.players.find((p) => p.id === liarPrivateState.liarId)?.nickname : undefined}
+          />
+        );
       case "voting":
         return (
           <VotingPanel
@@ -59,7 +70,7 @@ export default function LiarDrawingBoard({ isSpectating }: GameComponentProps) {
           />
         );
       case "round-result":
-        return <RoundResult state={state} />;
+        return <RoundResult state={state} myId={myId} isSpectating={isSpectating} />;
       case "final-result":
         return <FinalResult state={state} myId={myId} />;
     }
@@ -69,12 +80,6 @@ export default function LiarDrawingBoard({ isSpectating }: GameComponentProps) {
     <div className="flex gap-4">
       <div className="flex-1">
         <div className="flex items-center mb-2">
-          {isSpectating && liarPrivateState && (
-            <div className="px-3 py-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-sm">
-              <span className="text-muted-foreground">라이어: </span>
-              <span className="font-bold text-yellow-400">{state.players.find((p) => p.id === liarPrivateState.liarId)?.nickname ?? "?"}</span>
-            </div>
-          )}
           <div className="ml-auto">
             <button
               onClick={() => setShowHelp(true)}
@@ -117,34 +122,54 @@ function FinalResult({ state, myId }: { state: LiarDrawingPublicState; myId: str
   const topScore = sortedPlayers[0]?.score ?? 0;
   const winners = sortedPlayers.filter((p) => p.score === topScore);
   const isDraw = winners.length > 1;
+  const medals = ["🥇", "🥈", "🥉"];
 
   return (
-    <div className="flex flex-col items-center gap-6 py-8">
-      <div className="text-2xl font-display font-bold tracking-wide text-glow-cyan">최종 결과</div>
+    <div className="flex flex-col items-center gap-6 py-8 phase-fade-up">
+      {/* 타이틀 */}
+      <div className="text-xs font-display text-muted-foreground tracking-widest uppercase">Final Result</div>
 
-      {isDraw ? (
-        <div className="text-lg text-muted-foreground">동점 무승부!</div>
-      ) : (
-        <div className="text-lg">
-          <span className="text-primary font-bold">{winners[0].nickname}</span>님이 우승!
-        </div>
-      )}
-
-      <div className="border border-border rounded-lg p-4 min-w-[250px] bg-card/50 neon-border">
-        {sortedPlayers.map((player, index) => (
-          <div
-            key={player.id}
-            className={`flex justify-between items-center py-2 ${
-              index < sortedPlayers.length - 1 ? "border-b border-border" : ""
-            } ${player.id === myId ? "text-primary" : ""}`}
-          >
-            <span className="font-medium">
-              {index + 1}위 {player.nickname}
-              {player.id === myId && " (나)"}
-            </span>
-            <span className="font-mono font-bold">{player.score}점</span>
+      {/* 우승자 */}
+      <div className="phase-scale-in text-center">
+        <div className="text-5xl mb-3">{isDraw ? "🤝" : "🏆"}</div>
+        {isDraw ? (
+          <div className="text-xl font-display font-bold text-neon-yellow">무승부!</div>
+        ) : (
+          <div>
+            <div className="text-2xl font-display font-bold text-primary text-glow-cyan">{winners[0].nickname}</div>
+            <div className="text-sm text-muted-foreground mt-1">우승!</div>
           </div>
-        ))}
+        )}
+      </div>
+
+      {/* 순위 */}
+      <div className="w-full max-w-xs border border-border rounded-xl p-4 bg-card/50 neon-border space-y-2">
+        {sortedPlayers.map((player, index) => {
+          const isMe = player.id === myId;
+          const isFirst = index === 0;
+          return (
+            <div
+              key={player.id}
+              className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-colors ${
+                isFirst
+                  ? "bg-primary/10 border border-primary/20"
+                  : isMe
+                    ? "bg-primary/5 border border-primary/10"
+                    : "bg-card/30"
+              }`}
+              style={{ animation: `phase-slide-rank 0.3s ${index * 0.1}s cubic-bezier(0.16, 1, 0.3, 1) both` }}
+            >
+              <span className="flex items-center gap-2">
+                <span className={index < 3 ? "text-lg" : "text-muted-foreground text-xs w-[28px] text-center font-mono"}>{index < 3 ? medals[index] : `${index + 1}`}</span>
+                <span className={`font-medium ${isMe ? "text-primary" : ""}`}>
+                  {player.nickname}
+                  {isMe && " (나)"}
+                </span>
+              </span>
+              <span className={`font-mono font-bold ${isFirst ? "text-primary" : ""}`}>{player.score}점</span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

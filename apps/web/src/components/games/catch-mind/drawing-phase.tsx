@@ -20,27 +20,56 @@ export function DrawingPhase({ state, socket, myId, keyword, isSpectating }: Dra
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <div className="flex items-center gap-4">
-        <div className="text-sm">
-          출제자: <span className="font-bold">{drawer?.nickname}</span>
-          {isDrawer && <span className="ml-1 text-primary">(나)</span>}
+      {/* 상단 정보 바 */}
+      <div className="flex items-center gap-3 px-5 py-2.5 rounded-xl border border-border/50 bg-card/60 neon-glow-cyan w-full max-w-[460px]">
+        {/* 출제자 */}
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-base">🎨</span>
+          <div className="min-w-0">
+            <div className="text-[10px] font-display text-muted-foreground tracking-wider uppercase leading-none">출제자</div>
+            <div className={`text-sm font-bold truncate ${isDrawer ? "text-primary" : "text-foreground"}`}>
+              {drawer?.nickname}{isDrawer && " (나)"}
+            </div>
+          </div>
         </div>
-        <TurnTimer turnStartedAt={state.turnStartedAt} drawTimeSeconds={state.drawTimeSeconds} />
-      </div>
 
-      {isDrawer && !isSpectating ? (
-        <div className="text-sm">
-          제시어: <span className="font-bold text-primary">{keyword}</span>
-        </div>
-      ) : !isSpectating ? (
-        <div className="text-sm text-muted-foreground">
-          {state.showCharHint && state.keywordLength !== null ? (
-            <>글자수: <span className="font-bold text-foreground tracking-widest">{"○".repeat(state.keywordLength)}</span></>
+        <div className="w-px h-8 bg-border shrink-0" />
+
+        {/* 제시어 / 힌트 */}
+        <div className="flex-1 min-w-0">
+          {isDrawer && !isSpectating ? (
+            <div>
+              <div className="text-[10px] font-display text-muted-foreground tracking-wider uppercase leading-none">제시어</div>
+              <div className="text-sm font-display font-bold text-primary text-glow-cyan truncate">{keyword}</div>
+            </div>
+          ) : !isSpectating ? (
+            <div>
+              {state.showCharHint && state.keywordLength !== null ? (
+                <>
+                  <div className="text-[10px] font-display text-muted-foreground tracking-wider uppercase leading-none">글자수</div>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    {Array.from({ length: state.keywordLength }, (_, i) => (
+                      <div key={i} className="w-5 h-5 rounded border border-primary/30 bg-primary/5 flex items-center justify-center text-[10px] text-primary font-bold">?</div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="text-xs text-muted-foreground">채팅으로 정답을 맞추세요!</div>
+              )}
+            </div>
           ) : (
-            "채팅으로 정답을 맞추세요!"
+            <div>
+              <div className="text-[10px] font-display text-muted-foreground tracking-wider uppercase leading-none">제시어</div>
+              <div className="text-sm font-display font-bold text-primary truncate">{keyword ?? "?"}</div>
+            </div>
           )}
         </div>
-      ) : null}
+
+        <div className="w-px h-8 bg-border shrink-0" />
+
+        {/* 타이머 */}
+        <TurnTimer turnStartedAt={state.turnStartedAt} drawTimeSeconds={state.drawTimeSeconds} />
+      </div>
 
       <DrawingArea state={state} socket={socket} isDrawer={isDrawer && !isSpectating} />
     </div>
@@ -63,9 +92,27 @@ function TurnTimer({ turnStartedAt, drawTimeSeconds }: { turnStartedAt: number |
     return () => clearInterval(interval);
   }, [turnStartedAt, drawTimeSeconds]);
 
+  const pct = (remainingTime / drawTimeSeconds) * 100;
+  const isUrgent = remainingTime <= 5;
+  const isWarning = remainingTime <= 10 && !isUrgent;
+
   return (
-    <div className="text-sm font-mono">
-      <span className={remainingTime <= 5 ? "text-destructive font-bold" : ""}>{Math.ceil(remainingTime)}초</span>
+    <div className="flex flex-col items-center gap-1 shrink-0 min-w-[52px]">
+      <div className={`text-xl font-mono font-black tabular-nums leading-none ${
+        isUrgent ? "text-accent animate-pulse" : isWarning ? "text-neon-yellow" : "text-foreground"
+      }`}>
+        {Math.ceil(remainingTime)}
+      </div>
+      <div className="text-[10px] font-display text-muted-foreground tracking-wider">초</div>
+      {/* 미니 프로그레스 */}
+      <div className="w-full h-0.5 rounded-full bg-border overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all duration-200 ${
+            isUrgent ? "bg-accent" : isWarning ? "bg-neon-yellow" : "bg-primary"
+          }`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
     </div>
   );
 }

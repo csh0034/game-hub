@@ -71,7 +71,7 @@ export default function GomokuBoard({ isSpectating }: GameComponentProps) {
       <div className="w-full flex items-stretch gap-3" style={{ maxWidth: BOARD_PX }}>
         {/* 흑 플레이어 */}
         <div className={`flex-1 flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all ${
-          state.currentTurn === "black"
+          !gameResult && state.currentTurn === "black"
             ? "bg-slate-800 border-slate-600 shadow-lg shadow-slate-900/50"
             : "bg-slate-900/50 border-slate-700/30 opacity-60"
         }`}>
@@ -80,7 +80,7 @@ export default function GomokuBoard({ isSpectating }: GameComponentProps) {
             <div className={`text-sm font-bold truncate ${state.currentTurn === "black" ? "text-white" : "text-slate-400"}`}>
               흑{myColor === "black" ? " (나)" : ""}
             </div>
-            {state.currentTurn === "black" && (
+            {!gameResult && state.currentTurn === "black" && (
               <div className="text-[10px] text-emerald-400 font-medium">착수 중</div>
             )}
           </div>
@@ -99,7 +99,7 @@ export default function GomokuBoard({ isSpectating }: GameComponentProps) {
 
         {/* 백 플레이어 */}
         <div className={`flex-1 flex items-center justify-end gap-3 px-4 py-2.5 rounded-xl border transition-all ${
-          state.currentTurn === "white"
+          !gameResult && state.currentTurn === "white"
             ? "bg-slate-800 border-slate-600 shadow-lg shadow-slate-900/50"
             : "bg-slate-900/50 border-slate-700/30 opacity-60"
         }`}>
@@ -107,7 +107,7 @@ export default function GomokuBoard({ isSpectating }: GameComponentProps) {
             <div className={`text-sm font-bold truncate ${state.currentTurn === "white" ? "text-white" : "text-slate-400"}`}>
               백{myColor === "white" ? " (나)" : ""}
             </div>
-            {state.currentTurn === "white" && (
+            {!gameResult && state.currentTurn === "white" && (
               <div className="text-[10px] text-emerald-400 font-medium">착수 중</div>
             )}
           </div>
@@ -125,13 +125,15 @@ export default function GomokuBoard({ isSpectating }: GameComponentProps) {
       </div>
 
       {/* 턴 표시 바 */}
-      <div className={`px-4 py-1.5 rounded-full text-xs font-semibold ${
-        isMyTurn
-          ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-          : "bg-slate-800 text-slate-400 border border-slate-700/50"
-      }`}>
-        {isMyTurn ? "내 차례입니다" : "상대 차례입니다"}
-      </div>
+      {!gameResult && (
+        <div className={`px-4 py-1.5 rounded-full text-xs font-semibold ${
+          isMyTurn
+            ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+            : "bg-slate-800 text-slate-400 border border-slate-700/50"
+        }`}>
+          {isMyTurn ? "내 차례입니다" : "상대 차례입니다"}
+        </div>
+      )}
 
       {/* 오목 보드 */}
       <div
@@ -243,20 +245,28 @@ export default function GomokuBoard({ isSpectating }: GameComponentProps) {
       {gameResult && (
         <div className="gomoku-result-enter w-full text-center py-4 px-6 rounded-xl border" style={{ maxWidth: BOARD_PX }}>
           <div className={`inline-flex items-center gap-2 px-5 py-2 rounded-full text-lg font-black ${
-            gameResult.winnerId === socket?.id
-              ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-              : gameResult.winnerId === null
-                ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
-                : "bg-red-500/15 text-red-400 border border-red-500/30"
+            isSpectating
+              ? "bg-sky-500/15 text-sky-400 border border-sky-500/30"
+              : gameResult.winnerId === socket?.id
+                ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                : gameResult.winnerId === null
+                  ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                  : "bg-red-500/15 text-red-400 border border-red-500/30"
           }`}>
             <span className="text-2xl">
-              {gameResult.winnerId === socket?.id ? "🏆" : gameResult.winnerId === null ? "🤝" : "😢"}
+              {isSpectating
+                ? gameResult.winnerId === null ? "🤝" : "🏆"
+                : gameResult.winnerId === socket?.id ? "🏆" : gameResult.winnerId === null ? "🤝" : "😢"}
             </span>
-            {gameResult.winnerId === socket?.id
-              ? "승리!"
-              : gameResult.winnerId === null
+            {isSpectating
+              ? gameResult.winnerId === null
                 ? "무승부"
-                : "패배"}
+                : `${gameResult.winnerId === state.players.black ? "흑" : "백"} 승리!`
+              : gameResult.winnerId === socket?.id
+                ? "승리!"
+                : gameResult.winnerId === null
+                  ? "무승부"
+                  : "패배"}
           </div>
           <p className="text-sm text-slate-400 mt-2">{gameResult.reason}</p>
           <style>{`

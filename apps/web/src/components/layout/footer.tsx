@@ -27,7 +27,7 @@ export function Footer({ githubRepoUrl }: FooterProps) {
                 GitHub
               </a>
             )}
-            <span>&copy; {new Date().getFullYear()} Game Hub</span>
+            <span>&copy; {new Date().getFullYear()} GAME HUB</span>
           </div>
         </div>
       </div>

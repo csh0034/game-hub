@@ -124,6 +124,45 @@ describe("tetris-logic", () => {
       // 벽차기로 회전이 성공해야 함
       expect(rotated).not.toBeNull();
     });
+
+    it("Z피스가 오른쪽 벽에서 시계 방향 회전된다 (0→1)", () => {
+      const board = createEmptyBoard();
+      // Z피스 rotation 0: rightmost cell = col+1, col=8이면 col+1=9 (보드 끝)
+      const piece: TetrisActivePiece = { type: "Z", row: 10, col: 8, rotation: 0 };
+      const rotated = tryRotate(board, piece, 1);
+      expect(rotated).not.toBeNull();
+      expect(rotated!.rotation).toBe(1);
+    });
+
+    it("Z피스가 오른쪽 벽에서 4단계 연속 회전된다", () => {
+      const board = createEmptyBoard();
+      // Z피스 시계 방향 4회 회전: 0→1→2→3→0
+      let piece: TetrisActivePiece = { type: "Z", row: 10, col: 8, rotation: 0 };
+      for (let i = 0; i < 4; i++) {
+        const rotated = tryRotate(board, piece, 1);
+        expect(rotated).not.toBeNull();
+        piece = rotated!;
+      }
+      expect(piece.rotation).toBe(0);
+    });
+
+    it("S피스가 왼쪽 벽에서 4단계 연속 회전된다", () => {
+      const board = createEmptyBoard();
+      let piece: TetrisActivePiece = { type: "S", row: 10, col: 1, rotation: 0 };
+      for (let i = 0; i < 4; i++) {
+        const rotated = tryRotate(board, piece, 1);
+        expect(rotated).not.toBeNull();
+        piece = rotated!;
+      }
+      expect(piece.rotation).toBe(0);
+    });
+
+    it("I피스가 오른쪽 벽에서 회전된다", () => {
+      const board = createEmptyBoard();
+      const piece: TetrisActivePiece = { type: "I", row: 10, col: 8, rotation: 0 };
+      const rotated = tryRotate(board, piece, 1);
+      expect(rotated).not.toBeNull();
+    });
   });
 
   describe("calculateGhostRow", () => {

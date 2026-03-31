@@ -218,6 +218,7 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
                 onSendMessage={onSendRoomMessage}
                 placeholder={isSpectating && !spectateChatEnabled ? "관전자 채팅이 허용되지 않습니다" : "게임 채팅... (@닉네임으로 귓속말)"}
                 myNickname={nickname}
+                mySocketId={socket?.id}
                 disabled={isSpectating && !spectateChatEnabled}
                 onlinePlayers={onlinePlayers}
                 onWhisper={onWhisper}
@@ -904,6 +905,7 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
             onSendMessage={onSendRoomMessage}
             placeholder={isSpectating && !spectateChatEnabled ? "관전자 채팅이 허용되지 않습니다" : "방 채팅... (@닉네임으로 귓속말)"}
             myNickname={nickname}
+            mySocketId={socket?.id}
             disabled={isSpectating && !spectateChatEnabled}
             onlinePlayers={onlinePlayers}
             onWhisper={onWhisper}

@@ -515,6 +515,7 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
                   onSendMessage={sendLobbyMessage}
                   placeholder="로비 채팅... (@닉네임으로 귓속말)"
                   myNickname={nickname ?? undefined}
+                  mySocketId={socket?.id}
                   isAdmin={isAdmin}
                   onDeleteMessage={(messageId) => deleteMessage("lobby", messageId)}
                   onlinePlayers={onlinePlayers}

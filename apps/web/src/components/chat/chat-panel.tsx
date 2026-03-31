@@ -11,6 +11,7 @@ interface ChatPanelProps {
   onSendMessage: (message: string) => void;
   placeholder?: string;
   myNickname?: string;
+  mySocketId?: string;
   isAdmin?: boolean;
   onDeleteMessage?: (messageId: string) => void;
   disabled?: boolean;
@@ -24,6 +25,7 @@ export function ChatPanel({
   onSendMessage,
   placeholder = "메시지를 입력하세요...",
   myNickname,
+  mySocketId,
   isAdmin = false,
   onDeleteMessage,
   disabled = false,
@@ -123,7 +125,7 @@ export function ChatPanel({
           )}
           {messages.map((msg, idx) => {
             const isSystem = msg.playerId === "system";
-            const isMe = msg.nickname === myNickname;
+            const isMe = (mySocketId && msg.playerId === mySocketId) || msg.nickname === myNickname;
 
             if (isSystem) {
               return (

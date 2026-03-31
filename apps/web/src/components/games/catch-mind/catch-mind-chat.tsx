@@ -39,6 +39,7 @@ export function CatchMindChat({ state, myId, messages, onSendMessage, myNickname
         onSendMessage={handleSend}
         placeholder={placeholder}
         myNickname={myNickname}
+        mySocketId={myId}
         disabled={isDisabled}
       />
     </div>

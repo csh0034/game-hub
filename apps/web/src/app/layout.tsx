@@ -25,7 +25,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://54.180.133.95:3000/";
-const SITE_TITLE = "Game Hub";
+const SITE_TITLE = "GAME HUB";
 const SITE_DESCRIPTION =
   "오목, 텍사스 홀덤, 테트리스 등 다양한 게임을 친구들과 함께! 웹 브라우저에서 바로 플레이하는 멀티플레이 게임 허브";
 

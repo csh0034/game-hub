@@ -19,7 +19,7 @@ export const DIFFICULTY_LABELS: Record<string, string> = {
 
 function formatScore(gameType: RankingGameType, score: number): string {
   if (gameType === "minesweeper" || gameType === "tetris") {
-    return `${(score / 1000).toFixed(1)}초`;
+    return `${(score / 1000).toFixed(3)}초`;
   }
   return `${score.toLocaleString()}점`;
 }

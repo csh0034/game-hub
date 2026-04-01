@@ -205,7 +205,7 @@ const PlayerBoard = memo(function PlayerBoard({
             <>
               <div className="text-center">
                 <div className={`${textSm} text-primary/50 font-display tracking-widest uppercase`}>Time</div>
-                <div className={`${textLg} font-bold font-mono text-foreground`}>{((elapsedTime ?? 0) / 1000).toFixed(1)}<span className="text-muted-foreground text-xs">s</span></div>
+                <div className={`${textLg} font-bold font-mono text-foreground`}>{((elapsedTime ?? 0) / 1000).toFixed(3)}<span className="text-muted-foreground text-xs">s</span></div>
               </div>
               <div className="text-center">
                 <div className={`${textSm} text-primary/50 font-display tracking-widest uppercase`}>Lines</div>
@@ -247,7 +247,7 @@ const PlayerBoard = memo(function PlayerBoard({
               </div>
               <div className="text-center">
                 <div className={`${textSm} text-primary/50 font-display tracking-widest uppercase`}>Time</div>
-                <div className={`${textLg} font-bold font-mono text-foreground`}>{((elapsedTime ?? 0) / 1000).toFixed(1)}<span className="text-muted-foreground text-xs">s</span></div>
+                <div className={`${textLg} font-bold font-mono text-foreground`}>{((elapsedTime ?? 0) / 1000).toFixed(3)}<span className="text-muted-foreground text-xs">s</span></div>
               </div>
             </>
           )}
@@ -446,7 +446,7 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded gap-2">
           <span className="text-3xl font-display font-bold text-neon-yellow drop-shadow-lg text-glow-cyan">CLEAR!</span>
           <span className="text-sm text-white/80">
-            클리어 시간: {(clearTime / 1000).toFixed(1)}초
+            클리어 시간: {(clearTime / 1000).toFixed(3)}초
           </span>
           {gameResult.rankingResult && gameResult.rankingResult.rank != null && (
             <span className="text-sm text-neon-yellow font-bold">
@@ -504,7 +504,7 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
     }
 
     const detail = isSpeedRace
-      ? (isWinner ? `클리어 시간: ${((gameResult?.completionTimeMs ?? elapsedTime) / 1000).toFixed(1)}초` : `${myBoard?.linesCleared ?? 0}/${SPEED_RACE_TARGET_LINES}줄`)
+      ? (isWinner ? `클리어 시간: ${((gameResult?.completionTimeMs ?? elapsedTime) / 1000).toFixed(3)}초` : `${myBoard?.linesCleared ?? 0}/${SPEED_RACE_TARGET_LINES}줄`)
       : `점수: ${myScore.toLocaleString()}`;
 
     return (
@@ -602,13 +602,13 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
       </div>
 
       {/* Controls hint */}
-      <div className="flex items-center justify-center gap-2 text-[10px] text-muted-foreground/60 font-mono">
-        <span className="px-1.5 py-0.5 rounded border border-border/30 bg-black/20">&larr; &rarr;</span><span>이동</span>
-        <span className="px-1.5 py-0.5 rounded border border-border/30 bg-black/20">&uarr; X</span><span>회전</span>
-        <span className="px-1.5 py-0.5 rounded border border-border/30 bg-black/20">Z</span><span>역회전</span>
-        <span className="px-1.5 py-0.5 rounded border border-border/30 bg-black/20">&darr;</span><span>소프트</span>
-        <span className="px-1.5 py-0.5 rounded border border-border/30 bg-black/20">Space</span><span>하드</span>
-        <span className="px-1.5 py-0.5 rounded border border-border/30 bg-black/20">C</span><span>홀드</span>
+      <div className="flex items-center justify-center gap-2 text-[10px] text-secondary-foreground font-mono">
+        <span className="px-1.5 py-0.5 rounded border border-border/50 bg-black/30">&larr; &rarr;</span><span>이동</span>
+        <span className="px-1.5 py-0.5 rounded border border-border/50 bg-black/30">&uarr; X</span><span>회전</span>
+        <span className="px-1.5 py-0.5 rounded border border-border/50 bg-black/30">Z</span><span>역회전</span>
+        <span className="px-1.5 py-0.5 rounded border border-border/50 bg-black/30">&darr;</span><span>소프트</span>
+        <span className="px-1.5 py-0.5 rounded border border-border/50 bg-black/30">Space</span><span>하드</span>
+        <span className="px-1.5 py-0.5 rounded border border-border/50 bg-black/30">C</span><span>홀드</span>
       </div>
     </div>
   );

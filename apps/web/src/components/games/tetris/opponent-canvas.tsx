@@ -177,7 +177,7 @@ export const OpponentCanvas = memo(function OpponentCanvas({
             {elapsedTime != null && (
               <>
                 <span className="text-muted-foreground">·</span>
-                <span className="text-muted-foreground">{(elapsedTime / 1000).toFixed(1)}초</span>
+                <span className="text-muted-foreground">{(elapsedTime / 1000).toFixed(3)}초</span>
               </>
             )}
           </>
@@ -189,7 +189,7 @@ export const OpponentCanvas = memo(function OpponentCanvas({
             {elapsedTime != null && (
               <>
                 <span className="text-muted-foreground">·</span>
-                <span className="text-muted-foreground">{(elapsedTime / 1000).toFixed(1)}초</span>
+                <span className="text-muted-foreground">{(elapsedTime / 1000).toFixed(3)}초</span>
               </>
             )}
           </>

@@ -247,7 +247,7 @@ export default function MinesweeperBoard({ isSpectating }: GameComponentProps) {
       </div>
 
       {/* Controls hint */}
-      <div className="text-xs text-muted-foreground text-center space-x-3">
+      <div className="text-xs text-secondary-foreground text-center space-x-3">
         <span>좌클릭 열기</span>
         <span>우클릭 🚩↔?</span>
         <span>양클릭 주변 열기</span>

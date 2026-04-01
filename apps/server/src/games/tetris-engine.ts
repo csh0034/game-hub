@@ -238,7 +238,7 @@ export class TetrisEngine implements GameEngine {
         if (ps && ps.linesCleared >= SPEED_RACE_TARGET_LINES) {
           if (!this.completedAt) this.completedAt = Date.now();
           const time = this.getCompletionTime();
-          const timeStr = (time / 1000).toFixed(1);
+          const timeStr = (time / 1000).toFixed(3);
           return { winnerId: id, reason: `클리어 시간: ${timeStr}초`, completionTimeMs: time };
         }
       }

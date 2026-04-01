@@ -45,7 +45,7 @@ export function GameHelpDialog({ open, onClose, title, children }: GameHelpDialo
             <h2 className="text-lg font-bold font-[family-name:var(--font-display)]">{title}</h2>
           </div>
 
-          <div className="ml-[52px] space-y-4 text-sm text-muted-foreground">{children}</div>
+          <div className="ml-[52px] space-y-4 text-sm text-secondary-foreground">{children}</div>
 
           <div className="flex justify-end mt-6">
             <button

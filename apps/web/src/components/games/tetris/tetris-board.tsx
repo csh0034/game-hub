@@ -294,6 +294,8 @@ const PlayerBoard = memo(function PlayerBoard({
   // Check prediction changes (activePiece/ghostRow may differ with same version)
   if (prev.board.activePiece !== next.board.activePiece) return false;
   if (prev.board.ghostRow !== next.board.ghostRow) return false;
+  if (prev.board.canHold !== next.board.canHold) return false;
+  if (prev.board.holdPiece !== next.board.holdPiece) return false;
   return true;
 });
 

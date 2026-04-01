@@ -21,6 +21,7 @@ import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import { AnnounceDialog } from "@/components/common/announce-dialog";
 import { AnnouncementOverlay } from "@/components/common/announcement-overlay";
 import { PlacardDialog } from "@/components/common/placard-dialog";
+import { PlacardCarousel } from "@/components/common/placard-carousel";
 import { RequestBoard } from "@/components/request-board/request-board";
 import LobbyRankingPanel from "@/components/ranking/lobby-ranking-panel";
 
@@ -86,7 +87,7 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
     null,
   );
   const [placardOpen, setPlacardOpen] = useState(false);
-  const [placardText, setPlacardText] = useState<string | null>(null);
+  const [placardItems, setPlacardItems] = useState<string[]>([]);
   const confirmResolveRef = useRef<((value: boolean) => void) | null>(null);
   const [forceLoggedOut, setForceLoggedOut] = useState(false);
 
@@ -183,11 +184,11 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
   // 플랜카드 초기 로드 + 실시간 업데이트
   useEffect(() => {
     if (!socket || !isConnected) return;
-    socket.emit("placard:get", (text) => {
-      setPlacardText(text);
+    socket.emit("placard:get", (items) => {
+      setPlacardItems(items);
     });
-    const handler = (text: string | null) => {
-      setPlacardText(text);
+    const handler = (items: string[]) => {
+      setPlacardItems(items);
     };
     socket.on("placard:updated", handler);
     return () => { socket.off("placard:updated", handler); };
@@ -367,13 +368,13 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
   const placardDialog = (
     <PlacardDialog
       open={placardOpen}
-      currentText={placardText}
+      currentItems={placardItems}
       onClose={() => setPlacardOpen(false)}
-      onSubmit={(text) => {
-        socket?.emit("placard:set", text, (result) => {
+      onSubmit={(items) => {
+        socket?.emit("placard:set", items, (result) => {
           if (result.success) {
             setPlacardOpen(false);
-            toast.success(text.trim() ? "플랜카드를 적용했습니다" : "플랜카드를 삭제했습니다");
+            toast.success(items.length > 0 ? "플랜카드를 적용했습니다" : "플랜카드를 삭제했습니다");
           } else {
             toast.error(result.error ?? "플랜카드 설정에 실패했습니다");
           }
@@ -469,10 +470,8 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
               )}
             </div>
 
-            {placardText && (
-              <div className="px-4 py-3 rounded-lg bg-neon-cyan/5 border border-neon-cyan/20 text-sm text-center font-medium text-neon-cyan/90 shadow-[0_0_15px_rgba(0,229,255,0.05)]">
-                {placardText}
-              </div>
+            {placardItems.length > 0 && (
+              <PlacardCarousel items={placardItems} />
             )}
 
             {activeTab === "lobby" ? (

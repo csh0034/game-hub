@@ -1,13 +1,13 @@
 import type { PlacardStore } from "../interfaces/placard-store.js";
 
 export class InMemoryPlacardStore implements PlacardStore {
-  private text: string | null = null;
+  private items: string[] = [];
 
-  async getText(): Promise<string | null> {
-    return this.text;
+  async getItems(): Promise<string[]> {
+    return this.items;
   }
 
-  async setText(text: string | null): Promise<void> {
-    this.text = text;
+  async setItems(items: string[]): Promise<void> {
+    this.items = items;
   }
 }

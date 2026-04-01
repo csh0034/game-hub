@@ -66,8 +66,8 @@ export interface ClientToServerEvents {
   "system:announce": (message: string, callback: (result: { success: boolean; error?: string }) => void) => void;
 
   // Placard
-  "placard:set": (text: string, callback: (result: { success: boolean; error?: string }) => void) => void;
-  "placard:get": (callback: (text: string | null) => void) => void;
+  "placard:set": (items: string[], callback: (result: { success: boolean; error?: string }) => void) => void;
+  "placard:get": (callback: (items: string[]) => void) => void;
 }
 
 // Server → Client
@@ -123,7 +123,7 @@ export interface ServerToClientEvents {
   "player:force-logout": () => void;
 
   // Placard
-  "placard:updated": (text: string | null) => void;
+  "placard:updated": (items: string[]) => void;
 
   // System
   "system:player-count": (data: { count: number; players: { nickname: string; connectedAt: number; isAdmin?: boolean }[] }) => void;

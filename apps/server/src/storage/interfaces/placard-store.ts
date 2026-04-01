@@ -1,4 +1,4 @@
 export interface PlacardStore {
-  getText(): Promise<string | null>;
-  setText(text: string | null): Promise<void>;
+  getItems(): Promise<string[]>;
+  setItems(items: string[]): Promise<void>;
 }

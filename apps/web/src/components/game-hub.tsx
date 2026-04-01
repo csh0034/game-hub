@@ -307,10 +307,15 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
   const wrappedJoinRoom = useCallback(
     async (...args: Parameters<typeof joinRoom>) => {
       clearRoomMessages();
-      const room = await joinRoom(...args);
-      requestRoomHistory();
-      history.pushState(null, "", "/room/" + room.id);
-      return room;
+      try {
+        const room = await joinRoom(...args);
+        requestRoomHistory();
+        history.pushState(null, "", "/room/" + room.id);
+        return room;
+      } catch {
+        toast.error("방에 참가할 수 없습니다.");
+        throw new Error("방에 참가할 수 없습니다.");
+      }
     },
     [joinRoom, clearRoomMessages, requestRoomHistory]
   );

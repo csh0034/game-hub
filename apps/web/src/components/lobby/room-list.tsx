@@ -26,6 +26,7 @@ export function RoomList({ rooms, onJoinRoom, onSpectateRoom }: RoomListProps) {
         const config = GAME_CONFIGS[room.gameType];
         const isFull = room.players.length >= room.maxPlayers;
         const isPlaying = room.status === "playing";
+        const isFinished = room.status === "finished";
         const spectateEnabled = room.gameOptions?.spectateEnabled;
         const spectatorsFull = room.spectators.length >= MAX_SPECTATORS;
         const spectateInGameEnabled = room.gameOptions?.spectateInGameEnabled;
@@ -105,10 +106,10 @@ export function RoomList({ rooms, onJoinRoom, onSpectateRoom }: RoomListProps) {
               )}
               <button
                 onClick={() => onJoinRoom(room.id)}
-                disabled={isFull || isPlaying}
+                disabled={isFull || isPlaying || isFinished}
                 className="bg-neon-cyan/90 hover:bg-neon-cyan disabled:bg-muted disabled:text-muted-foreground text-background px-4 py-2 rounded-lg text-sm font-bold transition-all disabled:cursor-not-allowed hover:shadow-[0_0_12px_rgba(0,229,255,0.3)] font-[family-name:var(--font-display)]"
               >
-                {isFull ? "만원" : isPlaying ? "진행 중" : "참가"}
+                {isFull ? "만원" : isPlaying ? "진행 중" : isFinished ? "종료" : "참가"}
               </button>
             </div>
           </div>

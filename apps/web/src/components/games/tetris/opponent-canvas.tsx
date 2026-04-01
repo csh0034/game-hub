@@ -76,6 +76,7 @@ interface OpponentCanvasProps {
   cellSize: number;
   nickname?: string;
   isSpeedRace?: boolean;
+  elapsedTime?: number;
 }
 
 export const OpponentCanvas = memo(function OpponentCanvas({
@@ -83,6 +84,7 @@ export const OpponentCanvas = memo(function OpponentCanvas({
   cellSize,
   nickname,
   isSpeedRace,
+  elapsedTime,
 }: OpponentCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const width = BOARD_COLS * cellSize;
@@ -142,28 +144,56 @@ export const OpponentCanvas = memo(function OpponentCanvas({
     }
   }, [board.board, board.activePiece, board.version, board.status, cellSize, width, height]);
 
+  const isGameOver = board.status === "gameover";
+
   return (
-    <div className="flex flex-col items-center gap-1">
+    <div className={`flex flex-col items-center gap-1.5 rounded-lg border p-2 transition-colors ${
+      isGameOver
+        ? "border-muted/30 bg-muted/10 opacity-70"
+        : "border-primary/20 bg-secondary/20 shadow-[0_0_8px_rgba(34,211,238,0.08)]"
+    }`}>
       {nickname && (
-        <span className="text-[10px] text-muted-foreground font-medium">{nickname}</span>
+        <span className={`text-[11px] font-display font-medium tracking-wide ${
+          isGameOver ? "text-muted-foreground" : "text-primary"
+        }`}>{nickname}</span>
       )}
       <div className="relative">
         <canvas
           ref={canvasRef}
           width={width}
           height={height}
-          className="border border-border rounded bg-secondary/30"
+          className="rounded border border-border/50"
         />
         {board.pendingGarbage > 0 && (
-          <div className="absolute top-0.5 right-0.5 text-[8px] font-bold text-red-400 bg-black/50 rounded px-0.5">
+          <div className="absolute top-0.5 right-0.5 text-[8px] font-bold text-red-400 bg-black/60 rounded px-1">
             {board.pendingGarbage}
           </div>
         )}
       </div>
-      <div className="text-center space-y-0">
-        <div className="text-[10px] text-muted-foreground">
-          {isSpeedRace ? `${board.linesCleared}/40` : `L${board.level} · ${board.score.toLocaleString()}`}
-        </div>
+      <div className="flex items-center gap-2 text-[10px] font-mono">
+        {isSpeedRace ? (
+          <>
+            <span className="text-primary">{board.linesCleared}/40</span>
+            {elapsedTime != null && (
+              <>
+                <span className="text-muted-foreground">·</span>
+                <span className="text-muted-foreground">{(elapsedTime / 1000).toFixed(1)}초</span>
+              </>
+            )}
+          </>
+        ) : (
+          <>
+            <span className="text-primary">L{board.level}</span>
+            <span className="text-muted-foreground">·</span>
+            <span className="text-muted-foreground">{board.score.toLocaleString()}</span>
+            {elapsedTime != null && (
+              <>
+                <span className="text-muted-foreground">·</span>
+                <span className="text-muted-foreground">{(elapsedTime / 1000).toFixed(1)}초</span>
+              </>
+            )}
+          </>
+        )}
       </div>
     </div>
   );
@@ -171,5 +201,6 @@ export const OpponentCanvas = memo(function OpponentCanvas({
   if (prev.cellSize !== next.cellSize) return false;
   if (prev.nickname !== next.nickname) return false;
   if (prev.isSpeedRace !== next.isSpeedRace) return false;
+  if (prev.elapsedTime !== next.elapsedTime) return false;
   return prev.board.version === next.board.version;
 });

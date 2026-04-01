@@ -50,7 +50,7 @@ const MiniPiecePreview = memo(function MiniPiecePreview({ type, size = "normal" 
   const cellClass = size === "small" ? "w-2 h-2" : "w-3 h-3";
 
   if (!type) {
-    return <div className={`${boxClass} bg-secondary/50 rounded border border-border`} />;
+    return <div className={`${boxClass} rounded-lg border border-border/30 bg-black/30`} />;
   }
 
   const cells = TETROMINO_SHAPES[type][0];
@@ -62,7 +62,7 @@ const MiniPiecePreview = memo(function MiniPiecePreview({ type, size = "normal" 
   const w = maxC - minC + 1;
 
   return (
-    <div className={`${boxClass} bg-secondary/50 rounded border border-border flex items-center justify-center`}>
+    <div className={`${boxClass} rounded-lg border border-border/30 bg-black/30 flex items-center justify-center`}>
       <div
         className="grid gap-px"
         style={{
@@ -141,20 +141,22 @@ const PlayerBoard = memo(function PlayerBoard({
   const textLg = compact ? "text-sm" : "text-lg";
 
   return (
-    <div className="flex gap-2">
-      {/* Hold */}
+    <div className="flex gap-3">
+      {/* Left panel: Hold */}
       {!compact && (
-        <div className="flex flex-col items-center gap-1">
-          <span className="text-xs text-muted-foreground font-display font-medium tracking-wider">HOLD</span>
-          <MiniPiecePreview type={board.holdPiece} size={previewSize} />
+        <div className="flex flex-col items-center gap-1.5">
+          <span className="text-[10px] text-primary/60 font-display font-semibold tracking-widest uppercase">Hold</span>
+          <div className={`rounded-lg border p-1 ${board.canHold === false ? "border-muted/20 opacity-40" : "border-primary/20 bg-black/20"}`}>
+            <MiniPiecePreview type={board.holdPiece} size={previewSize} />
+          </div>
         </div>
       )}
 
       {/* Board */}
       <div className="flex flex-col items-center gap-1">
-        {nickname && <span className={`${textSm} text-muted-foreground font-medium`}>{nickname}</span>}
+        {nickname && <span className={`${textSm} text-primary font-display font-medium tracking-wide`}>{nickname}</span>}
         <div
-          className="border border-border rounded bg-secondary/30 relative"
+          className="border border-primary/15 rounded-lg bg-black/40 relative shadow-[0_0_12px_rgba(34,211,238,0.06)]"
           style={{
             display: "grid",
             gridTemplateColumns: `repeat(10, ${cellSize}px)`,
@@ -163,13 +165,13 @@ const PlayerBoard = memo(function PlayerBoard({
         >
           {displayGrid.map((row, r) =>
             row.map((cell, c) => {
-              let className = "border border-border/20 ";
+              let className = "border border-white/5 ";
               if (cell.type && cell.isGhost) {
-                className += `${TETROMINO_COLORS[cell.type]} opacity-25 ${TETROMINO_BORDER_COLORS[cell.type]}`;
+                className += `${TETROMINO_COLORS[cell.type]} opacity-20 ${TETROMINO_BORDER_COLORS[cell.type]}`;
               } else if (cell.type) {
                 className += `${TETROMINO_COLORS[cell.type]} border ${TETROMINO_BORDER_COLORS[cell.type]}`;
               } else {
-                className += "bg-secondary/20";
+                className += "bg-white/[0.02]";
               }
               return (
                 <div
@@ -181,7 +183,7 @@ const PlayerBoard = memo(function PlayerBoard({
             }),
           )}
           {board.status === "gameover" && !resultOverlay && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded">
+            <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-lg">
               <span className={`text-foreground font-display font-bold ${compact ? "text-xs" : "text-lg"}`}>GAME OVER</span>
             </div>
           )}
@@ -189,76 +191,91 @@ const PlayerBoard = memo(function PlayerBoard({
         </div>
       </div>
 
-      {/* Info panel */}
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-col items-center gap-1">
-          <span className={`${textSm} text-muted-foreground font-display font-medium tracking-wider`}>NEXT</span>
+      {/* Right panel: Next + Stats */}
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col items-center gap-1.5">
+          <span className={`text-[10px] text-primary/60 font-display font-semibold tracking-widest uppercase`}>Next</span>
           {board.nextPieces.map((type, i) => (
             <MiniPiecePreview key={i} type={type} size={previewSize} />
           ))}
         </div>
-        <div className="space-y-1 text-center">
+
+        <div className="rounded-lg border border-primary/15 bg-black/20 px-3 py-2 space-y-2">
           {isSpeedRace ? (
             <>
-              <div>
-                <div className={`${textSm} text-muted-foreground font-display tracking-wider`}>TIME</div>
-                <div className={`${textLg} font-bold font-mono`}>{((elapsedTime ?? 0) / 1000).toFixed(1)}초</div>
+              <div className="text-center">
+                <div className={`${textSm} text-primary/50 font-display tracking-widest uppercase`}>Time</div>
+                <div className={`${textLg} font-bold font-mono text-foreground`}>{((elapsedTime ?? 0) / 1000).toFixed(1)}<span className="text-muted-foreground text-xs">s</span></div>
               </div>
-              <div>
-                <div className={`${textSm} text-muted-foreground font-display tracking-wider`}>LINES</div>
-                <div className={`${textLg} font-bold font-mono`}>{board.linesCleared}/{SPEED_RACE_TARGET_LINES}</div>
+              <div className="text-center">
+                <div className={`${textSm} text-primary/50 font-display tracking-widest uppercase`}>Lines</div>
+                <div className={`${textLg} font-bold font-mono`}>
+                  <span className="text-primary">{board.linesCleared}</span>
+                  <span className="text-muted-foreground">/{SPEED_RACE_TARGET_LINES}</span>
+                </div>
               </div>
-              <div className="w-full bg-secondary/50 rounded-full h-2 mt-1">
+              <div className="w-full bg-black/40 rounded-full h-1.5 border border-primary/10">
                 <div
-                  className="bg-primary h-2 rounded-full transition-all"
+                  className="bg-gradient-to-r from-primary to-neon-purple h-full rounded-full transition-all"
                   style={{ width: `${Math.min((board.linesCleared / SPEED_RACE_TARGET_LINES) * 100, 100)}%` }}
                 />
               </div>
-              <div>
-                <div className={`${textSm} text-muted-foreground font-display tracking-wider`}>LEVEL</div>
-                <div className={`${textLg} font-bold font-mono`}>{board.level}</div>
+              <div className="text-center">
+                <div className={`${textSm} text-primary/50 font-display tracking-widest uppercase`}>Level</div>
+                <div className={`${textLg} font-bold font-mono text-foreground`}>{board.level}</div>
               </div>
             </>
           ) : (
             <>
-              <div>
-                <div className={`${textSm} text-muted-foreground font-display tracking-wider`}>SCORE</div>
-                <div className={`${textLg} font-bold font-mono`}>{board.score.toLocaleString()}</div>
+              <div className="text-center">
+                <div className={`${textSm} text-primary/50 font-display tracking-widest uppercase`}>Score</div>
+                <div className={`${textLg} font-bold font-mono text-foreground`}>{board.score.toLocaleString()}</div>
               </div>
-              <div>
-                <div className={`${textSm} text-muted-foreground font-display tracking-wider`}>LEVEL</div>
-                <div className={`${textLg} font-bold font-mono`}>{board.level}</div>
+              <div className="text-center">
+                <div className={`${textSm} text-primary/50 font-display tracking-widest uppercase`}>Level</div>
+                <div className={`${textLg} font-bold font-mono text-foreground`}>{board.level}</div>
               </div>
               {dropInterval != null && (
-                <div>
-                  <div className={`${textSm} text-muted-foreground font-display tracking-wider`}>SPEED</div>
-                  <div className={`${textLg} font-bold font-mono`}>{(dropInterval / 1000).toFixed(2)}s</div>
+                <div className="text-center">
+                  <div className={`${textSm} text-primary/50 font-display tracking-widest uppercase`}>Speed</div>
+                  <div className={`${textLg} font-bold font-mono text-foreground`}>{(dropInterval / 1000).toFixed(2)}<span className="text-muted-foreground text-xs">s</span></div>
                 </div>
               )}
-              <div>
-                <div className={`${textSm} text-muted-foreground font-display tracking-wider`}>LINES</div>
-                <div className={`${textLg} font-bold font-mono`}>{board.linesCleared}</div>
+              <div className="text-center">
+                <div className={`${textSm} text-primary/50 font-display tracking-widest uppercase`}>Lines</div>
+                <div className={`${textLg} font-bold font-mono text-foreground`}>{board.linesCleared}</div>
+              </div>
+              <div className="text-center">
+                <div className={`${textSm} text-primary/50 font-display tracking-widest uppercase`}>Time</div>
+                <div className={`${textLg} font-bold font-mono text-foreground`}>{((elapsedTime ?? 0) / 1000).toFixed(1)}<span className="text-muted-foreground text-xs">s</span></div>
               </div>
             </>
           )}
+        </div>
+
+        {/* Status indicators */}
+        <div className="flex flex-col items-center gap-1">
           {board.pendingGarbage > 0 && (
-            <div>
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-red-500/10 border border-red-500/20">
               <div className={`${textSm} text-red-400 font-display tracking-wider`}>GARBAGE</div>
-              <div className={`${textLg} font-bold font-mono text-red-400`}>{board.pendingGarbage}</div>
+              <div className={`${textSm} font-bold font-mono text-red-400`}>{board.pendingGarbage}</div>
             </div>
           )}
           {board.combo > 1 && (
-            <div>
-              <div className={`${textSm} text-neon-yellow font-display tracking-wider`}>COMBO</div>
-              <div className={`${textLg} font-bold font-mono text-neon-yellow`}>{board.combo}</div>
+            <div className="px-2 py-0.5 rounded bg-neon-yellow/10 border border-neon-yellow/20">
+              <span className={`${textSm} font-bold font-mono text-neon-yellow`}>{board.combo}x COMBO</span>
             </div>
           )}
           {board.backToBack && (
-            <div className={`${textSm} text-neon-purple font-display font-bold tracking-wider`}>B2B</div>
+            <div className="px-2 py-0.5 rounded bg-neon-purple/10 border border-neon-purple/20">
+              <span className={`${textSm} text-neon-purple font-display font-bold tracking-wider`}>B2B</span>
+            </div>
           )}
           {board.lastClearType && (
-            <div className={`${textSm} text-success font-display font-bold uppercase tracking-wider`}>
-              {board.lastClearType.replace(/-/g, " ")}
+            <div className="px-2 py-0.5 rounded bg-success/10 border border-success/20">
+              <span className={`${textSm} text-success font-display font-bold uppercase tracking-wider`}>
+                {board.lastClearType.replace(/-/g, " ")}
+              </span>
             </div>
           )}
         </div>
@@ -315,7 +332,7 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
 
   const isSpeedRace = gameMode === "speed-race";
 
-  // Elapsed time for speed-race mode
+  // Elapsed time
   const [elapsedTime, setElapsedTime] = useState(0);
   const gameEndedRef = useRef(false);
 
@@ -323,22 +340,16 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
     gameEndedRef.current = !!gameResult;
   }, [gameResult]);
 
-  const speedRaceBaseRef = useRef<number | null>(null);
-
   useEffect(() => {
-    if (!isSpeedRace || !startedAt) {
-      speedRaceBaseRef.current = null;
-      return;
-    }
-    speedRaceBaseRef.current = Date.now();
+    if (!startedAt) return;
 
     const timer = setInterval(() => {
       if (gameEndedRef.current) return;
-      setElapsedTime(Date.now() - speedRaceBaseRef.current!);
+      setElapsedTime(Date.now() - startedAt);
     }, 100);
 
     return () => clearInterval(timer);
-  }, [isSpeedRace, startedAt]);
+  }, [startedAt]);
 
   // Client-side prediction for own board
   const [prediction, setPrediction] = useState<{ piece: TetrisActivePiece; version: number } | null>(null);
@@ -514,9 +525,16 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
 
     return (
       <div className="flex flex-col items-center gap-4 p-4">
+        <div className="flex items-center gap-3 text-xs font-mono text-muted-foreground">
+          <span className="font-display tracking-wider text-primary/80">SPECTATING</span>
+          <span>·</span>
+          <span>{isSpeedRace ? "SPEED RACE" : "CLASSIC"}</span>
+          <span>·</span>
+          <span>{(elapsedTime / 1000).toFixed(1)}초</span>
+        </div>
         {opponentEntries.length > 0 ? (
           <div
-            className="grid gap-4"
+            className="grid gap-3"
             style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
           >
             {opponentEntries.map(([id, board], i) => (
@@ -584,13 +602,13 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
       </div>
 
       {/* Controls hint */}
-      <div className="text-xs text-muted-foreground text-center space-x-3">
-        <span>&larr; &rarr; 이동</span>
-        <span>&uarr;/X 회전</span>
-        <span>Z 역회전</span>
-        <span>&darr; 소프트드롭</span>
-        <span>Space 하드드롭</span>
-        <span>C/Shift 홀드</span>
+      <div className="flex items-center justify-center gap-2 text-[10px] text-muted-foreground/60 font-mono">
+        <span className="px-1.5 py-0.5 rounded border border-border/30 bg-black/20">&larr; &rarr;</span><span>이동</span>
+        <span className="px-1.5 py-0.5 rounded border border-border/30 bg-black/20">&uarr; X</span><span>회전</span>
+        <span className="px-1.5 py-0.5 rounded border border-border/30 bg-black/20">Z</span><span>역회전</span>
+        <span className="px-1.5 py-0.5 rounded border border-border/30 bg-black/20">&darr;</span><span>소프트</span>
+        <span className="px-1.5 py-0.5 rounded border border-border/30 bg-black/20">Space</span><span>하드</span>
+        <span className="px-1.5 py-0.5 rounded border border-border/30 bg-black/20">C</span><span>홀드</span>
       </div>
     </div>
   );

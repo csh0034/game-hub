@@ -153,9 +153,7 @@ export class TetrisEngine implements GameEngine {
 
   initState(players: Player[]): TetrisPublicState {
     this.playerIds = players.map((p) => p.id);
-    if (this.gameMode === "speed-race") {
-      this.startedAt = Date.now();
-    }
+    this.startedAt = Date.now();
 
     this.playerStates.clear();
 

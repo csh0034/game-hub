@@ -736,11 +736,11 @@ describe("TetrisEngine", () => {
       expect(speedEngine.getGameMode()).toBe("speed-race");
     });
 
-    it("classic 모드는 startedAt이 null이다", () => {
+    it("classic 모드도 startedAt이 설정된다", () => {
       const classicEngine = new TetrisEngine("beginner", "classic");
       const state = classicEngine.initState(mockPlayers);
       expect(state.gameMode).toBe("classic");
-      expect(state.startedAt).toBeNull();
+      expect(state.startedAt).toBeGreaterThan(0);
     });
 
     it("getCompletionTime이 경과 시간을 반환한다", () => {

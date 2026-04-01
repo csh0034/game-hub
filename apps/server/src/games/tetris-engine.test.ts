@@ -471,6 +471,8 @@ describe("TetrisEngine", () => {
       expect(pieceUpdate.activePiece).toEqual(fullBoard.activePiece);
       expect(pieceUpdate.ghostRow).toBe(fullBoard.ghostRow);
       expect(pieceUpdate.version).toBe(fullBoard.version);
+      expect(pieceUpdate.holdPiece).toBe(fullBoard.holdPiece);
+      expect(pieceUpdate.canHold).toBe(fullBoard.canHold);
     });
   });
 

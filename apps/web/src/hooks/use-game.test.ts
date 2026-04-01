@@ -176,7 +176,7 @@ describe("useGame", () => {
     const piece = { type: "T", row: 0, col: 3, rotation: 0 };
 
     act(() => {
-      socket._trigger("game:tetris-piece-updated", { playerId: "p1", activePiece: piece, ghostRow: 18, version: 1 });
+      socket._trigger("game:tetris-piece-updated", { playerId: "p1", activePiece: piece, ghostRow: 18, version: 1, holdPiece: "T", canHold: false });
     });
 
     expect(useTetrisBoardStore.getState().opponentBoards["p1"].activePiece).toEqual(piece);

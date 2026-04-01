@@ -71,28 +71,32 @@ describe("useTetrisBoardStore", () => {
 
     it("내 ID이면 myBoard의 activePiece를 갱신한다", () => {
       useTetrisBoardStore.getState().initFromState(createState("me"), "me");
-      useTetrisBoardStore.getState().setPlayerPiece("me", piece, 18, 1);
+      useTetrisBoardStore.getState().setPlayerPiece("me", piece, 18, 1, "T", false);
       const myBoard = useTetrisBoardStore.getState().myBoard;
       expect(myBoard?.activePiece).toEqual(piece);
       expect(myBoard?.ghostRow).toBe(18);
       expect(myBoard?.version).toBe(1);
+      expect(myBoard?.holdPiece).toBe("T");
+      expect(myBoard?.canHold).toBe(false);
     });
 
     it("myBoard가 null이면 아무것도 변경하지 않는다", () => {
       useTetrisBoardStore.setState({ myId: "me", myBoard: null });
-      useTetrisBoardStore.getState().setPlayerPiece("me", piece, 18, 1);
+      useTetrisBoardStore.getState().setPlayerPiece("me", piece, 18, 1, null, true);
       expect(useTetrisBoardStore.getState().myBoard).toBeNull();
     });
 
     it("다른 ID이면 opponentBoards의 activePiece를 갱신한다", () => {
       useTetrisBoardStore.getState().initFromState(createState("me"), "me");
-      useTetrisBoardStore.getState().setPlayerPiece("opponent-1", piece, 15, 2);
+      useTetrisBoardStore.getState().setPlayerPiece("opponent-1", piece, 15, 2, "I", true);
       expect(useTetrisBoardStore.getState().opponentBoards["opponent-1"]?.activePiece).toEqual(piece);
+      expect(useTetrisBoardStore.getState().opponentBoards["opponent-1"]?.holdPiece).toBe("I");
+      expect(useTetrisBoardStore.getState().opponentBoards["opponent-1"]?.canHold).toBe(true);
     });
 
     it("상대 보드가 없으면 아무것도 변경하지 않는다", () => {
       useTetrisBoardStore.getState().initFromState(createState("me"), "me");
-      useTetrisBoardStore.getState().setPlayerPiece("unknown", piece, 0, 0);
+      useTetrisBoardStore.getState().setPlayerPiece("unknown", piece, 0, 0, null, true);
       expect(useTetrisBoardStore.getState().opponentBoards["unknown"]).toBeUndefined();
     });
   });

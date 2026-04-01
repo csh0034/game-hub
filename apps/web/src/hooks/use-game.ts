@@ -54,7 +54,7 @@ export function useGame(socket: GameSocket | null) {
       useTetrisBoardStore.getState().setPlayerBoard(data.playerId, data.board);
     };
     const onTetrisPieceUpdated = (data: TetrisPieceUpdate) => {
-      useTetrisBoardStore.getState().setPlayerPiece(data.playerId, data.activePiece, data.ghostRow, data.version);
+      useTetrisBoardStore.getState().setPlayerPiece(data.playerId, data.activePiece, data.ghostRow, data.version, data.holdPiece, data.canHold);
     };
 
     socket.on("game:started", onStarted);

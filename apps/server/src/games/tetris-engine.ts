@@ -711,7 +711,7 @@ export class TetrisEngine implements GameEngine {
     return this.playerToPublicBoard(ps);
   }
 
-  toPieceUpdate(playerId: string): { activePiece: TetrisActivePiece | null; ghostRow: number; version: number } | null {
+  toPieceUpdate(playerId: string): { activePiece: TetrisActivePiece | null; ghostRow: number; version: number; holdPiece: TetrominoType | null; canHold: boolean } | null {
     const ps = this.playerStates.get(playerId);
     if (!ps) return null;
     const ghostRow = ps.activePiece ? this.calculateGhostRow(ps.board, ps.activePiece) : 0;
@@ -721,6 +721,8 @@ export class TetrisEngine implements GameEngine {
         : null,
       ghostRow: ghostRow - BUFFER_ROWS,
       version: ps.version,
+      holdPiece: ps.holdPiece,
+      canHold: ps.canHold,
     };
   }
 

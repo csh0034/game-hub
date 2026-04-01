@@ -205,6 +205,8 @@ export interface TetrisPieceUpdate {
   activePiece: TetrisActivePiece | null;
   ghostRow: number;
   version: number;
+  holdPiece: TetrominoType | null;
+  canHold: boolean;
 }
 
 export interface ComingSoonGame {

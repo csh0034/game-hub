@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { TetrisPlayerBoard, TetrisDifficulty, TetrisGameMode, TetrisPublicState, TetrisActivePiece } from "@game-hub/shared-types";
+import type { TetrisPlayerBoard, TetrisDifficulty, TetrisGameMode, TetrisPublicState, TetrisActivePiece, TetrominoType } from "@game-hub/shared-types";
 
 interface TetrisBoardStore {
   myBoard: TetrisPlayerBoard | null;
@@ -9,7 +9,7 @@ interface TetrisBoardStore {
   startedAt: number | null;
   myId: string | null;
   setPlayerBoard: (playerId: string, board: TetrisPlayerBoard) => void;
-  setPlayerPiece: (playerId: string, activePiece: TetrisActivePiece | null, ghostRow: number, version: number) => void;
+  setPlayerPiece: (playerId: string, activePiece: TetrisActivePiece | null, ghostRow: number, version: number, holdPiece: TetrominoType | null, canHold: boolean) => void;
   initFromState: (state: TetrisPublicState, myId: string) => void;
   reset: () => void;
 }
@@ -33,12 +33,12 @@ export const useTetrisBoardStore = create<TetrisBoardStore>((set, get) => ({
     }
   },
 
-  setPlayerPiece: (playerId, activePiece, ghostRow, version) => {
+  setPlayerPiece: (playerId, activePiece, ghostRow, version, holdPiece, canHold) => {
     const { myId } = get();
     if (playerId === myId) {
       set((state) => {
         if (!state.myBoard) return {};
-        return { myBoard: { ...state.myBoard, activePiece, ghostRow, version } };
+        return { myBoard: { ...state.myBoard, activePiece, ghostRow, version, holdPiece, canHold } };
       });
     } else {
       set((state) => {
@@ -47,7 +47,7 @@ export const useTetrisBoardStore = create<TetrisBoardStore>((set, get) => ({
         return {
           opponentBoards: {
             ...state.opponentBoards,
-            [playerId]: { ...existing, activePiece, ghostRow, version },
+            [playerId]: { ...existing, activePiece, ghostRow, version, holdPiece, canHold },
           },
         };
       });

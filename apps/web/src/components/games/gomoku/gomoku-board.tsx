@@ -141,11 +141,11 @@ export default function GomokuBoard({ isSpectating }: GameComponentProps) {
         style={{
           width: BOARD_PX,
           height: BOARD_PX,
-          background: "linear-gradient(145deg, #c8943e, #b8842e, #a8742e)",
+          background: "linear-gradient(145deg, #0d1225, #111628, #0a0e1a)",
         }}
       >
         {/* 보드 테두리 */}
-        <div className="absolute inset-0 rounded-xl border border-amber-600/50 shadow-inner pointer-events-none" />
+        <div className="absolute inset-0 rounded-xl border border-primary/20 shadow-[0_0_15px_rgba(0,229,255,0.08)] pointer-events-none" />
 
         {/* Grid lines */}
         <svg
@@ -160,7 +160,7 @@ export default function GomokuBoard({ isSpectating }: GameComponentProps) {
                 y1={PADDING + i * CELL_SIZE}
                 x2={PADDING + (BOARD_SIZE - 1) * CELL_SIZE}
                 y2={PADDING + i * CELL_SIZE}
-                stroke="rgba(0,0,0,0.35)"
+                stroke="rgba(0,229,255,0.15)"
                 strokeWidth={0.8}
               />
               <line
@@ -168,7 +168,7 @@ export default function GomokuBoard({ isSpectating }: GameComponentProps) {
                 y1={PADDING}
                 x2={PADDING + i * CELL_SIZE}
                 y2={PADDING + (BOARD_SIZE - 1) * CELL_SIZE}
-                stroke="rgba(0,0,0,0.35)"
+                stroke="rgba(0,229,255,0.15)"
                 strokeWidth={0.8}
               />
             </g>
@@ -180,7 +180,7 @@ export default function GomokuBoard({ isSpectating }: GameComponentProps) {
             width={(BOARD_SIZE - 1) * CELL_SIZE}
             height={(BOARD_SIZE - 1) * CELL_SIZE}
             fill="none"
-            stroke="rgba(0,0,0,0.5)"
+            stroke="rgba(0,229,255,0.3)"
             strokeWidth={1.5}
           />
           {/* Star points */}
@@ -191,7 +191,7 @@ export default function GomokuBoard({ isSpectating }: GameComponentProps) {
                 cx={PADDING + c * CELL_SIZE}
                 cy={PADDING + r * CELL_SIZE}
                 r={3.5}
-                fill="rgba(0,0,0,0.55)"
+                fill="rgba(0,229,255,0.4)"
               />
             ))
           )}
@@ -222,7 +222,7 @@ export default function GomokuBoard({ isSpectating }: GameComponentProps) {
                       stone === "black"
                         ? "bg-gradient-to-br from-gray-500 to-gray-950 shadow-[0_2px_4px_rgba(0,0,0,0.6)]"
                         : "bg-gradient-to-br from-white to-gray-100 shadow-[0_2px_4px_rgba(0,0,0,0.3)] border border-gray-200/80"
-                    } ${isLast ? "ring-2 ring-red-400" : ""} ${isWinCell(row, col) ? "ring-2 ring-yellow-400 scale-110" : ""}`}
+                    } ${isLast ? "ring-2 ring-accent" : ""} ${isWinCell(row, col) ? "ring-2 ring-neon-yellow shadow-[0_0_8px_rgba(251,191,36,0.4)] scale-110" : ""}`}
                   />
                 )}
                 {!stone && isMyTurn && !gameResult && !isForbidden(row, col) && (
@@ -231,7 +231,7 @@ export default function GomokuBoard({ isSpectating }: GameComponentProps) {
                   }`} />
                 )}
                 {!stone && !gameResult && (isSpectating || myColor === "black") && isForbidden(row, col) && (
-                  <div className="w-[24px] h-[24px] mx-auto flex items-center justify-center text-red-500 text-base font-extrabold drop-shadow-[0_0_2px_rgba(0,0,0,0.5)]">
+                  <div className="w-[24px] h-[24px] mx-auto flex items-center justify-center text-accent text-base font-extrabold drop-shadow-[0_0_4px_rgba(255,45,111,0.5)]">
                     ✕
                   </div>
                 )}

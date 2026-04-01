@@ -6,10 +6,10 @@ import { REQUEST_LABELS } from "@game-hub/shared-types";
 import { Ban, Check, ExternalLink, Clock, Trash2, X, Play, MessageSquare, RotateCcw, ChevronDown, GitCommitHorizontal, Pencil } from "lucide-react";
 
 const labelConfig: Record<RequestLabel, { name: string; className: string }> = {
-  feature: { name: "기능 요청", className: "bg-blue-500/15 text-blue-500" },
-  bug: { name: "버그", className: "bg-red-500/15 text-red-500" },
-  improvement: { name: "개선", className: "bg-emerald-500/15 text-emerald-500" },
-  "new-game": { name: "게임 추가", className: "bg-purple-500/15 text-purple-500" },
+  feature: { name: "기능 요청", className: "bg-neon-cyan/15 text-neon-cyan" },
+  bug: { name: "버그", className: "bg-accent/15 text-accent" },
+  improvement: { name: "개선", className: "bg-neon-green/15 text-neon-green" },
+  "new-game": { name: "게임 추가", className: "bg-neon-purple/15 text-neon-purple" },
 };
 
 interface RequestItemProps {
@@ -29,18 +29,18 @@ const statusConfig: Record<RequestStatus, {
   className: string;
 }> = {
   open: {
-    icon: <div className="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0 mt-1.5" />,
+    icon: <div className="w-2 h-2 rounded-full bg-neon-yellow flex-shrink-0 mt-1.5" />,
     border: "border-border bg-card hover:border-border/80",
     titleClass: "",
     name: "요청",
-    className: "text-amber-500",
+    className: "text-neon-yellow",
   },
   "in-progress": {
-    icon: <Play className="w-4 h-4 text-blue-500 flex-shrink-0" />,
-    border: "border-blue-500/30 bg-blue-500/5",
+    icon: <Play className="w-4 h-4 text-primary flex-shrink-0" />,
+    border: "border-primary/30 bg-primary/5",
     titleClass: "",
     name: "진행",
-    className: "text-blue-500",
+    className: "text-primary",
   },
   resolved: {
     icon: <Check className="w-4 h-4 text-success flex-shrink-0" />,
@@ -50,27 +50,27 @@ const statusConfig: Record<RequestStatus, {
     className: "text-success",
   },
   rejected: {
-    icon: <X className="w-4 h-4 text-destructive flex-shrink-0" />,
-    border: "border-destructive/30 bg-destructive/5",
+    icon: <X className="w-4 h-4 text-accent flex-shrink-0" />,
+    border: "border-accent/30 bg-accent/5",
     titleClass: "text-muted-foreground line-through",
     name: "거부",
-    className: "text-destructive",
+    className: "text-accent",
   },
   stopped: {
-    icon: <Ban className="w-4 h-4 text-orange-500 flex-shrink-0" />,
-    border: "border-orange-500/30 bg-orange-500/5",
+    icon: <Ban className="w-4 h-4 text-neon-yellow flex-shrink-0" />,
+    border: "border-neon-yellow/30 bg-neon-yellow/5",
     titleClass: "text-muted-foreground line-through",
     name: "중단",
-    className: "text-orange-500",
+    className: "text-neon-yellow",
   },
 };
 
 const statusMenuConfig: Record<RequestStatus, { icon: React.ReactNode; name: string; className: string }> = {
-  open: { icon: <RotateCcw className="w-3.5 h-3.5" />, name: "재오픈", className: "text-amber-500" },
-  "in-progress": { icon: <Play className="w-3.5 h-3.5" />, name: "진행", className: "text-blue-500" },
+  open: { icon: <RotateCcw className="w-3.5 h-3.5" />, name: "재오픈", className: "text-neon-yellow" },
+  "in-progress": { icon: <Play className="w-3.5 h-3.5" />, name: "진행", className: "text-primary" },
   resolved: { icon: <Check className="w-3.5 h-3.5" />, name: "완료", className: "text-success" },
-  rejected: { icon: <X className="w-3.5 h-3.5" />, name: "거부", className: "text-destructive" },
-  stopped: { icon: <Ban className="w-3.5 h-3.5" />, name: "중단", className: "text-orange-500" },
+  rejected: { icon: <X className="w-3.5 h-3.5" />, name: "거부", className: "text-accent" },
+  stopped: { icon: <Ban className="w-3.5 h-3.5" />, name: "중단", className: "text-neon-yellow" },
 };
 
 const ALL_STATUSES: RequestStatus[] = ["open", "in-progress", "resolved", "rejected", "stopped"];
@@ -360,7 +360,7 @@ export function RequestItem({ request, isAdmin, onChangeStatus, onChangeLabel, o
             </div>
             <button
               onClick={() => onDelete(request.id)}
-              className="p-1.5 text-xs rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+              className="p-1.5 text-xs rounded-lg text-muted-foreground hover:text-accent hover:bg-accent/10 transition-colors"
               title="삭제"
             >
               <Trash2 className="w-3.5 h-3.5" />

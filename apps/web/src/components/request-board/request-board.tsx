@@ -5,10 +5,10 @@ import type { FeatureRequest, CreateRequestPayload, RequestLabel, RequestStatus 
 import { Send } from "lucide-react";
 
 const labelOptions: { value: RequestLabel; name: string; color: string }[] = [
-  { value: "feature", name: "기능 요청", color: "bg-blue-500/15 text-blue-500 border-blue-500/30" },
-  { value: "bug", name: "버그", color: "bg-red-500/15 text-red-500 border-red-500/30" },
-  { value: "improvement", name: "개선", color: "bg-emerald-500/15 text-emerald-500 border-emerald-500/30" },
-  { value: "new-game", name: "게임 추가", color: "bg-purple-500/15 text-purple-500 border-purple-500/30" },
+  { value: "feature", name: "기능 요청", color: "bg-neon-cyan/15 text-neon-cyan border-neon-cyan/30" },
+  { value: "bug", name: "버그", color: "bg-accent/15 text-accent border-accent/30" },
+  { value: "improvement", name: "개선", color: "bg-neon-green/15 text-neon-green border-neon-green/30" },
+  { value: "new-game", name: "게임 추가", color: "bg-neon-purple/15 text-neon-purple border-neon-purple/30" },
 ];
 import { RequestItem } from "./request-item";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";

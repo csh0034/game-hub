@@ -200,7 +200,7 @@ const PlayerBoard = memo(function PlayerBoard({
           ))}
         </div>
 
-        <div className="rounded-lg border border-primary/15 bg-black/20 px-3 py-2 space-y-2">
+        <div className="rounded-lg border border-primary/15 bg-black/20 px-3 py-2 space-y-2 min-w-[7rem]">
           {isSpeedRace ? (
             <>
               <div className="text-center">

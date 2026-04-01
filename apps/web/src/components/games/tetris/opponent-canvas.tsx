@@ -170,7 +170,7 @@ export const OpponentCanvas = memo(function OpponentCanvas({
           </div>
         )}
       </div>
-      <div className="flex items-center gap-2 text-[10px] font-mono">
+      <div className="flex items-center justify-center gap-2 text-[10px] font-mono">
         {isSpeedRace ? (
           <>
             <span className="text-primary">{board.linesCleared}/40</span>

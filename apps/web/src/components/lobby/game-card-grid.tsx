@@ -120,7 +120,8 @@ export function GameCardGrid({ onCreateRoom }: GameCardGridProps) {
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-4xl">{game.icon}</span>
                 </div>
-                <h3 className="text-lg font-semibold font-[family-name:var(--font-display)] mb-3">{game.name}</h3>
+                <h3 className="text-lg font-semibold font-[family-name:var(--font-display)] mb-1">{game.name}</h3>
+                <p className="text-sm text-muted-foreground mb-3 line-clamp-2 min-h-10">{game.description}</p>
                 <div className="grid grid-cols-3 gap-2">
                   {(Object.entries(MINESWEEPER_DIFFICULTY_CONFIGS) as [MinesweeperDifficulty, typeof MINESWEEPER_DIFFICULTY_CONFIGS[MinesweeperDifficulty]][]).map(([key, config]) => (
                     <button

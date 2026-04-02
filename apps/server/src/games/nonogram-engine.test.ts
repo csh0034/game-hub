@@ -225,6 +225,32 @@ describe("NonogramEngine", () => {
         expect(NONOGRAM_PATTERNS[diff].length, `${diff} 패턴 수`).toBeGreaterThanOrEqual(2);
       }
     });
+
+    it("모든 패턴의 채움률이 40~70% 범위이다", () => {
+      for (const [diff, patterns] of Object.entries(NONOGRAM_PATTERNS)) {
+        patterns.forEach((p, i) => {
+          const total = p.length * p[0].length;
+          const filled = p.flat().filter(Boolean).length;
+          const ratio = filled / total;
+          expect(ratio, `${diff} 패턴[${i}] 채움률 ${(ratio * 100).toFixed(1)}%`).toBeGreaterThanOrEqual(0.4);
+          expect(ratio, `${diff} 패턴[${i}] 채움률 ${(ratio * 100).toFixed(1)}%`).toBeLessThanOrEqual(0.7);
+        });
+      }
+    });
+
+    it("모든 패턴에 보드 크기 절반 이상의 큰 힌트가 존재한다", () => {
+      for (const [diff, patterns] of Object.entries(NONOGRAM_PATTERNS)) {
+        patterns.forEach((p, i) => {
+          const rows = p.length;
+          const cols = p[0].length;
+          const rowHints = p.map((r) => computeHints(r));
+          const colHints = Array.from({ length: cols }, (_, c) => computeHints(p.map((r) => r[c])));
+          const maxHint = Math.max(...rowHints.flat(), ...colHints.flat());
+          const halfSize = Math.max(rows, cols) / 2;
+          expect(maxHint, `${diff} 패턴[${i}] 최대힌트=${maxHint} < ${halfSize}`).toBeGreaterThanOrEqual(halfSize);
+        });
+      }
+    });
   });
 
   describe("getCompletionTime", () => {

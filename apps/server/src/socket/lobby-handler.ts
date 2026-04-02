@@ -85,6 +85,10 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
   });
 
   socket.on("lobby:create-room", (payload, callback) => {
+    if (!socket.data.authenticated) {
+      socket.emit("player:force-logout");
+      return;
+    }
     const config = GAME_CONFIGS[payload.gameType];
     if (config.disabled) {
       socket.emit("game:error", config.disabledReason ?? "이 게임은 현재 이용할 수 없습니다.");
@@ -106,6 +110,11 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
   });
 
   socket.on("lobby:join-room", (payload, callback) => {
+    if (!socket.data.authenticated) {
+      socket.emit("player:force-logout");
+      callback(null, "인증이 필요합니다.");
+      return;
+    }
     cleanupPreviousRoom();
     socket.leave("lobby");
     const player = {
@@ -128,6 +137,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
   });
 
   socket.on("lobby:leave-room", () => {
+    if (!socket.data.authenticated) return;
     const roomId = socket.data.roomId;
     if (!roomId) return;
 
@@ -168,6 +178,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
   });
 
   socket.on("lobby:update-game-options", (gameOptions, callback) => {
+    if (!socket.data.authenticated) return callback({ success: false, error: "인증이 필요합니다." });
     const roomId = socket.data.roomId;
     if (!roomId) return callback({ success: false, error: "방에 참가하고 있지 않습니다." });
     const room = gameManager.updateGameOptions(roomId, socket.id!, gameOptions);
@@ -178,6 +189,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
   });
 
   socket.on("lobby:update-room-name", (name, callback) => {
+    if (!socket.data.authenticated) return callback({ success: false, error: "인증이 필요합니다." });
     const roomId = socket.data.roomId;
     if (!roomId) return callback({ success: false, error: "방에 참가하고 있지 않습니다." });
     const room = gameManager.updateRoomName(roomId, socket.id!, name);
@@ -188,6 +200,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
   });
 
   socket.on("lobby:toggle-ready", () => {
+    if (!socket.data.authenticated) return;
     const roomId = socket.data.roomId;
     if (!roomId) return;
     if (socket.data.isSpectator) return;
@@ -198,6 +211,11 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
   });
 
   socket.on("lobby:join-spectate", (payload, callback) => {
+    if (!socket.data.authenticated) {
+      socket.emit("player:force-logout");
+      callback(null, "인증이 필요합니다.");
+      return;
+    }
     cleanupPreviousRoom();
     socket.leave("lobby");
     const player = {
@@ -250,6 +268,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
   });
 
   socket.on("lobby:kick-spectators", (callback) => {
+    if (!socket.data.authenticated) return callback({ success: false, error: "인증이 필요합니다." });
     const roomId = socket.data.roomId;
     if (!roomId) return callback({ success: false, error: "방에 참가하고 있지 않습니다." });
     const room = gameManager.getRoom(roomId);
@@ -276,6 +295,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
   });
 
   socket.on("lobby:switch-role", (callback) => {
+    if (!socket.data.authenticated) return callback({ success: false, error: "인증이 필요합니다." });
     const roomId = socket.data.roomId;
     if (!roomId) return callback({ success: false, error: "방에 참가하고 있지 않습니다." });
 
@@ -299,6 +319,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
   });
 
   socket.on("lobby:kick", (targetId, callback) => {
+    if (!socket.data.authenticated) return callback({ success: false, error: "인증이 필요합니다." });
     const roomId = socket.data.roomId;
     if (!roomId) return callback({ success: false, error: "방에 참가하고 있지 않습니다." });
     const room = gameManager.getRoom(roomId);

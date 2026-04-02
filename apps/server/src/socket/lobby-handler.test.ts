@@ -1071,3 +1071,50 @@ describe("setupLobbyHandler — lobby:switch-role", () => {
     expect(callback).toHaveBeenCalledWith({ success: false, error: "방에 참가하고 있지 않습니다." });
   });
 });
+
+describe("setupLobbyHandler — 인증 가드", () => {
+  let socket: ReturnType<typeof createMockSocket>;
+  let io: ReturnType<typeof createMockIo>;
+  let gameManager: GameManager;
+  let chatStore: InMemoryChatStore;
+
+  beforeEach(() => {
+    socket = createMockSocket("socket-1", "Player_sock", { authenticated: false });
+    io = createMockIo({ withTo: true });
+    gameManager = new GameManager();
+    chatStore = new InMemoryChatStore();
+    setupLobbyHandler(io as unknown as GameServer, socket as unknown as GameSocket, gameManager, chatStore);
+  });
+
+  it("미인증 소켓의 방 생성 시 force-logout을 전송한다", () => {
+    const callback = vi.fn();
+    socket._trigger("lobby:create-room", { gameType: "gomoku", name: "Test" }, callback);
+
+    expect(socket.emit).toHaveBeenCalledWith("player:force-logout");
+    expect(callback).not.toHaveBeenCalled();
+    expect(gameManager.getRooms()).toHaveLength(0);
+  });
+
+  it("미인증 소켓의 방 참가 시 force-logout과 에러 콜백을 반환한다", () => {
+    // 인증된 소켓으로 방 생성
+    const authSocket = createMockSocket("auth-1", "Player1");
+    setupLobbyHandler(io as unknown as GameServer, authSocket as unknown as GameSocket, gameManager, chatStore);
+    const createCb = vi.fn();
+    authSocket._trigger("lobby:create-room", { gameType: "tetris", name: "Room" }, createCb);
+    const room = createCb.mock.calls[0][0];
+
+    const callback = vi.fn();
+    socket._trigger("lobby:join-room", { roomId: room.id }, callback);
+
+    expect(socket.emit).toHaveBeenCalledWith("player:force-logout");
+    expect(callback).toHaveBeenCalledWith(null, "인증이 필요합니다.");
+  });
+
+  it("미인증 소켓의 관전 시 force-logout과 에러 콜백을 반환한다", () => {
+    const callback = vi.fn();
+    socket._trigger("lobby:join-spectate", { roomId: "some-room" }, callback);
+
+    expect(socket.emit).toHaveBeenCalledWith("player:force-logout");
+    expect(callback).toHaveBeenCalledWith(null, "인증이 필요합니다.");
+  });
+});

@@ -81,6 +81,15 @@ export function setupNicknameHandler(
       socket.join("lobby");
     }
 
+    // 방에 있는 경우 닉네임 동기화
+    if (socket.data.roomId) {
+      const updatedRoom = gameManager.updatePlayerNickname(socket.data.roomId, socket.id!, trimmed);
+      if (updatedRoom) {
+        io.to(socket.data.roomId).emit("lobby:room-updated", updatedRoom);
+        io.emit("lobby:room-updated", updatedRoom);
+      }
+    }
+
     await sessionStore.reserveNickname(trimmed, socket.id!);
     await sessionStore.saveSession(socket.id!, socket.data);
 

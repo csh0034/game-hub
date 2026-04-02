@@ -259,6 +259,37 @@ describe("setupNicknameHandler", () => {
       expect(updatedRoom!.hostId).toBe("new-socket");
     });
 
+    it("재접속 시 방 내 닉네임이 동기화된다", async () => {
+      // 방 생성 및 이전 소켓을 플레이어로 등록 (기본 닉네임)
+      const room = gameManager.createRoom(
+        { name: "테스트방", gameType: "gomoku", gameOptions: {} },
+        { id: "old-socket", nickname: "Player_old", isReady: false },
+      );
+      const roomId = room.id;
+
+      oldSocket.data.roomId = roomId;
+      await sessionStore.reserveNickname("홍길동", "old-socket");
+      await sessionStore.saveSession("old-socket", oldSocket.data);
+
+      io = createMockIo({ sockets: [newSocket], withTo: true });
+      setupNicknameHandler(io, newSocket, sessionStore, gameManager);
+
+      const callback = vi.fn();
+      newSocket._trigger("player:set-nickname", "홍길동", "browser-A", callback);
+
+      await vi.waitFor(() => {
+        expect(callback).toHaveBeenCalledWith({
+          success: true,
+          isAdmin: false,
+          githubRepoUrl: "https://github.com/csh0034/game-hub",
+        });
+      });
+
+      // 방의 플레이어 닉네임이 동기화되었는지 확인
+      const updatedRoom = gameManager.getRoom(roomId);
+      expect(updatedRoom!.players[0].nickname).toBe("홍길동");
+    });
+
     it("재접속 시 관전자 상태가 복원된다", async () => {
       // 방 생성 (다른 호스트)
       const room = gameManager.createRoom(

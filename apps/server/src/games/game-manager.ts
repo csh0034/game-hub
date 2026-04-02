@@ -272,6 +272,18 @@ export class GameManager {
     return room;
   }
 
+  updatePlayerNickname(roomId: string, playerId: string, nickname: string): Room | null {
+    const room = this.rooms.get(roomId);
+    if (!room) return null;
+    const player = room.players.find((p) => p.id === playerId);
+    const spectator = room.spectators.find((p) => p.id === playerId);
+    if (!player && !spectator) return null;
+    if (player) player.nickname = nickname;
+    if (spectator) spectator.nickname = nickname;
+    this.persistRoom(room);
+    return room;
+  }
+
   getRoom(roomId: string): Room | null {
     return this.rooms.get(roomId) || null;
   }

@@ -469,4 +469,31 @@ describe("GameManager", () => {
       expect(result!.spectators[0].id).toBe("new-spec-1");
     });
   });
+
+  describe("updatePlayerNickname", () => {
+    it("플레이어의 닉네임을 변경한다", () => {
+      const room = gm.createRoom(gomokuPayload, host);
+      const result = gm.updatePlayerNickname(room.id, host.id, "새닉네임");
+      expect(result).not.toBeNull();
+      expect(result!.players[0].nickname).toBe("새닉네임");
+    });
+
+    it("관전자의 닉네임을 변경한다", () => {
+      const spec: Player = { id: "spec-1", nickname: "Spectator", isReady: false };
+      const room = gm.createRoom({ ...gomokuPayload, gameOptions: { spectateEnabled: true } }, host);
+      gm.addSpectator(room.id, spec);
+      const result = gm.updatePlayerNickname(room.id, spec.id, "관전닉");
+      expect(result).not.toBeNull();
+      expect(result!.spectators[0].nickname).toBe("관전닉");
+    });
+
+    it("존재하지 않는 방이면 null을 반환한다", () => {
+      expect(gm.updatePlayerNickname("invalid", host.id, "닉네임")).toBeNull();
+    });
+
+    it("존재하지 않는 플레이어면 null을 반환한다", () => {
+      const room = gm.createRoom(gomokuPayload, host);
+      expect(gm.updatePlayerNickname(room.id, "unknown", "닉네임")).toBeNull();
+    });
+  });
 });

@@ -39,6 +39,7 @@ export interface ClientToServerEvents {
   "game:nonogram-undo": (callback: (success: boolean) => void) => void;
   "game:nonogram-restart": (callback: (success: boolean) => void) => void;
   "game:nonogram-redo": (callback: (success: boolean) => void) => void;
+  "game:nonogram-toggle-hint": (hintKey: string, callback: (success: boolean) => void) => void;
 
   // Player
   "player:set-nickname": (

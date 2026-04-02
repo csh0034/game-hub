@@ -53,6 +53,7 @@ export class NonogramEngine implements GameEngine {
       progress: 0,
       status: "playing",
       completedAt: null,
+      checkedHints: [],
     };
 
     return this.toPublicState();
@@ -151,8 +152,21 @@ export class NonogramEngine implements GameEngine {
       }
     }
     ps.progress = 0;
+    ps.checkedHints = [];
     this.history = [];
     this.redoStack = [];
+    return this.toPublicState();
+  }
+
+  toggleHint(hintKey: string): NonogramPublicState {
+    const ps = this.playerState;
+    if (!ps) return this.toPublicState();
+    const idx = ps.checkedHints.indexOf(hintKey);
+    if (idx >= 0) {
+      ps.checkedHints.splice(idx, 1);
+    } else {
+      ps.checkedHints.push(hintKey);
+    }
     return this.toPublicState();
   }
 
@@ -245,6 +259,7 @@ export class NonogramEngine implements GameEngine {
       players[this.playerId] = {
         ...this.playerState,
         board: this.playerState.board.map((row) => [...row]),
+        checkedHints: [...this.playerState.checkedHints],
       };
     }
     return {

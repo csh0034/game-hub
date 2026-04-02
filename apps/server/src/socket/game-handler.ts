@@ -826,6 +826,17 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
     callback(true);
   });
 
+  socket.on("game:nonogram-toggle-hint", (hintKey, callback) => {
+    const roomId = socket.data.roomId;
+    if (!roomId) return;
+    if (socket.data.isSpectator) return;
+    const engine = gameManager.getNonogramEngine(roomId);
+    if (!engine) return;
+    const newState = engine.toggleHint(hintKey);
+    io.to(roomId).emit("game:state-updated", newState);
+    callback(true);
+  });
+
   socket.on("game:rematch", () => {
     const roomId = socket.data.roomId;
     if (!roomId) return;

@@ -8,6 +8,8 @@ import { NONOGRAM_DIFFICULTY_CONFIGS } from "@game-hub/shared-types";
 import type { GameComponentProps } from "@/lib/game-registry";
 import { useGameStore } from "@/stores/game-store";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
+import { GameHelpDialog } from "@/components/common/game-help-dialog";
+import { HelpCircle } from "lucide-react";
 
 const CELL_SIZES: Record<NonogramDifficulty, number> = {
   tiny: 40,
@@ -19,6 +21,8 @@ const CELL_SIZES: Record<NonogramDifficulty, number> = {
 
 const THICK_COLOR = "rgba(0,229,255,0.35)";
 const THIN_COLOR = "rgba(94,111,145,0.4)";
+const FILLED_THICK_COLOR = "rgba(0,0,0,0.25)";
+const FILLED_THIN_COLOR = "rgba(0,0,0,0.15)";
 
 export default function NonogramBoard({ isSpectating }: GameComponentProps) {
   const { socket } = useSocket();
@@ -126,6 +130,9 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
     });
   }, [socket]);
 
+  // 도움말
+  const [showHelp, setShowHelp] = useState(false);
+
   // 다시하기
   const [restartDialogOpen, setRestartDialogOpen] = useState(false);
   const handleRestart = useCallback(() => {
@@ -167,15 +174,11 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
     return () => window.removeEventListener("keydown", handler);
   }, [handleUndo, handleRedo]);
 
-  const [checkedHints, setCheckedHints] = useState<Set<string>>(new Set());
+  const checkedHints = useMemo(() => new Set(playerBoard?.checkedHints ?? []), [playerBoard?.checkedHints]);
   const toggleHint = useCallback((key: string) => {
-    setCheckedHints((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-  }, []);
+    if (!socket || isSpectating) return;
+    socket.emit("game:nonogram-toggle-hint", key, () => {});
+  }, [socket, isSpectating]);
 
   // 오류 검증
   const [verifyMsg, setVerifyMsg] = useState<{ text: string; isError: boolean } | null>(null);
@@ -205,7 +208,7 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
     // box-shadow만으로 테두리 구현 — border 없이 모든 셀 크기 완전 동일
     const cols = state.cols;
     const rows = state.rows;
-    function buildShadow(r: number, c: number, gameRow: number, gameCol: number, isCorner: boolean) {
+    function buildShadow(r: number, c: number, gameRow: number, gameCol: number, isCorner: boolean, filled = false) {
       const isLastCol = c === totalCols - 1;
       const isLastRow = r === totalRows - 1;
       const atHintGameRight = c === maxHintRowLen - 1;
@@ -214,18 +217,20 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
       const at5thRow = gameRow >= 0 && (gameRow + 1) % 5 === 0 && gameRow < rows - 1;
       const isFirstRow = r === 0 && !isCorner;
       const isFirstCol = c === 0 && !isCorner;
+      const thick = filled ? FILLED_THICK_COLOR : THICK_COLOR;
+      const thin = filled ? FILLED_THIN_COLOR : THIN_COLOR;
 
       const shadows: string[] = [];
       if (!isLastCol) {
-        const color = (atHintGameRight || at5thCol) ? THICK_COLOR : THIN_COLOR;
+        const color = (atHintGameRight || at5thCol) ? thick : thin;
         shadows.push(`inset -1px 0 0 ${color}`);
       }
       if (!isLastRow) {
-        const color = (atHintGameBottom || at5thRow) ? THICK_COLOR : THIN_COLOR;
+        const color = (atHintGameBottom || at5thRow) ? thick : thin;
         shadows.push(`inset 0 -1px 0 ${color}`);
       }
-      if (isFirstRow) shadows.push(`inset 0 1px 0 ${THICK_COLOR}`);
-      if (isFirstCol) shadows.push(`inset 1px 0 0 ${THICK_COLOR}`);
+      if (isFirstRow) shadows.push(`inset 0 1px 0 ${thick}`);
+      if (isFirstCol) shadows.push(`inset 1px 0 0 ${thick}`);
       return shadows.length > 0 ? shadows.join(", ") : "none";
     }
 
@@ -270,11 +275,15 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
 
           const checked = hintKey ? checkedHints.has(hintKey) : false;
           cells.push(
-            <div key={`${r}-${c}`} className="flex items-center justify-center" style={{ boxShadow: shadow }}>
+            <div
+              key={`${r}-${c}`}
+              className={`flex items-center justify-center ${hintKey && !isSpectating ? "cursor-pointer" : ""}`}
+              style={{ boxShadow: shadow }}
+              onClick={hintKey && !isSpectating ? () => toggleHint(hintKey) : undefined}
+            >
               {hintValue !== null && hintKey && (
                 <span
-                  className={`font-mono cursor-pointer select-none transition-colors ${checked ? "text-primary font-bold" : "text-muted-foreground"}`}
-                  onClick={() => toggleHint(hintKey)}
+                  className={`font-mono select-none transition-colors ${checked ? "text-primary font-bold" : "text-muted-foreground"}`}
                 >
                   {hintValue}
                 </span>
@@ -286,18 +295,20 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
 
         // 게임 셀
         const cell = pendingMoves.get(`${gameRow}-${gameCol}`) ?? playerBoard.board[gameRow][gameCol];
-        const bg = cell === "filled"
+        const isFilled = cell === "filled";
+        const bg = isFilled
           ? "bg-primary"
           : cell === "marked"
             ? "bg-muted"
             : "bg-[#2a3150] hover:bg-[#323b5c]";
+        const cellShadow = isFilled ? buildShadow(r, c, gameRow, gameCol, false, true) : shadow;
 
         const disabled = playerBoard.status === "completed" || gameResult != null || !!isSpectating;
         cells.push(
           <button
             key={`${r}-${c}`}
             className={`flex items-center justify-center select-none transition-colors duration-75 touch-none ${bg}`}
-            style={{ boxShadow: shadow }}
+            style={{ boxShadow: cellShadow }}
             onPointerDown={disabled ? undefined : (e) => handlePointerDown(e, gameRow, gameCol, cell)}
             onContextMenu={(e) => e.preventDefault()}
             disabled={disabled}
@@ -325,9 +336,16 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
 
   return (
     <div className="flex flex-col items-center gap-4">
-      {/* Difficulty label */}
-      <div className="text-sm text-muted-foreground">
-        {difficultyConfig.label} ({state.rows}×{state.cols})
+      {/* Difficulty label + help */}
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <span>{difficultyConfig.label} ({state.rows}×{state.cols})</span>
+        <button
+          onClick={() => setShowHelp(true)}
+          className="text-muted-foreground hover:text-primary transition-colors"
+          title="게임 도움말"
+        >
+          <HelpCircle className="w-4 h-4" />
+        </button>
       </div>
 
       {/* Header: [시간 --- 검증결과 --- 검증버튼 초기화] */}
@@ -444,6 +462,48 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
         onConfirm={handleRestart}
         onCancel={() => setRestartDialogOpen(false)}
       />
+
+      <GameHelpDialog open={showHelp} onClose={() => setShowHelp(false)} title="노노그램">
+        <div>
+          <h3 className="text-foreground font-semibold mb-1">게임 방법</h3>
+          <ul className="list-disc list-inside space-y-1">
+            <li>숫자 힌트를 보고 칸을 채워 그림을 완성한다</li>
+            <li>숫자 = 연속으로 채워진 칸의 그룹 크기</li>
+            <li>여러 숫자는 순서대로, 그룹 사이 최소 1칸 빈 칸</li>
+            <li>0 = 해당 줄에 채워진 칸 없음</li>
+          </ul>
+        </div>
+        <div>
+          <h3 className="text-foreground font-semibold mb-1">마우스 조작</h3>
+          <ul className="list-disc list-inside space-y-1">
+            <li>좌클릭: 채우기 → X → 해제</li>
+            <li>우클릭: X → 채우기 → 해제</li>
+            <li>드래그: 여러 칸에 연속 적용</li>
+            <li>힌트 숫자 클릭: 완료 체크 토글</li>
+          </ul>
+        </div>
+        <div>
+          <h3 className="text-foreground font-semibold mb-1">키보드 단축키</h3>
+          <ul className="list-disc list-inside space-y-1">
+            <li>Ctrl+Z: 되돌리기</li>
+            <li>Ctrl+Y: 다시 적용</li>
+          </ul>
+        </div>
+        <div>
+          <h3 className="text-foreground font-semibold mb-1">보조 기능</h3>
+          <ul className="list-disc list-inside space-y-1">
+            <li>검증: 오류 유무 및 남은 칸 수 확인</li>
+            <li>초기화: 빈 상태로 되돌림 (같은 퍼즐 유지)</li>
+          </ul>
+        </div>
+        <div>
+          <h3 className="text-foreground font-semibold mb-1">승리 조건</h3>
+          <ul className="list-disc list-inside space-y-1">
+            <li>채운 칸이 정답과 일치하면 승리</li>
+            <li>X 마킹은 판정에 영향 없음</li>
+          </ul>
+        </div>
+      </GameHelpDialog>
     </div>
   );
 }

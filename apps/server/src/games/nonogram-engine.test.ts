@@ -367,6 +367,44 @@ describe("NonogramEngine", () => {
     });
   });
 
+  describe("toggleHint", () => {
+    it("힌트를 체크한다", () => {
+      engine.initState(mockPlayers);
+      const state = engine.toggleHint("col-0-0");
+      expect(state.players["player1"].checkedHints).toContain("col-0-0");
+    });
+
+    it("이미 체크된 힌트를 해제한다", () => {
+      engine.initState(mockPlayers);
+      engine.toggleHint("col-0-0");
+      const state = engine.toggleHint("col-0-0");
+      expect(state.players["player1"].checkedHints).not.toContain("col-0-0");
+    });
+
+    it("여러 힌트를 독립적으로 토글한다", () => {
+      engine.initState(mockPlayers);
+      engine.toggleHint("col-0-0");
+      const state = engine.toggleHint("row-1-0");
+      expect(state.players["player1"].checkedHints).toContain("col-0-0");
+      expect(state.players["player1"].checkedHints).toContain("row-1-0");
+    });
+  });
+
+  describe("checkedHints 초기화", () => {
+    it("initState에서 빈 배열로 초기화한다", () => {
+      const state = engine.initState(mockPlayers);
+      expect(state.players["player1"].checkedHints).toEqual([]);
+    });
+
+    it("restart에서 checkedHints를 초기화한다", () => {
+      const state = engine.initState(mockPlayers);
+      engine.toggleHint("col-0-0");
+      engine.toggleHint("row-1-0");
+      engine.restart();
+      expect(engine._getPlayerState()?.checkedHints).toEqual([]);
+    });
+  });
+
   describe("processBatchMove", () => {
     it("여러 셀을 한 번에 변경한다", () => {
       engine.initState(mockPlayers);

@@ -408,6 +408,7 @@ export interface NonogramPlayerBoard {
   progress: number; // 0~100
   status: "playing" | "completed";
   completedAt: number | null;
+  checkedHints: string[];
 }
 
 export interface NonogramPublicState {

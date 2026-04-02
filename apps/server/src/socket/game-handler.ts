@@ -783,6 +783,7 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
     const engine = gameManager.getNonogramEngine(roomId);
     if (!engine) return;
     const newState = engine.processBatchMove(socket.id!, moves);
+    gameManager.setGameState(roomId, newState);
     io.to(roomId).emit("game:state-updated", newState);
     const result = engine.checkWin(newState);
     if (result) {
@@ -802,6 +803,7 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
     const engine = gameManager.getNonogramEngine(roomId);
     if (!engine) return;
     const newState = engine.restart();
+    gameManager.setGameState(roomId, newState);
     io.to(roomId).emit("game:state-updated", newState);
     callback(true);
   });
@@ -812,6 +814,7 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
     const engine = gameManager.getNonogramEngine(roomId);
     if (!engine) return;
     const newState = engine.undo();
+    gameManager.setGameState(roomId, newState);
     io.to(roomId).emit("game:state-updated", newState);
     callback(true);
   });
@@ -822,6 +825,7 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
     const engine = gameManager.getNonogramEngine(roomId);
     if (!engine) return;
     const newState = engine.redo();
+    gameManager.setGameState(roomId, newState);
     io.to(roomId).emit("game:state-updated", newState);
     callback(true);
   });
@@ -833,6 +837,7 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
     const engine = gameManager.getNonogramEngine(roomId);
     if (!engine) return;
     const newState = engine.toggleHint(hintKey);
+    gameManager.setGameState(roomId, newState);
     io.to(roomId).emit("game:state-updated", newState);
     callback(true);
   });

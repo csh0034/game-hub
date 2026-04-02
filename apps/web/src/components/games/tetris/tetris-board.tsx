@@ -140,6 +140,21 @@ const PlayerBoard = memo(function PlayerBoard({
   const textSm = compact ? "text-[10px]" : "text-xs";
   const textLg = compact ? "text-sm" : "text-lg";
 
+  const prevLinesClearedRef = useRef(board.linesCleared);
+  const [isPulsing, setIsPulsing] = useState(false);
+  const remaining = SPEED_RACE_TARGET_LINES - board.linesCleared;
+  const speedRaceColors = getSpeedRaceProgress(board.linesCleared);
+
+  useEffect(() => {
+    if (isSpeedRace && board.linesCleared !== prevLinesClearedRef.current && board.linesCleared > 0) {
+      const startTimer = setTimeout(() => setIsPulsing(true), 0);
+      const endTimer = setTimeout(() => setIsPulsing(false), 300);
+      prevLinesClearedRef.current = board.linesCleared;
+      return () => { clearTimeout(startTimer); clearTimeout(endTimer); };
+    }
+    prevLinesClearedRef.current = board.linesCleared;
+  }, [board.linesCleared, isSpeedRace]);
+
   return (
     <div className="flex gap-3">
       {/* Left panel: Hold */}
@@ -208,15 +223,17 @@ const PlayerBoard = memo(function PlayerBoard({
                 <div className={`${textLg} font-bold font-mono text-foreground`}>{((elapsedTime ?? 0) / 1000).toFixed(3)}<span className="text-muted-foreground text-xs">s</span></div>
               </div>
               <div className="text-center">
-                <div className={`${textSm} text-primary/50 font-display tracking-widest uppercase`}>Lines</div>
-                <div className={`${textLg} font-bold font-mono`}>
-                  <span className="text-primary">{board.linesCleared}</span>
-                  <span className="text-muted-foreground">/{SPEED_RACE_TARGET_LINES}</span>
+                <div className={`${textSm} text-primary/50 font-display tracking-widest uppercase`}>Left</div>
+                <div className={`${compact ? "text-xl" : "text-2xl"} font-bold font-mono transition-transform duration-200 ${isPulsing ? "scale-125" : "scale-100"} ${speedRaceColors.text}`}>
+                  {remaining}
+                </div>
+                <div className="text-[10px] font-mono text-muted-foreground">
+                  {board.linesCleared}/{SPEED_RACE_TARGET_LINES}
                 </div>
               </div>
-              <div className="w-full bg-black/40 rounded-full h-1.5 border border-primary/10">
+              <div className="w-full bg-black/40 rounded-full h-3 border border-primary/10">
                 <div
-                  className="bg-gradient-to-r from-primary to-neon-purple h-full rounded-full transition-all"
+                  className={`${speedRaceColors.bar} h-full rounded-full transition-all duration-300 ${speedRaceColors.glow ? "shadow-[0_0_8px_rgba(74,222,128,0.5)]" : ""}`}
                   style={{ width: `${Math.min((board.linesCleared / SPEED_RACE_TARGET_LINES) * 100, 100)}%` }}
                 />
               </div>
@@ -299,6 +316,14 @@ const PlayerBoard = memo(function PlayerBoard({
   return true;
 });
 
+function getSpeedRaceProgress(linesCleared: number) {
+  const remaining = SPEED_RACE_TARGET_LINES - linesCleared;
+  if (remaining <= 5) return { text: "text-green-400", bar: "bg-gradient-to-r from-green-400 to-emerald-300", glow: true };
+  if (remaining <= 10) return { text: "text-green-400", bar: "bg-gradient-to-r from-neon-yellow to-green-400", glow: false };
+  if (remaining <= 20) return { text: "text-neon-yellow", bar: "bg-gradient-to-r from-primary to-neon-yellow", glow: false };
+  return { text: "text-primary", bar: "bg-gradient-to-r from-primary to-neon-purple", glow: false };
+}
+
 const DIFFICULTY_CONFIGS = {
   beginner: { baseInterval: 800, startLevel: 1 },
   intermediate: { baseInterval: 600, startLevel: 1 },
@@ -337,6 +362,7 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
   // Elapsed time
   const [elapsedTime, setElapsedTime] = useState(0);
   const gameEndedRef = useRef(false);
+  const gameStartRef = useRef<{ localStart: number; key: number } | null>(null);
 
   useEffect(() => {
     gameEndedRef.current = !!gameResult;
@@ -345,9 +371,13 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
   useEffect(() => {
     if (!startedAt) return;
 
+    if (!gameStartRef.current || gameStartRef.current.key !== startedAt) {
+      gameStartRef.current = { localStart: Date.now(), key: startedAt };
+    }
+
     const timer = setInterval(() => {
       if (gameEndedRef.current) return;
-      setElapsedTime(Date.now() - startedAt);
+      setElapsedTime(Date.now() - gameStartRef.current!.localStart);
     }, 100);
 
     return () => clearInterval(timer);

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, memo } from "react";
+import { useEffect, useRef, useState, memo } from "react";
+import { SPEED_RACE_TARGET_LINES } from "@game-hub/shared-types";
 import type { TetrisPlayerBoard, TetrominoType, TetrisActivePiece } from "@game-hub/shared-types";
 
 const TETROMINO_HEX: Record<TetrominoType, string> = {
@@ -64,6 +65,14 @@ const TETROMINO_SHAPES: Record<TetrominoType, [number, number][][]> = {
   ],
 };
 
+function getSpeedRaceProgressColor(linesCleared: number) {
+  const remaining = SPEED_RACE_TARGET_LINES - linesCleared;
+  if (remaining <= 5) return { text: "text-green-400", bar: "bg-gradient-to-r from-green-400 to-emerald-300", glow: true };
+  if (remaining <= 10) return { text: "text-green-400", bar: "bg-gradient-to-r from-neon-yellow to-green-400", glow: false };
+  if (remaining <= 20) return { text: "text-neon-yellow", bar: "bg-gradient-to-r from-primary to-neon-yellow", glow: false };
+  return { text: "text-primary", bar: "bg-gradient-to-r from-primary to-neon-purple", glow: false };
+}
+
 function getPieceCells(piece: TetrisActivePiece): [number, number][] {
   return TETROMINO_SHAPES[piece.type][piece.rotation].map(([dr, dc]) => [
     piece.row + dr,
@@ -89,6 +98,21 @@ export const OpponentCanvas = memo(function OpponentCanvas({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const width = BOARD_COLS * cellSize;
   const height = BOARD_ROWS * cellSize;
+
+  const prevLinesClearedRef = useRef(board.linesCleared);
+  const [isPulsing, setIsPulsing] = useState(false);
+  const remaining = SPEED_RACE_TARGET_LINES - board.linesCleared;
+  const progressColors = getSpeedRaceProgressColor(board.linesCleared);
+
+  useEffect(() => {
+    if (isSpeedRace && board.linesCleared !== prevLinesClearedRef.current && board.linesCleared > 0) {
+      const startTimer = setTimeout(() => setIsPulsing(true), 0);
+      const endTimer = setTimeout(() => setIsPulsing(false), 300);
+      prevLinesClearedRef.current = board.linesCleared;
+      return () => { clearTimeout(startTimer); clearTimeout(endTimer); };
+    }
+    prevLinesClearedRef.current = board.linesCleared;
+  }, [board.linesCleared, isSpeedRace]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -170,10 +194,20 @@ export const OpponentCanvas = memo(function OpponentCanvas({
           </div>
         )}
       </div>
-      <div className="flex items-center justify-center gap-2 text-[10px] font-mono">
+      <div className="flex flex-col items-center gap-1 w-full">
+        {isSpeedRace && (
+          <div className="w-full bg-black/40 rounded-full h-1.5 border border-primary/10">
+            <div
+              className={`${progressColors.bar} h-full rounded-full transition-all duration-300 ${progressColors.glow ? "shadow-[0_0_6px_rgba(74,222,128,0.5)]" : ""}`}
+              style={{ width: `${Math.min((board.linesCleared / SPEED_RACE_TARGET_LINES) * 100, 100)}%` }}
+            />
+          </div>
+        )}
+        <div className="flex items-center justify-center gap-2 text-[10px] font-mono">
         {isSpeedRace ? (
           <>
-            <span className="text-primary">{board.linesCleared}/40</span>
+            <span className={`font-bold transition-transform duration-200 inline-block ${isPulsing ? "scale-125" : "scale-100"} ${progressColors.text}`}>{remaining} left</span>
+            <span className="text-muted-foreground">{board.linesCleared}/{SPEED_RACE_TARGET_LINES}</span>
             {elapsedTime != null && (
               <>
                 <span className="text-muted-foreground">·</span>
@@ -194,6 +228,7 @@ export const OpponentCanvas = memo(function OpponentCanvas({
             )}
           </>
         )}
+        </div>
       </div>
     </div>
   );

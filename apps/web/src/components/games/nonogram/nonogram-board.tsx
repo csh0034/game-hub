@@ -224,6 +224,7 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
         <div className="text-xs text-secondary-foreground text-center space-x-3">
           <span>좌클릭 채우기/비우기</span>
           <span>우클릭 ✕마킹/해제</span>
+          <span>숫자클릭 체크</span>
         </div>
       )}
     </div>

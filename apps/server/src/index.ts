@@ -51,6 +51,8 @@ async function bootstrap() {
       origin: corsOrigin,
       methods: ["GET", "POST"],
     },
+    pingInterval: 10000,
+    pingTimeout: 5000,
   });
 
   // Initialize storage
@@ -127,8 +129,12 @@ async function bootstrap() {
         }
       }
       if (socket.data.authenticated) {
-        await sessionStore.releaseNickname(socket.data.nickname);
-        await sessionStore.deleteSession(socket.id);
+        try {
+          await sessionStore.releaseNickname(socket.data.nickname);
+          await sessionStore.deleteSession(socket.id);
+        } catch (err) {
+          console.error(`[disconnect] session cleanup failed for ${socket.id}:`, err);
+        }
         broadcastAuthenticatedCount(io);
       }
     });

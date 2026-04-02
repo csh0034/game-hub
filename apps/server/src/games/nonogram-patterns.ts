@@ -10,12 +10,12 @@ export interface NonogramPattern {
   grid: boolean[][];
 }
 
-function parseArt(art: string): boolean[][] {
-  return art.split("\n").map((line) => [...line].map((c) => c === "#"));
+function parseArt(art: string[]): boolean[][] {
+  return art.map((line) => [...line].map((c) => c === "#"));
 }
 
 function parsePatterns(
-  patterns: { name: string; art: string }[],
+  patterns: { name: string; art: string[] }[],
 ): NonogramPattern[] {
   return patterns.map((p) => ({ name: p.name, grid: parseArt(p.art) }));
 }

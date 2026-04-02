@@ -49,6 +49,7 @@ describe("NonogramEngine", () => {
       expect(state.players["player1"]).toBeDefined();
       expect(state.players["player1"].status).toBe("playing");
       expect(state.players["player1"].progress).toBe(0);
+      expect(state.puzzleName).toBeNull();
     });
 
     it("플레이어 보드를 hidden으로 초기화한다", () => {
@@ -155,6 +156,7 @@ describe("NonogramEngine", () => {
       expect(result).not.toBeNull();
       expect(result?.winnerId).toBe("player1");
       expect(result?.reason).toContain("클리어 시간");
+      expect(state2.puzzleName).toBeTypeOf("string");
     });
 
     it("미완성 시 null을 반환한다", () => {
@@ -211,9 +213,10 @@ describe("NonogramEngine", () => {
         const patterns = NONOGRAM_PATTERNS[diff];
         expect(patterns.length).toBeGreaterThan(0);
         for (let i = 0; i < patterns.length; i++) {
-          expect(patterns[i].length, `${diff} 패턴[${i}] 행 수`).toBe(config.rows);
-          for (let r = 0; r < patterns[i].length; r++) {
-            expect(patterns[i][r].length, `${diff} 패턴[${i}] ${r}행 열 수`).toBe(config.cols);
+          const g = patterns[i].grid;
+          expect(g.length, `${diff} 패턴[${i}] 행 수`).toBe(config.rows);
+          for (let r = 0; r < g.length; r++) {
+            expect(g[r].length, `${diff} 패턴[${i}] ${r}행 열 수`).toBe(config.cols);
           }
         }
       }
@@ -228,9 +231,9 @@ describe("NonogramEngine", () => {
 
     it("모든 패턴의 채움률이 40~70% 범위이다", () => {
       for (const [diff, patterns] of Object.entries(NONOGRAM_PATTERNS)) {
-        patterns.forEach((p, i) => {
-          const total = p.length * p[0].length;
-          const filled = p.flat().filter(Boolean).length;
+        patterns.forEach(({ grid }, i) => {
+          const total = grid.length * grid[0].length;
+          const filled = grid.flat().filter(Boolean).length;
           const ratio = filled / total;
           expect(ratio, `${diff} 패턴[${i}] 채움률 ${(ratio * 100).toFixed(1)}%`).toBeGreaterThanOrEqual(0.4);
           expect(ratio, `${diff} 패턴[${i}] 채움률 ${(ratio * 100).toFixed(1)}%`).toBeLessThanOrEqual(0.7);
@@ -240,11 +243,11 @@ describe("NonogramEngine", () => {
 
     it("모든 패턴에 보드 크기 절반 이상의 큰 힌트가 존재한다", () => {
       for (const [diff, patterns] of Object.entries(NONOGRAM_PATTERNS)) {
-        patterns.forEach((p, i) => {
-          const rows = p.length;
-          const cols = p[0].length;
-          const rowHints = p.map((r) => computeHints(r));
-          const colHints = Array.from({ length: cols }, (_, c) => computeHints(p.map((r) => r[c])));
+        patterns.forEach(({ grid }, i) => {
+          const rows = grid.length;
+          const cols = grid[0].length;
+          const rowHints = grid.map((r) => computeHints(r));
+          const colHints = Array.from({ length: cols }, (_, c) => computeHints(grid.map((r) => r[c])));
           const maxHint = Math.max(...rowHints.flat(), ...colHints.flat());
           const halfSize = Math.max(rows, cols) / 2;
           expect(maxHint, `${diff} 패턴[${i}] 최대힌트=${maxHint} < ${halfSize}`).toBeGreaterThanOrEqual(halfSize);

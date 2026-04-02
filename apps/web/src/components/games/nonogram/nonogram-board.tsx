@@ -431,11 +431,18 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
                   zIndex: 9,
                 }}
               >
-                <span className={`text-3xl font-display font-bold drop-shadow-lg ${
-                  isCompleted ? "text-primary text-glow-cyan" : "text-destructive text-glow-pink"
-                }`}>
-                  {isCompleted ? "CLEAR!" : "GAME OVER"}
-                </span>
+                <div className="flex flex-col items-center gap-1">
+                  <span className={`text-3xl font-display font-bold drop-shadow-lg ${
+                    isCompleted ? "text-primary text-glow-cyan" : "text-destructive text-glow-pink"
+                  }`}>
+                    {isCompleted ? "CLEAR!" : "GAME OVER"}
+                  </span>
+                  {isCompleted && state.puzzleName && (
+                    <span className="text-sm text-primary/80 font-medium drop-shadow-lg">
+                      {state.puzzleName}
+                    </span>
+                  )}
+                </div>
               </div>
             )}
           </div>

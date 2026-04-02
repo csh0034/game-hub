@@ -27,6 +27,7 @@ export class NonogramEngine implements GameEngine {
   private colHints: number[][] = [];
   private playerState: NonogramPlayerBoard | null = null;
   private playerId = "";
+  private puzzleName = "";
   private startedAt: number | null = null;
   private history: { row: number; col: number; from: NonogramCellStatus; to: NonogramCellStatus }[][] = [];
   private redoStack: { row: number; col: number; from: NonogramCellStatus; to: NonogramCellStatus }[][] = [];
@@ -219,7 +220,8 @@ export class NonogramEngine implements GameEngine {
   private generatePuzzle(): void {
     const patterns = NONOGRAM_PATTERNS[this.difficulty];
     const pattern = patterns[Math.floor(Math.random() * patterns.length)];
-    this.solution = pattern.map((row) => [...row]);
+    this.puzzleName = pattern.name;
+    this.solution = pattern.grid.map((row) => [...row]);
     this.rows = this.solution.length;
     this.cols = this.solution[0].length;
     this.rowHints = this.solution.map((row) => computeHints(row));
@@ -262,6 +264,7 @@ export class NonogramEngine implements GameEngine {
         checkedHints: [...this.playerState.checkedHints],
       };
     }
+    const isCompleted = this.playerState?.status === "completed";
     return {
       players,
       rows: this.rows,
@@ -270,6 +273,7 @@ export class NonogramEngine implements GameEngine {
       colHints: this.colHints,
       difficulty: this.difficulty,
       startedAt: this.startedAt,
+      puzzleName: isCompleted ? this.puzzleName : null,
     };
   }
 

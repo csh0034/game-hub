@@ -419,6 +419,7 @@ export interface NonogramPublicState {
   colHints: number[][];
   difficulty: NonogramDifficulty;
   startedAt: number | null;
+  puzzleName: string | null;
 }
 
 export interface NonogramMove {

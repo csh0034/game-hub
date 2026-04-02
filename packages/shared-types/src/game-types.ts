@@ -63,7 +63,7 @@ export const GAME_CONFIGS: Record<GameType, GameConfig> = {
   minesweeper: {
     gameType: "minesweeper",
     name: "지뢰찾기",
-    description: "초급/중급/고급 난이도로 지뢰를 피해 모든 안전한 칸을 열면 승리",
+    description: "지뢰를 피해 모든 안전한 칸을 열면 승리",
     minPlayers: 1,
     maxPlayers: 1,
     icon: "💣",

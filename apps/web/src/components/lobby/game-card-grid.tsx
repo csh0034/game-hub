@@ -38,6 +38,41 @@ function getQuickStartBadges(gameType: GameType): string[] | null {
   }
 }
 
+function CardBadge({ type, text }: { type: "new" | "disabled" | "coming"; text: string }) {
+  const styles = {
+    new: "bg-neon-green/20 text-neon-green animate-pulse",
+    disabled: "bg-neon-yellow/15 text-neon-yellow",
+    coming: "bg-neon-purple/15 text-neon-purple",
+  };
+  return (
+    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${styles[type]}`}>
+      {text}
+    </span>
+  );
+}
+
+function CardHeader({ icon, badge }: { icon: string; badge?: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between mb-3">
+      <span className="text-4xl">{icon}</span>
+      {badge}
+    </div>
+  );
+}
+
+function CardBody({ name, description, min, max }: { name: string; description: string; min: number; max: number }) {
+  return (
+    <>
+      <h3 className="text-lg font-semibold font-[family-name:var(--font-display)] mb-1">{name}</h3>
+      <p className="text-sm text-foreground/60 mb-2 line-clamp-2 min-h-10">{description}</p>
+      <div className="flex items-center gap-1 text-xs text-foreground/50 mb-3">
+        <Users className="w-3 h-3" />
+        <span>{min === max ? `${min}명` : `${min}-${max}명`}</span>
+      </div>
+    </>
+  );
+}
+
 export function GameCardGrid({ onCreateRoom }: GameCardGridProps) {
   const games = Object.values(GAME_CONFIGS);
 
@@ -84,61 +119,48 @@ export function GameCardGrid({ onCreateRoom }: GameCardGridProps) {
       {games.map((game) => (
         <div key={game.gameType}>
           {game.gameType === "nonogram" ? (
-            <div className="group relative w-full h-full bg-card border border-border rounded-xl p-6 text-left transition-all duration-300 neon-border-hover">
-              <div className="relative">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-4xl">{game.icon}</span>
-                  <span className="text-xs font-bold bg-neon-green/20 text-neon-green px-2 py-0.5 rounded-full animate-pulse">
-                    NEW
-                  </span>
-                </div>
-                <h3 className="text-lg font-semibold font-[family-name:var(--font-display)] mb-1">{game.name}</h3>
-                <p className="text-sm text-muted-foreground mb-3 line-clamp-2 min-h-10">{game.description}</p>
-                <div className="grid grid-cols-5 gap-1.5">
-                  {(Object.entries(NONOGRAM_DIFFICULTY_CONFIGS) as [NonogramDifficulty, typeof NONOGRAM_DIFFICULTY_CONFIGS[NonogramDifficulty]][]).map(([key, config]) => (
-                    <button
-                      key={key}
-                      onClick={() => handleNonogramCreate(key)}
-                      className="p-1.5 rounded-lg border border-border bg-background text-sm text-center hover:border-neon-cyan/50 hover:bg-neon-cyan/5 hover:shadow-[0_0_10px_rgba(0,229,255,0.1)] transition-all"
-                    >
-                      <div className="font-medium text-xs">{config.label}</div>
-                      <div className="text-[10px] text-muted-foreground mt-0.5">
-                        {config.rows}×{config.cols}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-3">
-                  <Users className="w-3 h-3" />
-                  <span>1명</span>
+            <div className="group relative w-full h-full flex flex-col bg-card border border-border rounded-xl p-6 text-left transition-all duration-300 neon-border-hover">
+              <div className="relative flex flex-col flex-1">
+                <CardHeader icon={game.icon} badge={<CardBadge type="new" text="NEW" />} />
+                <CardBody name={game.name} description={game.description} min={game.minPlayers} max={game.maxPlayers} />
+                <div className="mt-auto pt-3">
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {(Object.entries(NONOGRAM_DIFFICULTY_CONFIGS) as [NonogramDifficulty, typeof NONOGRAM_DIFFICULTY_CONFIGS[NonogramDifficulty]][]).map(([key, config]) => (
+                      <button
+                        key={key}
+                        onClick={() => handleNonogramCreate(key)}
+                        className="p-1.5 rounded-lg border border-border bg-background text-sm text-center hover:border-neon-cyan/50 hover:bg-neon-cyan/5 hover:shadow-[0_0_10px_rgba(0,229,255,0.1)] transition-all"
+                      >
+                        <div className="font-medium text-xs">{config.label}</div>
+                        <div className="text-[10px] text-muted-foreground mt-0.5">
+                          {config.rows}×{config.cols}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
           ) : game.gameType === "minesweeper" ? (
-            <div className="group relative w-full h-full bg-card border border-border rounded-xl p-6 text-left transition-all duration-300 neon-border-hover">
-              <div className="relative">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-4xl">{game.icon}</span>
-                </div>
-                <h3 className="text-lg font-semibold font-[family-name:var(--font-display)] mb-1">{game.name}</h3>
-                <p className="text-sm text-muted-foreground mb-3 line-clamp-2 min-h-10">{game.description}</p>
-                <div className="grid grid-cols-3 gap-2">
-                  {(Object.entries(MINESWEEPER_DIFFICULTY_CONFIGS) as [MinesweeperDifficulty, typeof MINESWEEPER_DIFFICULTY_CONFIGS[MinesweeperDifficulty]][]).map(([key, config]) => (
-                    <button
-                      key={key}
-                      onClick={() => handleMinesweeperCreate(key)}
-                      className="p-2 rounded-lg border border-border bg-background text-sm text-center hover:border-neon-cyan/50 hover:bg-neon-cyan/5 hover:shadow-[0_0_10px_rgba(0,229,255,0.1)] transition-all"
-                    >
-                      <div className="font-medium">{config.label}</div>
-                      <div className="text-xs text-muted-foreground mt-0.5">
-                        {config.rows}×{config.cols}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-3">
-                  <Users className="w-3 h-3" />
-                  <span>1명</span>
+            <div className="group relative w-full h-full flex flex-col bg-card border border-border rounded-xl p-6 text-left transition-all duration-300 neon-border-hover">
+              <div className="relative flex flex-col flex-1">
+                <CardHeader icon={game.icon} />
+                <CardBody name={game.name} description={game.description} min={game.minPlayers} max={game.maxPlayers} />
+                <div className="mt-auto pt-3">
+                  <div className="grid grid-cols-3 gap-2">
+                    {(Object.entries(MINESWEEPER_DIFFICULTY_CONFIGS) as [MinesweeperDifficulty, typeof MINESWEEPER_DIFFICULTY_CONFIGS[MinesweeperDifficulty]][]).map(([key, config]) => (
+                      <button
+                        key={key}
+                        onClick={() => handleMinesweeperCreate(key)}
+                        className="p-2 rounded-lg border border-border bg-background text-sm text-center hover:border-neon-cyan/50 hover:bg-neon-cyan/5 hover:shadow-[0_0_10px_rgba(0,229,255,0.1)] transition-all"
+                      >
+                        <div className="font-medium">{config.label}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          {config.rows}×{config.cols}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -146,47 +168,37 @@ export function GameCardGrid({ onCreateRoom }: GameCardGridProps) {
             <button
               onClick={() => handleQuickCreate(game.gameType)}
               disabled={game.disabled}
-              className={`group relative w-full h-full bg-card border border-border rounded-xl p-6 text-left transition-all duration-300 ${game.disabled ? "opacity-50 cursor-default" : "neon-border-hover hover:shadow-[0_0_20px_rgba(0,229,255,0.08)]"}`}
+              className={`group relative w-full h-full flex flex-col bg-card border border-border rounded-xl p-6 text-left transition-all duration-300 ${game.disabled ? "opacity-50 cursor-default" : "neon-border-hover hover:shadow-[0_0_20px_rgba(0,229,255,0.08)]"}`}
             >
               <div className="absolute inset-0 bg-gradient-to-br from-neon-cyan/5 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="relative">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-4xl">{game.icon}</span>
-                  {game.disabled && (
-                    <span className="text-xs font-semibold bg-neon-yellow/15 text-neon-yellow px-2 py-0.5 rounded-full">
-                      {game.disabledReason ?? "점검중"}
-                    </span>
-                  )}
-                  {!game.disabled && NEW_GAMES.includes(game.gameType) && (
-                    <span className="text-xs font-bold bg-neon-green/20 text-neon-green px-2 py-0.5 rounded-full animate-pulse">
-                      NEW
-                    </span>
-                  )}
+              <div className="relative flex flex-col flex-1">
+                <CardHeader
+                  icon={game.icon}
+                  badge={
+                    game.disabled
+                      ? <CardBadge type="disabled" text={game.disabledReason ?? "점검중"} />
+                      : NEW_GAMES.includes(game.gameType)
+                        ? <CardBadge type="new" text="NEW" />
+                        : undefined
+                  }
+                />
+                <CardBody name={game.name} description={game.description} min={game.minPlayers} max={game.maxPlayers} />
+                <div className="mt-auto">
+                  {!game.disabled && (() => {
+                    const badges = getQuickStartBadges(game.gameType);
+                    if (!badges) return null;
+                    return (
+                      <div className="flex items-center gap-1.5 text-xs text-neon-cyan/70 mt-2 flex-wrap">
+                        <Zap className="w-3 h-3 shrink-0" />
+                        {badges.map((badge) => (
+                          <span key={badge} className="bg-neon-cyan/10 text-neon-cyan/80 px-1.5 py-0.5 rounded font-medium">
+                            {badge}
+                          </span>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
-                <h3 className="text-lg font-semibold font-[family-name:var(--font-display)] mb-1">{game.name}</h3>
-                <p className="text-sm text-muted-foreground mb-3 line-clamp-2 min-h-10">{game.description}</p>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Users className="w-3 h-3" />
-                  <span>
-                    {game.minPlayers === game.maxPlayers
-                      ? `${game.minPlayers}명`
-                      : `${game.minPlayers}-${game.maxPlayers}명`}
-                  </span>
-                </div>
-                {!game.disabled && (() => {
-                  const badges = getQuickStartBadges(game.gameType);
-                  if (!badges) return null;
-                  return (
-                    <div className="flex items-center gap-1.5 text-xs text-neon-cyan/70 mt-2 flex-wrap">
-                      <Zap className="w-3 h-3 shrink-0" />
-                      {badges.map((badge) => (
-                        <span key={badge} className="bg-neon-cyan/10 text-neon-cyan/80 px-1.5 py-0.5 rounded font-medium">
-                          {badge}
-                        </span>
-                      ))}
-                    </div>
-                  );
-                })()}
               </div>
             </button>
           )}
@@ -196,25 +208,11 @@ export function GameCardGrid({ onCreateRoom }: GameCardGridProps) {
         <div key={game.name}>
           <button
             disabled
-            className="group relative w-full h-full bg-card border border-border rounded-xl p-6 text-left transition-all duration-300 opacity-40 cursor-default"
+            className="group relative w-full h-full flex flex-col bg-card border border-border rounded-xl p-6 text-left transition-all duration-300 opacity-40 cursor-default"
           >
-            <div className="relative">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-4xl">{game.icon}</span>
-                <span className="text-xs font-semibold bg-neon-purple/15 text-neon-purple px-2 py-0.5 rounded-full">
-                  오픈 예정
-                </span>
-              </div>
-              <h3 className="text-lg font-semibold font-[family-name:var(--font-display)] mb-1">{game.name}</h3>
-              <p className="text-sm text-muted-foreground mb-3 line-clamp-2 min-h-10">{game.description}</p>
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Users className="w-3 h-3" />
-                <span>
-                  {game.minPlayers === game.maxPlayers
-                    ? `${game.minPlayers}명`
-                    : `${game.minPlayers}-${game.maxPlayers}명`}
-                </span>
-              </div>
+            <div className="relative flex flex-col flex-1">
+              <CardHeader icon={game.icon} badge={<CardBadge type="coming" text="오픈 예정" />} />
+              <CardBody name={game.name} description={game.description} min={game.minPlayers} max={game.maxPlayers} />
             </div>
           </button>
         </div>

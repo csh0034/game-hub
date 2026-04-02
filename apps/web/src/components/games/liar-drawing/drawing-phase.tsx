@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { LiarDrawingPublicState, DrawPoint, DrawTool, PenColor, PenThickness } from "@game-hub/shared-types";
-import type { GameSocket } from "@/lib/socket";
+import { getServerElapsed, type GameSocket } from "@/lib/socket";
 import { DrawingCanvas } from "./drawing-canvas";
 import { DrawingToolbar } from "./drawing-toolbar";
 
@@ -87,15 +87,11 @@ export function DrawingPhase({ state, socket, myId, keyword, isSpectating, liarN
 
 function TurnTimer({ turnStartedAt, drawTimeSeconds }: { turnStartedAt: number | null; drawTimeSeconds: number }) {
   const [remainingTime, setRemainingTime] = useState(drawTimeSeconds);
-  const baseRef = useRef<{ localStart: number; key: number } | null>(null);
 
   useEffect(() => {
     if (!turnStartedAt) return;
-    if (!baseRef.current || baseRef.current.key !== turnStartedAt) {
-      baseRef.current = { localStart: Date.now(), key: turnStartedAt };
-    }
     const interval = setInterval(() => {
-      const elapsed = (Date.now() - baseRef.current!.localStart) / 1000;
+      const elapsed = getServerElapsed(turnStartedAt) / 1000;
       setRemainingTime(Math.max(0, drawTimeSeconds - elapsed));
     }, 200);
     return () => clearInterval(interval);

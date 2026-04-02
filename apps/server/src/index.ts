@@ -87,6 +87,7 @@ async function bootstrap() {
     socket.data.authenticatedAt = null;
 
     socket.emit("system:version", { commitHash: COMMIT_HASH });
+    socket.emit("system:server-time", { serverTime: Date.now() });
 
     setupNicknameHandler(io, socket, sessionStore, gameManager);
     setupLobbyHandler(io, socket, gameManager, chatStore);

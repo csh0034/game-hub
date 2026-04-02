@@ -7,6 +7,7 @@ import type { MinesweeperPublicState, MinesweeperMove, MinesweeperDifficulty } f
 import { MINESWEEPER_DIFFICULTY_CONFIGS } from "@game-hub/shared-types";
 import type { GameComponentProps } from "@/lib/game-registry";
 import { useGameStore } from "@/stores/game-store";
+import { getServerElapsed } from "@/lib/socket";
 
 const NUMBER_COLORS: Record<number, string> = {
   1: "text-blue-400",
@@ -33,18 +34,10 @@ export default function MinesweeperBoard({ isSpectating }: GameComponentProps) {
 
   const state = gameState as MinesweeperPublicState | null;
 
-  const timerBaseRef = useRef<{ localStart: number; key: number } | null>(null);
-
   useEffect(() => {
-    if (!state?.startedAt || state.status !== "playing") {
-      timerBaseRef.current = null;
-      return;
-    }
-    if (!timerBaseRef.current || timerBaseRef.current.key !== state.startedAt) {
-      timerBaseRef.current = { localStart: Date.now(), key: state.startedAt };
-    }
+    if (!state?.startedAt || state.status !== "playing") return;
 
-    const update = () => setElapsed(Math.floor((Date.now() - timerBaseRef.current!.localStart) / 1000));
+    const update = () => setElapsed(Math.floor(getServerElapsed(state.startedAt!) / 1000));
     update();
     const interval = setInterval(update, 1000);
     return () => clearInterval(interval);

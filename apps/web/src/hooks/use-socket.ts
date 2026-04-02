@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useSyncExternalStore } from "react";
 import { toast } from "sonner";
-import { getSocket, type GameSocket } from "@/lib/socket";
+import { getSocket, setServerTimeOffset, type GameSocket } from "@/lib/socket";
 
 let globalSocket: GameSocket | null = null;
 let cachedPlayerCount = 0;
@@ -42,6 +42,10 @@ export function useSocket() {
       setOnlinePlayers(players);
     });
 
+    s.on("system:server-time", ({ serverTime }) => {
+      setServerTimeOffset(serverTime);
+    });
+
     s.on("system:version", ({ commitHash }) => {
       const clientHash = process.env.NEXT_PUBLIC_COMMIT_HASH;
       if (clientHash && commitHash !== "unknown" && clientHash !== commitHash) {
@@ -67,6 +71,7 @@ export function useSocket() {
       s.off("connect");
       s.off("disconnect");
       s.off("system:player-count");
+      s.off("system:server-time");
       s.off("system:version");
     };
   }, []);

@@ -2,6 +2,7 @@
 
 import { memo, useEffect, useRef } from "react";
 import type { TypingWord, TypingPlayerState } from "@game-hub/shared-types";
+import { getServerElapsed } from "@/lib/socket";
 
 interface OpponentTypingBoardProps {
   words: TypingWord[];
@@ -17,8 +18,7 @@ function MiniFallingWord({ word }: { word: TypingWord }) {
     const board = el.offsetParent as HTMLElement | null;
     if (!board) return;
     const boardH = board.clientHeight;
-    const now = Date.now();
-    const elapsed = (now - word.spawnedAt) / 1000;
+    const elapsed = getServerElapsed(word.spawnedAt) / 1000;
     const total = word.fallDurationMs / 1000;
     const remaining = Math.max(total - elapsed, 0);
     const startY = Math.min(elapsed / total, 1) * boardH;

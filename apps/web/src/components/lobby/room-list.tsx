@@ -3,6 +3,7 @@
 import type { Room } from "@game-hub/shared-types";
 import { GAME_CONFIGS, MAX_SPECTATORS, MINESWEEPER_DIFFICULTY_CONFIGS, TETRIS_DIFFICULTY_CONFIGS, TYPING_DIFFICULTY_CONFIGS, NONOGRAM_DIFFICULTY_CONFIGS } from "@game-hub/shared-types";
 import { Users, Clock, Play, Eye, MessageCircle, MessageCircleOff } from "lucide-react";
+import { getServerElapsed } from "@/lib/socket";
 
 interface RoomListProps {
   rooms: Room[];
@@ -175,7 +176,7 @@ function getOptionsSummary(room: Room): string | null {
 }
 
 function formatTime(timestamp: number): string {
-  const diff = Math.floor((Date.now() - timestamp) / 1000);
+  const diff = Math.floor(getServerElapsed(timestamp) / 1000);
   if (diff < 60) return "방금 전";
   if (diff < 3600) return `${Math.floor(diff / 60)}분 전`;
   return `${Math.floor(diff / 3600)}시간 전`;

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { HelpCircle } from "lucide-react";
 import { useGame } from "@/hooks/use-game";
 import { useGameStore } from "@/stores/game-store";
-import { getSocket } from "@/lib/socket";
+import { getSocket, getServerElapsed } from "@/lib/socket";
 import { GameHelpDialog } from "@/components/common/game-help-dialog";
 import { OpponentTypingBoard } from "./opponent-typing-board";
 import type {
@@ -31,8 +31,7 @@ function FallingWord({ word }: { word: TypingWord }) {
     const board = el.offsetParent as HTMLElement | null;
     if (!board) return;
     const boardH = board.clientHeight;
-    const now = Date.now();
-    const elapsed = (now - word.spawnedAt) / 1000;
+    const elapsed = getServerElapsed(word.spawnedAt) / 1000;
     const total = word.fallDurationMs / 1000;
     const remaining = Math.max(total - elapsed, 0);
     const startY = Math.min(elapsed / total, 1) * boardH;
@@ -258,16 +257,12 @@ export default function TypingBoard({ roomId: _roomId, isSpectating }: TypingBoa
   }, [countdown]);
 
   // 남은 시간 카운트다운
-  const typingBaseRef = useRef<{ localStart: number; key: number } | null>(null);
   const allDead = Object.values(players).length > 0 && Object.values(players).every((p) => p.status === "gameover");
 
   useEffect(() => {
     if (!gameState?.startedAt || countdown !== null || allDead) return;
-    if (!typingBaseRef.current || typingBaseRef.current.key !== gameState.startedAt) {
-      typingBaseRef.current = { localStart: Date.now(), key: gameState.startedAt };
-    }
     const updateTimer = () => {
-      const elapsed = Date.now() - typingBaseRef.current!.localStart;
+      const elapsed = getServerElapsed(gameState.startedAt!);
       const remaining = Math.max(gameState.timeLimit - Math.floor(elapsed / 1000), 0);
       setRemainingTime(remaining);
     };

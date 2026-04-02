@@ -36,6 +36,18 @@ export function getBrowserId(): string {
   return id;
 }
 
+// 서버-클라이언트 시간 오프셋 (serverTime - clientTime)
+let serverTimeOffset = 0;
+
+export function setServerTimeOffset(serverTime: number) {
+  serverTimeOffset = serverTime - Date.now();
+}
+
+/** 서버 타임스탬프 기준 경과 시간(ms) 계산. 시계 오차 및 중간 입장 모두 보정. */
+export function getServerElapsed(serverTimestamp: number): number {
+  return Math.max(0, Date.now() + serverTimeOffset - serverTimestamp);
+}
+
 export function getSocket(): GameSocket {
   if (!socket) {
     socket = io(SOCKET_URL, {

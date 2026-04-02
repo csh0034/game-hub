@@ -7,6 +7,7 @@ import type { NonogramPublicState, NonogramDifficulty } from "@game-hub/shared-t
 import { NONOGRAM_DIFFICULTY_CONFIGS } from "@game-hub/shared-types";
 import type { GameComponentProps } from "@/lib/game-registry";
 import { useGameStore } from "@/stores/game-store";
+import { getServerElapsed } from "@/lib/socket";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import { GameHelpDialog } from "@/components/common/game-help-dialog";
 import { HelpCircle } from "lucide-react";
@@ -32,8 +33,6 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
   const [elapsed, setElapsed] = useState(0);
 
   const state = gameState as NonogramPublicState | null;
-  const timerBaseRef = useRef<{ localStart: number; key: number } | null>(null);
-
   const playerBoard = useMemo(() => {
     if (!state) return null;
     const id = socket?.id && state.players[socket.id] ? socket.id : Object.keys(state.players)[0];
@@ -41,16 +40,10 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
   }, [state, socket?.id]);
 
   useEffect(() => {
-    if (!state?.startedAt) {
-      timerBaseRef.current = null;
-      return;
-    }
+    if (!state?.startedAt) return;
     if (playerBoard?.status === "completed") return;
-    if (!timerBaseRef.current || timerBaseRef.current.key !== state.startedAt) {
-      timerBaseRef.current = { localStart: Date.now(), key: state.startedAt };
-    }
 
-    const update = () => setElapsed(Math.floor((Date.now() - timerBaseRef.current!.localStart) / 1000));
+    const update = () => setElapsed(Math.floor(getServerElapsed(state.startedAt!) / 1000));
     update();
     const interval = setInterval(update, 1000);
     return () => clearInterval(interval);

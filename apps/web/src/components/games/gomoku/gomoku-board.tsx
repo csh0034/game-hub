@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useGame } from "@/hooks/use-game";
 import { useSocket } from "@/hooks/use-socket";
 import { HelpCircle } from "lucide-react";
 import type { GomokuState, GomokuMove } from "@game-hub/shared-types";
 import type { GameComponentProps } from "@/lib/game-registry";
 import { GameHelpDialog } from "@/components/common/game-help-dialog";
+import { getServerElapsed } from "@/lib/socket";
 
 const BOARD_SIZE = 15;
 const CELL_SIZE = 36;
@@ -24,21 +25,12 @@ export default function GomokuBoard({ isSpectating }: GameComponentProps) {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [showHelp, setShowHelp] = useState(false);
 
-  const turnBaseRef = useRef<{ localStart: number; key: number } | null>(null);
-  const gameBaseRef = useRef<number | null>(null);
-
   useEffect(() => {
     if (!state || gameResult) return;
-    if (!turnBaseRef.current || turnBaseRef.current.key !== state.turnStartedAt) {
-      turnBaseRef.current = { localStart: Date.now(), key: state.turnStartedAt };
-    }
-    if (!gameBaseRef.current) {
-      gameBaseRef.current = Date.now();
-    }
     const interval = setInterval(() => {
-      const turnElapsed = (Date.now() - turnBaseRef.current!.localStart) / 1000;
+      const turnElapsed = getServerElapsed(state.turnStartedAt) / 1000;
       setRemainingTime(Math.max(0, state.turnTimeSeconds - turnElapsed));
-      setElapsedTime(Math.floor((Date.now() - gameBaseRef.current!) / 1000));
+      setElapsedTime(Math.floor(getServerElapsed(state.gameStartedAt) / 1000));
     }, 200);
     return () => clearInterval(interval);
   }, [state?.turnStartedAt, state?.gameStartedAt, state, gameResult]);

@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import type { FeatureRequest, RequestLabel, RequestStatus } from "@game-hub/shared-types";
 import { REQUEST_LABELS } from "@game-hub/shared-types";
 import { Ban, Check, ExternalLink, Clock, Trash2, X, Play, MessageSquare, RotateCcw, ChevronDown, GitCommitHorizontal, Pencil } from "lucide-react";
+import { getServerElapsed } from "@/lib/socket";
 
 const labelConfig: Record<RequestLabel, { name: string; className: string }> = {
   feature: { name: "기능 요청", className: "bg-neon-cyan/15 text-neon-cyan" },
@@ -373,7 +374,7 @@ export function RequestItem({ request, isAdmin, onChangeStatus, onChangeLabel, o
 }
 
 function formatTime(timestamp: number): string {
-  const diff = Math.floor((Date.now() - timestamp) / 1000);
+  const diff = Math.floor(getServerElapsed(timestamp) / 1000);
   if (diff < 60) return "방금 전";
   if (diff < 3600) return `${Math.floor(diff / 60)}분 전`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}시간 전`;

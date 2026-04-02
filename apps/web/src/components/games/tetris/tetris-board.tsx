@@ -22,6 +22,7 @@ import type {
   TetrisActivePiece,
 } from "@game-hub/shared-types";
 import type { GameComponentProps } from "@/lib/game-registry";
+import { getServerElapsed } from "@/lib/socket";
 
 const TETROMINO_COLORS: Record<TetrominoType, string> = {
   I: "bg-cyan-400",
@@ -363,7 +364,6 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
   // Elapsed time
   const [elapsedTime, setElapsedTime] = useState(0);
   const gameEndedRef = useRef(false);
-  const gameStartRef = useRef<{ localStart: number; key: number } | null>(null);
 
   useEffect(() => {
     gameEndedRef.current = !!gameResult;
@@ -372,13 +372,9 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
   useEffect(() => {
     if (!startedAt) return;
 
-    if (!gameStartRef.current || gameStartRef.current.key !== startedAt) {
-      gameStartRef.current = { localStart: Date.now(), key: startedAt };
-    }
-
     const timer = setInterval(() => {
       if (gameEndedRef.current) return;
-      setElapsedTime(Date.now() - gameStartRef.current!.localStart);
+      setElapsedTime(getServerElapsed(startedAt));
     }, 100);
 
     return () => clearInterval(timer);

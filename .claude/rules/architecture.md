@@ -60,7 +60,8 @@ game-hub/
 │   ├── catch-mind-engine.ts
 │   ├── catch-mind-timer.ts   # 캐치마인드 그리기 타이머
 │   ├── typing-engine.ts
-│   └── typing-ticker.ts      # 타자 게임 단어 스폰 타이머
+│   ├── typing-ticker.ts      # 타자 게임 단어 스폰 타이머
+│   └── nonogram-engine.ts
 └── socket/
     ├── lobby-handler.ts     # lobby:* 이벤트 (방 CRUD, 방 이름 수정, 관전, 강퇴)
     ├── chat-handler.ts      # chat:* 이벤트 (ChatStore 사용)
@@ -121,7 +122,8 @@ game-hub/
 │       ├── minesweeper/
 │       ├── tetris/
 │       ├── liar-drawing/
-│       └── catch-mind/
+│       ├── catch-mind/
+│       └── nonogram/
 ├── hooks/                   # useSocket, useLobby, useGame, useChat, useRequests, useRanking, useTetrisInput
 ├── stores/                  # Zustand (lobby-store, game-store, chat-store, request-store, ranking-store, tetris-board-store)
 └── lib/

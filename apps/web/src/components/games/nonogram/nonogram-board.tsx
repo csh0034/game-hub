@@ -32,7 +32,7 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
   const [elapsed, setElapsed] = useState(0);
 
   const state = gameState as NonogramPublicState | null;
-  const msBaseRef = useRef<number | null>(null);
+  const timerBaseRef = useRef<{ localStart: number; key: number } | null>(null);
 
   const playerBoard = useMemo(() => {
     if (!state) return null;
@@ -42,13 +42,15 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
 
   useEffect(() => {
     if (!state?.startedAt) {
-      msBaseRef.current = null;
+      timerBaseRef.current = null;
       return;
     }
     if (playerBoard?.status === "completed") return;
-    if (!msBaseRef.current) msBaseRef.current = state.startedAt;
+    if (!timerBaseRef.current || timerBaseRef.current.key !== state.startedAt) {
+      timerBaseRef.current = { localStart: Date.now(), key: state.startedAt };
+    }
 
-    const update = () => setElapsed(Math.floor((Date.now() - msBaseRef.current!) / 1000));
+    const update = () => setElapsed(Math.floor((Date.now() - timerBaseRef.current!.localStart) / 1000));
     update();
     const interval = setInterval(update, 1000);
     return () => clearInterval(interval);

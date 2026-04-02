@@ -41,7 +41,7 @@ export default function MinesweeperBoard({ isSpectating }: GameComponentProps) {
       return;
     }
     if (!msBaseRef.current) {
-      msBaseRef.current = Date.now();
+      msBaseRef.current = state.startedAt;
     }
 
     const update = () => setElapsed(Math.floor((Date.now() - msBaseRef.current!) / 1000));

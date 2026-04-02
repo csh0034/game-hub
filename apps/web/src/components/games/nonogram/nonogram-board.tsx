@@ -41,7 +41,7 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
       return;
     }
     if (playerBoard?.status === "completed") return;
-    if (!msBaseRef.current) msBaseRef.current = Date.now();
+    if (!msBaseRef.current) msBaseRef.current = state.startedAt;
 
     const update = () => setElapsed(Math.floor((Date.now() - msBaseRef.current!) / 1000));
     update();

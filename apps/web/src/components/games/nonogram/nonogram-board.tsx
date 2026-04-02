@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useGame } from "@/hooks/use-game";
 import { useSocket } from "@/hooks/use-socket";
 import type { NonogramPublicState, NonogramMove, NonogramDifficulty } from "@game-hub/shared-types";
@@ -12,9 +12,12 @@ const CELL_SIZES: Record<NonogramDifficulty, number> = {
   tiny: 40,
   beginner: 32,
   intermediate: 26,
-  expert: 22,
-  extreme: 14,
+  expert: 26,
+  extreme: 22,
 };
+
+const THICK_COLOR = "rgba(0,229,255,0.35)";
+const THIN_COLOR = "rgba(94,111,145,0.4)";
 
 export default function NonogramBoard({ isSpectating }: GameComponentProps) {
   const { socket } = useSocket();
@@ -25,7 +28,6 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
   const state = gameState as NonogramPublicState | null;
   const msBaseRef = useRef<number | null>(null);
 
-  // 플레이어 보드 (관전자는 첫 번째 플레이어 보드를 표시)
   const playerBoard = useMemo(() => {
     if (!state) return null;
     const id = socket?.id && state.players[socket.id] ? socket.id : Object.keys(state.players)[0];
@@ -37,12 +39,8 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
       msBaseRef.current = null;
       return;
     }
-
     if (playerBoard?.status === "completed") return;
-
-    if (!msBaseRef.current) {
-      msBaseRef.current = Date.now();
-    }
+    if (!msBaseRef.current) msBaseRef.current = Date.now();
 
     const update = () => setElapsed(Math.floor((Date.now() - msBaseRef.current!) / 1000));
     update();
@@ -53,8 +51,7 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
   const handleFill = useCallback(
     (row: number, col: number) => {
       if (isSpectating) return;
-      const move: NonogramMove = { type: "fill", row, col };
-      makeMove(move);
+      makeMove({ type: "fill", row, col } as NonogramMove);
     },
     [isSpectating, makeMove],
   );
@@ -63,8 +60,7 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
     (e: React.MouseEvent, row: number, col: number) => {
       e.preventDefault();
       if (isSpectating) return;
-      const move: NonogramMove = { type: "mark", row, col };
-      makeMove(move);
+      makeMove({ type: "mark", row, col } as NonogramMove);
     },
     [isSpectating, makeMove],
   );
@@ -79,7 +75,6 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
     return Math.max(...state.colHints.map((h) => h.length));
   }, [state]);
 
-  // 힌트 체크 상태 (클라이언트 전용) — key: "row-r-i" 또는 "col-c-i"
   const [checkedHints, setCheckedHints] = useState<Set<string>>(new Set());
   const toggleHint = useCallback((key: string) => {
     setCheckedHints((prev) => {
@@ -90,13 +85,134 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
     });
   }, []);
 
+  const cellSize = state ? (CELL_SIZES[state.difficulty] ?? 32) : 32;
+
+  const gridCells = useMemo(() => {
+    if (!state || !playerBoard) return null;
+
+    const totalRows = maxHintColLen + state.rows;
+    const totalCols = maxHintRowLen + state.cols;
+    const cells: React.ReactNode[] = [];
+
+    // box-shadow만으로 테두리 구현 — border 없이 모든 셀 크기 완전 동일
+    const cols = state.cols;
+    const rows = state.rows;
+    function buildShadow(r: number, c: number, gameRow: number, gameCol: number, isCorner: boolean) {
+      const isLastCol = c === totalCols - 1;
+      const isLastRow = r === totalRows - 1;
+      const atHintGameRight = c === maxHintRowLen - 1;
+      const atHintGameBottom = r === maxHintColLen - 1;
+      const at5thCol = gameCol >= 0 && (gameCol + 1) % 5 === 0 && gameCol < cols - 1;
+      const at5thRow = gameRow >= 0 && (gameRow + 1) % 5 === 0 && gameRow < rows - 1;
+      const isFirstRow = r === 0 && !isCorner;
+      const isFirstCol = c === 0 && !isCorner;
+
+      const shadows: string[] = [];
+      if (!isLastCol) {
+        const color = (atHintGameRight || at5thCol) ? THICK_COLOR : THIN_COLOR;
+        shadows.push(`inset -1px 0 0 ${color}`);
+      }
+      if (!isLastRow) {
+        const color = (atHintGameBottom || at5thRow) ? THICK_COLOR : THIN_COLOR;
+        shadows.push(`inset 0 -1px 0 ${color}`);
+      }
+      if (isFirstRow) shadows.push(`inset 0 1px 0 ${THICK_COLOR}`);
+      if (isFirstCol) shadows.push(`inset 1px 0 0 ${THICK_COLOR}`);
+      return shadows.length > 0 ? shadows.join(", ") : "none";
+    }
+
+    for (let r = 0; r < totalRows; r++) {
+      for (let c = 0; c < totalCols; c++) {
+        const gameRow = r - maxHintColLen;
+        const gameCol = c - maxHintRowLen;
+        const isCorner = r < maxHintColLen && c < maxHintRowLen;
+        const isColHint = r < maxHintColLen && c >= maxHintRowLen;
+        const isRowHint = r >= maxHintColLen && c < maxHintRowLen;
+
+        if (isCorner) {
+          // 코너: 힌트-게임 경계선만 표시, 내부 그리드선 없음
+          const cornerShadows: string[] = [];
+          if (c === maxHintRowLen - 1) cornerShadows.push(`inset -1px 0 0 ${THICK_COLOR}`);
+          if (r === maxHintColLen - 1) cornerShadows.push(`inset 0 -1px 0 ${THICK_COLOR}`);
+          cells.push(<div key={`${r}-${c}`} style={{ boxShadow: cornerShadows.join(", ") || "none" }} />);
+          continue;
+        }
+
+        const shadow = buildShadow(r, c, gameRow, gameCol, false);
+
+        if (isColHint || isRowHint) {
+          let hintValue: number | null = null;
+          let hintKey: string | null = null;
+
+          if (isColHint) {
+            const hints = state.colHints[gameCol];
+            const hintIdx = r - (maxHintColLen - hints.length);
+            if (hintIdx >= 0) {
+              hintValue = hints[hintIdx];
+              hintKey = `col-${gameCol}-${hintIdx}`;
+            }
+          } else {
+            const hints = state.rowHints[gameRow];
+            const hintIdx = c - (maxHintRowLen - hints.length);
+            if (hintIdx >= 0) {
+              hintValue = hints[hintIdx];
+              hintKey = `row-${gameRow}-${hintIdx}`;
+            }
+          }
+
+          const checked = hintKey ? checkedHints.has(hintKey) : false;
+          cells.push(
+            <div key={`${r}-${c}`} className="flex items-center justify-center" style={{ boxShadow: shadow }}>
+              {hintValue !== null && hintKey && (
+                <span
+                  className={`font-mono cursor-pointer select-none transition-colors ${checked ? "text-primary font-bold" : "text-muted-foreground"}`}
+                  onClick={() => toggleHint(hintKey)}
+                >
+                  {hintValue}
+                </span>
+              )}
+            </div>,
+          );
+          continue;
+        }
+
+        // 게임 셀
+        const cell = playerBoard.board[gameRow][gameCol];
+        const bg = cell === "filled"
+          ? "bg-primary"
+          : cell === "marked"
+            ? "bg-muted"
+            : "bg-[#2a3150] hover:bg-[#323b5c]";
+
+        cells.push(
+          <button
+            key={`${r}-${c}`}
+            className={`flex items-center justify-center select-none transition-colors duration-75 ${bg}`}
+            style={{ boxShadow: shadow }}
+            onClick={() => handleFill(gameRow, gameCol)}
+            onContextMenu={(e) => handleMark(e, gameRow, gameCol)}
+            disabled={playerBoard.status === "completed" || gameResult != null || !!isSpectating}
+          >
+            {cell === "marked" && (
+              <span className="text-muted-foreground font-bold">✕</span>
+            )}
+          </button>,
+        );
+      }
+    }
+    return cells;
+  }, [state, playerBoard, maxHintColLen, maxHintRowLen, checkedHints, toggleHint, gameResult, isSpectating, handleFill, handleMark, cellSize]);
+
   if (!state || !playerBoard) return null;
 
   const difficultyConfig = NONOGRAM_DIFFICULTY_CONFIGS[state.difficulty];
-  const cellSize = CELL_SIZES[state.difficulty] ?? 32;
-  const hintFontSize = cellSize > 20 ? 12 : 9;
+  const hintFontSize = Math.min(Math.max(Math.floor(cellSize * 0.55), 8), 13);
   const isCompleted = playerBoard.status === "completed";
   const isGameOver = gameResult != null;
+
+  // 게임 영역 크기
+  const gameAreaW = state.cols * cellSize;
+  const gameAreaH = state.rows * cellSize;
 
   return (
     <div className="flex flex-col items-center gap-4">
@@ -117,96 +233,37 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
         </div>
       </div>
 
-      {/* Board with hints */}
-      <div className="relative">
+      {/* 게임 영역 크기 래퍼 — 중앙 배치의 기준점, marginTop으로 힌트 영역 공간 확보 */}
+      <div style={{ width: gameAreaW, height: gameAreaH, position: "relative", overflow: "visible", marginTop: maxHintColLen * cellSize }}>
+        {/* 전체 그리드 (힌트 + 게임) — 우하단 고정, 힌트는 왼쪽/위로 확장 */}
         <div
-          className="grid"
           style={{
-            gridTemplateColumns: `${maxHintRowLen * (cellSize * 0.6)}px repeat(${state.cols}, ${cellSize}px)`,
-            gridTemplateRows: `${maxHintColLen * (cellSize * 0.6)}px repeat(${state.rows}, ${cellSize}px)`,
+            position: "absolute",
+            bottom: 0,
+            right: 0,
+            borderRight: `2px solid ${THICK_COLOR}`,
+            borderBottom: `2px solid ${THICK_COLOR}`,
+            borderRadius: 4,
           }}
         >
-          {/* Top-left empty corner */}
-          <div />
-
-          {/* Column hints */}
-          {state.colHints.map((hints, c) => (
-            <div
-              key={`ch-${c}`}
-              className="flex flex-col items-center justify-end pb-0.5"
-              style={{ fontSize: hintFontSize }}
-            >
-              {hints.map((h, i) => {
-                const key = `col-${c}-${i}`;
-                const checked = checkedHints.has(key);
-                return (
-                  <span
-                    key={i}
-                    className={`leading-tight font-mono cursor-pointer select-none transition-colors ${checked ? "text-primary/40 line-through" : "text-muted-foreground"}`}
-                    onClick={() => toggleHint(key)}
-                  >
-                    {h}
-                  </span>
-                );
-              })}
-            </div>
-          ))}
-
-          {/* Row hints + cells */}
-          {playerBoard.board.map((row, r) => (
-            <Fragment key={`row-${r}`}>
-              {/* Row hint */}
-              <div
-                className="flex items-center justify-end gap-0.5 pr-1"
-                style={{ fontSize: hintFontSize }}
-              >
-                {state.rowHints[r].map((h, i) => {
-                  const key = `row-${r}-${i}`;
-                  const checked = checkedHints.has(key);
-                  return (
-                    <span
-                      key={i}
-                      className={`font-mono cursor-pointer select-none transition-colors ${checked ? "text-primary/40 line-through" : "text-muted-foreground"}`}
-                      onClick={() => toggleHint(key)}
-                    >
-                      {h}
-                    </span>
-                  );
-                })}
-              </div>
-
-              {/* Cells */}
-              {row.map((cell, c) => {
-                const borderRight = (c + 1) % 5 === 0 && c < state.cols - 1;
-                const borderBottom = (r + 1) % 5 === 0 && r < state.rows - 1;
-                return (
-                  <button
-                    key={`${r}-${c}`}
-                    className={`flex items-center justify-center select-none border border-border/50 transition-colors duration-75 ${
-                      cell === "filled"
-                        ? "bg-primary"
-                        : cell === "marked"
-                          ? "bg-muted"
-                          : "bg-[#2a3150] hover:bg-[#323b5c]"
-                    } ${borderRight ? "!border-r-primary/30" : ""} ${borderBottom ? "!border-b-primary/30" : ""}`}
-                    style={{ width: cellSize, height: cellSize, fontSize: hintFontSize }}
-                    onClick={() => handleFill(r, c)}
-                    onContextMenu={(e) => handleMark(e, r, c)}
-                    disabled={isCompleted || isGameOver || isSpectating}
-                  >
-                    {cell === "marked" && (
-                      <span className="text-muted-foreground font-bold">✕</span>
-                    )}
-                  </button>
-                );
-              })}
-            </Fragment>
-          ))}
+          <div
+            className="grid"
+            style={{
+              gridTemplateColumns: `repeat(${maxHintRowLen + state.cols}, ${cellSize}px)`,
+              gridTemplateRows: `repeat(${maxHintColLen + state.rows}, ${cellSize}px)`,
+              fontSize: hintFontSize,
+            }}
+          >
+            {gridCells}
+          </div>
         </div>
 
-        {/* Game result overlay */}
+        {/* Game result overlay — 게임 영역만 덮음 */}
         {isGameOver && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 gap-3">
+          <div
+            className="flex flex-col items-center justify-center bg-black/70 gap-3"
+            style={{ position: "absolute", inset: 0, zIndex: 10 }}
+          >
             <span className={`text-3xl font-display font-bold drop-shadow-lg ${
               isCompleted ? "text-primary text-glow-cyan" : "text-destructive text-glow-pink"
             }`}>

@@ -173,19 +173,23 @@ export class NonogramEngine implements GameEngine {
     return null;
   }
 
-  /** 채운 칸 중 틀린 칸 수를 반환 */
-  countErrors(): number {
+  /** 채운 칸 중 틀린 칸 수 + 아직 안 채운 정답 칸 수를 반환 */
+  verify(): { errorCount: number; remaining: number } {
     const ps = this.playerState;
-    if (!ps) return 0;
+    if (!ps) return { errorCount: 0, remaining: 0 };
     let errors = 0;
+    let remaining = 0;
     for (let r = 0; r < this.rows; r++) {
       for (let c = 0; c < this.cols; c++) {
         if (ps.board[r][c] === "filled" && !this.solution[r][c]) {
           errors++;
         }
+        if (this.solution[r][c] && ps.board[r][c] !== "filled") {
+          remaining++;
+        }
       }
     }
-    return errors;
+    return { errorCount: errors, remaining };
   }
 
   getDifficulty(): NonogramDifficulty {

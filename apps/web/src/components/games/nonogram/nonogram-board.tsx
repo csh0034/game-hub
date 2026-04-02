@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useGame } from "@/hooks/use-game";
 import { useSocket } from "@/hooks/use-socket";
-import type { NonogramPublicState, NonogramMove, NonogramDifficulty } from "@game-hub/shared-types";
+import type { NonogramPublicState, NonogramDifficulty } from "@game-hub/shared-types";
 import { NONOGRAM_DIFFICULTY_CONFIGS } from "@game-hub/shared-types";
 import type { GameComponentProps } from "@/lib/game-registry";
 import { useGameStore } from "@/stores/game-store";
@@ -22,7 +22,7 @@ const THIN_COLOR = "rgba(94,111,145,0.4)";
 
 export default function NonogramBoard({ isSpectating }: GameComponentProps) {
   const { socket } = useSocket();
-  const { gameState, makeMove } = useGame(socket);
+  const { gameState } = useGame(socket);
   const gameResult = useGameStore((s) => s.gameResult);
   const [elapsed, setElapsed] = useState(0);
 
@@ -74,27 +74,25 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
     return "hidden";
   }, []);
 
-  // 드래그 상태
+  // 드래그 상태 + 낙관적 업데이트
   const dragRef = useRef<{
     active: boolean;
     target: "filled" | "marked" | "hidden";
     cells: Set<string>;
+    moves: { row: number; col: number; target: "filled" | "marked" | "hidden" }[];
   } | null>(null);
   const gridContainerRef = useRef<HTMLDivElement>(null);
-
-  const applyCell = useCallback((row: number, col: number, target: "filled" | "marked" | "hidden") => {
-    const type = target === "filled" ? "fill" : target === "marked" ? "mark" : "clear";
-    makeMove({ type, row, col } as NonogramMove);
-  }, [makeMove]);
+  const [pendingMoves, setPendingMoves] = useState<Map<string, "filled" | "marked" | "hidden">>(new Map());
 
   const handlePointerDown = useCallback((e: React.PointerEvent, row: number, col: number, currentCell: string) => {
     if (isSpectating) return;
     e.preventDefault();
     const isLeft = e.button === 0;
     const target = nextState(currentCell, isLeft);
-    dragRef.current = { active: true, target, cells: new Set([`${row}-${col}`]) };
-    applyCell(row, col, target);
-  }, [isSpectating, nextState, applyCell]);
+    const key = `${row}-${col}`;
+    dragRef.current = { active: true, target, cells: new Set([key]), moves: [{ row, col, target }] };
+    setPendingMoves(new Map([[key, target]]));
+  }, [isSpectating, nextState]);
 
   const handleGridPointerMove = useCallback((e: React.PointerEvent) => {
     const drag = dragRef.current;
@@ -113,13 +111,20 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
     const key = `${gameRow}-${gameCol}`;
     if (drag.cells.has(key)) return;
     drag.cells.add(key);
-    applyCell(gameRow, gameCol, drag.target);
-  }, [applyCell, cellSize, maxHintColLen, maxHintRowLen, state]);
+    drag.moves.push({ row: gameRow, col: gameCol, target: drag.target });
+    setPendingMoves(prev => new Map(prev).set(key, drag.target));
+  }, [cellSize, maxHintColLen, maxHintRowLen, state]);
 
   const handlePointerUp = useCallback(() => {
-    if (!dragRef.current?.active) return;
+    const drag = dragRef.current;
+    if (!drag?.active) return;
+    const moves = drag.moves;
     dragRef.current = null;
-  }, []);
+    if (!socket || moves.length === 0) return;
+    socket.emit("game:nonogram-batch-move", moves, () => {
+      setPendingMoves(new Map());
+    });
+  }, [socket]);
 
   // 다시하기
   const [restartDialogOpen, setRestartDialogOpen] = useState(false);
@@ -140,12 +145,11 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
     socket.emit("game:nonogram-redo", () => {});
   }, [socket]);
 
-  // 그리드 밖에서 마우스 놓아도 드래그 종료
+  // 그리드 밖에서 마우스 놓아도 드래그 종료 + batch 전송
   useEffect(() => {
-    const up = () => { dragRef.current = null; };
-    window.addEventListener("pointerup", up);
-    return () => window.removeEventListener("pointerup", up);
-  }, []);
+    window.addEventListener("pointerup", handlePointerUp);
+    return () => window.removeEventListener("pointerup", handlePointerUp);
+  }, [handlePointerUp]);
 
   // 키보드 단축키 (Ctrl+Z / Ctrl+Y)
   useEffect(() => {
@@ -180,13 +184,11 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
   const fadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleVerify = useCallback(() => {
     if (!socket) return;
-    socket.emit("game:nonogram-verify", ({ errorCount }) => {
+    socket.emit("game:nonogram-verify", ({ errorCount, remaining }) => {
       if (verifyTimerRef.current) clearTimeout(verifyTimerRef.current);
       if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
-      setVerifyMsg({
-        text: errorCount === 0 ? "오류 없음" : "오류 있음",
-        isError: errorCount > 0,
-      });
+      const text = errorCount > 0 ? "오류 있음" : `남은 칸 ${remaining}개`;
+      setVerifyMsg({ text, isError: errorCount > 0 });
       setVerifyVisible(true);
       fadeTimerRef.current = setTimeout(() => setVerifyVisible(false), 1000);
       verifyTimerRef.current = setTimeout(() => setVerifyMsg(null), 1500);
@@ -283,7 +285,7 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
         }
 
         // 게임 셀
-        const cell = playerBoard.board[gameRow][gameCol];
+        const cell = pendingMoves.get(`${gameRow}-${gameCol}`) ?? playerBoard.board[gameRow][gameCol];
         const bg = cell === "filled"
           ? "bg-primary"
           : cell === "marked"
@@ -308,7 +310,7 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
       }
     }
     return cells;
-  }, [state, playerBoard, maxHintColLen, maxHintRowLen, checkedHints, toggleHint, gameResult, isSpectating, handlePointerDown, cellSize]);
+  }, [state, playerBoard, maxHintColLen, maxHintRowLen, checkedHints, toggleHint, gameResult, isSpectating, handlePointerDown, cellSize, pendingMoves]);
 
   if (!state || !playerBoard) return null;
 

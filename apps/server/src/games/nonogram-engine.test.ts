@@ -244,15 +244,16 @@ describe("NonogramEngine", () => {
     });
   });
 
-  describe("countErrors", () => {
-    it("틀린 칸이 없으면 0을 반환한다", () => {
+  describe("verify", () => {
+    it("틀린 칸이 없으면 errorCount 0을 반환한다", () => {
       const state = engine.initState(mockPlayers);
       engine._setSolution([
         [true, false],
         [false, true],
       ]);
       engine.processMove(state, "player1", { type: "fill", row: 0, col: 0 });
-      expect(engine.countErrors()).toBe(0);
+      expect(engine.verify().errorCount).toBe(0);
+      expect(engine.verify().remaining).toBe(1);
     });
 
     it("틀린 칸 수를 정확히 반환한다", () => {
@@ -261,14 +262,19 @@ describe("NonogramEngine", () => {
         [true, false],
         [false, true],
       ]);
-      // (0,1)은 false인데 fill → 오류 1개
       engine.processMove(state, "player1", { type: "fill", row: 0, col: 1 });
-      expect(engine.countErrors()).toBe(1);
+      expect(engine.verify().errorCount).toBe(1);
     });
 
-    it("아무것도 채우지 않으면 0을 반환한다", () => {
+    it("아무것도 채우지 않으면 남은 칸 수를 반환한다", () => {
       engine.initState(mockPlayers);
-      expect(engine.countErrors()).toBe(0);
+      engine._setSolution([
+        [true, false],
+        [false, true],
+      ]);
+      const { errorCount, remaining } = engine.verify();
+      expect(errorCount).toBe(0);
+      expect(remaining).toBe(2);
     });
 
     it("marked 셀은 오류로 세지 않는다", () => {
@@ -278,7 +284,7 @@ describe("NonogramEngine", () => {
         [false, true],
       ]);
       engine.processMove(state, "player1", { type: "mark", row: 0, col: 1 });
-      expect(engine.countErrors()).toBe(0);
+      expect(engine.verify().errorCount).toBe(0);
     });
   });
 

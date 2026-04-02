@@ -774,7 +774,7 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
     if (!roomId) return;
     const engine = gameManager.getNonogramEngine(roomId);
     if (!engine) return;
-    callback({ errorCount: engine.countErrors() });
+    callback(engine.verify());
   });
 
   socket.on("game:nonogram-batch-move", (moves, callback) => {

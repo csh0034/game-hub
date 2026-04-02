@@ -142,11 +142,15 @@ const PlayerBoard = memo(function PlayerBoard({
 
   const prevLinesClearedRef = useRef(board.linesCleared);
   const [isPulsing, setIsPulsing] = useState(false);
-  const remaining = SPEED_RACE_TARGET_LINES - board.linesCleared;
-  const speedRaceColors = getSpeedRaceProgress(board.linesCleared);
+  const remaining = isSpeedRace ? SPEED_RACE_TARGET_LINES - board.linesCleared : 0;
+  const speedRaceColors = isSpeedRace ? getSpeedRaceProgress(board.linesCleared) : null;
 
   useEffect(() => {
-    if (isSpeedRace && board.linesCleared !== prevLinesClearedRef.current && board.linesCleared > 0) {
+    if (!isSpeedRace) {
+      prevLinesClearedRef.current = board.linesCleared;
+      return;
+    }
+    if (board.linesCleared !== prevLinesClearedRef.current && board.linesCleared > 0) {
       const startTimer = setTimeout(() => setIsPulsing(true), 0);
       const endTimer = setTimeout(() => setIsPulsing(false), 300);
       prevLinesClearedRef.current = board.linesCleared;
@@ -224,16 +228,13 @@ const PlayerBoard = memo(function PlayerBoard({
               </div>
               <div className="text-center">
                 <div className={`${textSm} text-primary/50 font-display tracking-widest uppercase`}>Left</div>
-                <div className={`${compact ? "text-xl" : "text-2xl"} font-bold font-mono transition-transform duration-200 ${isPulsing ? "scale-125" : "scale-100"} ${speedRaceColors.text}`}>
+                <div className={`${compact ? "text-xl" : "text-2xl"} font-bold font-mono transition-transform duration-200 ${isPulsing ? "scale-125" : "scale-100"} ${speedRaceColors!.text}`}>
                   {remaining}
-                </div>
-                <div className="text-[10px] font-mono text-muted-foreground">
-                  {board.linesCleared}/{SPEED_RACE_TARGET_LINES}
                 </div>
               </div>
               <div className="w-full bg-black/40 rounded-full h-3 border border-primary/10">
                 <div
-                  className={`${speedRaceColors.bar} h-full rounded-full transition-all duration-300 ${speedRaceColors.glow ? "shadow-[0_0_8px_rgba(74,222,128,0.5)]" : ""}`}
+                  className={`${speedRaceColors!.bar} h-full rounded-full transition-all duration-300 ${speedRaceColors!.glow ? "shadow-[0_0_8px_rgba(74,222,128,0.5)]" : ""}`}
                   style={{ width: `${Math.min((board.linesCleared / SPEED_RACE_TARGET_LINES) * 100, 100)}%` }}
                 />
               </div>
@@ -460,7 +461,6 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
   });
 
   const isSolo = Object.keys(opponentBoards).length === 0;
-  const myScore = myBoard?.score ?? 0;
   const isSoloGameOver = isSolo && myBoard?.status === "gameover" && gameResult != null;
   const isWinner = !isSolo && gameResult != null && gameResult.winnerId === socket?.id;
   const isLoser = !isSolo && gameResult != null && gameResult.winnerId !== socket?.id && gameResult.winnerId !== null;
@@ -475,7 +475,7 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
     if (isSoloSpeedRaceClear) {
       const clearTime = gameResult.completionTimeMs ?? elapsedTime;
       return (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded gap-2">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 rounded-lg gap-2">
           <span className="text-3xl font-display font-bold text-neon-yellow drop-shadow-lg text-glow-cyan">CLEAR!</span>
           <span className="text-sm text-white/80">
             클리어 시간: {(clearTime / 1000).toFixed(3)}초
@@ -491,25 +491,10 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
 
     if (!isSoloGameOver) return undefined;
 
-    // Speed race solo: 게임오버 (40줄 미달성)
-    if (isSpeedRace) {
-      return (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded gap-2">
-          <span className="text-3xl font-display font-bold text-accent drop-shadow-lg text-glow-pink">GAME OVER</span>
-          <span className="text-sm text-white/80">
-            {myBoard?.linesCleared ?? 0}/{SPEED_RACE_TARGET_LINES}줄
-          </span>
-        </div>
-      );
-    }
-
-    // Classic solo: 기존 오버레이
+    // Solo 게임오버 (스피드레이스/클래식 공통)
     return (
-      <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded gap-2">
+      <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 rounded-lg gap-2">
         <span className="text-3xl font-display font-bold text-accent drop-shadow-lg text-glow-pink">GAME OVER</span>
-        <span className="text-sm text-white/80">
-          점수: {myScore.toLocaleString()}
-        </span>
         {gameResult.rankingResult && gameResult.rankingResult.rank != null && (
           <span className="text-sm text-neon-yellow font-bold">
             {gameResult.rankingResult.isNewRecord ? "🏆 새로운 1위!" : `전체 ${gameResult.rankingResult.rank}위`}
@@ -517,7 +502,7 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
         )}
       </div>
     );
-  }, [isSoloGameOver, isSoloSpeedRaceClear, isSpeedRace, gameResult, myScore, elapsedTime, myBoard?.linesCleared]);
+  }, [isSoloGameOver, isSoloSpeedRaceClear, gameResult, elapsedTime]);
 
   const versusResultOverlay = useMemo(() => {
     if (!isWinner && !isLoser && !isDraw) return undefined;
@@ -535,17 +520,12 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
       titleColor = "text-accent";
     }
 
-    const detail = isSpeedRace
-      ? (isWinner ? `클리어 시간: ${((gameResult?.completionTimeMs ?? elapsedTime) / 1000).toFixed(3)}초` : `${myBoard?.linesCleared ?? 0}/${SPEED_RACE_TARGET_LINES}줄`)
-      : `점수: ${myScore.toLocaleString()}`;
-
     return (
-      <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded gap-2">
+      <div className="absolute inset-0 flex items-center justify-center bg-black/70 rounded-lg">
         <span className={`text-3xl font-display font-bold ${titleColor} drop-shadow-lg`}>{title}</span>
-        <span className="text-sm text-white/80">{detail}</span>
       </div>
     );
-  }, [isWinner, isLoser, isDraw, myScore, isSpeedRace, elapsedTime, gameResult, myBoard?.linesCleared]);
+  }, [isWinner, isLoser, isDraw]);
 
   // 관전자: 플레이어 보드만 표시 (내 보드 없음)
   if (isSpectating) {
@@ -562,7 +542,7 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
           <span>·</span>
           <span>{isSpeedRace ? "SPEED RACE" : "CLASSIC"}</span>
           <span>·</span>
-          <span>{(elapsedTime / 1000).toFixed(1)}초</span>
+          <span>{(elapsedTime / 1000).toFixed(3)}초</span>
         </div>
         {opponentEntries.length > 0 ? (
           <div

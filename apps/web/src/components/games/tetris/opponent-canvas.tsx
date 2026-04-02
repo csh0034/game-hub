@@ -101,11 +101,15 @@ export const OpponentCanvas = memo(function OpponentCanvas({
 
   const prevLinesClearedRef = useRef(board.linesCleared);
   const [isPulsing, setIsPulsing] = useState(false);
-  const remaining = SPEED_RACE_TARGET_LINES - board.linesCleared;
-  const progressColors = getSpeedRaceProgressColor(board.linesCleared);
+  const remaining = isSpeedRace ? SPEED_RACE_TARGET_LINES - board.linesCleared : 0;
+  const progressColors = isSpeedRace ? getSpeedRaceProgressColor(board.linesCleared) : null;
 
   useEffect(() => {
-    if (isSpeedRace && board.linesCleared !== prevLinesClearedRef.current && board.linesCleared > 0) {
+    if (!isSpeedRace) {
+      prevLinesClearedRef.current = board.linesCleared;
+      return;
+    }
+    if (board.linesCleared !== prevLinesClearedRef.current && board.linesCleared > 0) {
       const startTimer = setTimeout(() => setIsPulsing(true), 0);
       const endTimer = setTimeout(() => setIsPulsing(false), 300);
       prevLinesClearedRef.current = board.linesCleared;
@@ -156,16 +160,6 @@ export const OpponentCanvas = memo(function OpponentCanvas({
       }
     }
 
-    // Draw game over overlay
-    if (board.status === "gameover") {
-      ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
-      ctx.fillRect(0, 0, width, height);
-      ctx.fillStyle = "#ffffff";
-      ctx.font = `bold ${Math.max(cellSize, 8)}px sans-serif`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText("GAME OVER", width / 2, height / 2);
-    }
   }, [board.board, board.activePiece, board.version, board.status, cellSize, width, height]);
 
   const isGameOver = board.status === "gameover";
@@ -193,12 +187,17 @@ export const OpponentCanvas = memo(function OpponentCanvas({
             {board.pendingGarbage}
           </div>
         )}
+        {isGameOver && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/70 rounded">
+            <span className={`font-display font-bold drop-shadow-lg ${cellSize >= 16 ? "text-sm" : "text-[10px]"} text-white`}>GAME OVER</span>
+          </div>
+        )}
       </div>
-      <div className="flex flex-col items-center gap-1 w-full">
+      {!isGameOver && <div className="flex flex-col items-center gap-1 w-full">
         {isSpeedRace && (
           <div className="w-full bg-black/40 rounded-full h-1.5 border border-primary/10">
             <div
-              className={`${progressColors.bar} h-full rounded-full transition-all duration-300 ${progressColors.glow ? "shadow-[0_0_6px_rgba(74,222,128,0.5)]" : ""}`}
+              className={`${progressColors!.bar} h-full rounded-full transition-all duration-300 ${progressColors!.glow ? "shadow-[0_0_6px_rgba(74,222,128,0.5)]" : ""}`}
               style={{ width: `${Math.min((board.linesCleared / SPEED_RACE_TARGET_LINES) * 100, 100)}%` }}
             />
           </div>
@@ -206,8 +205,7 @@ export const OpponentCanvas = memo(function OpponentCanvas({
         <div className="flex items-center justify-center gap-2 text-[10px] font-mono">
         {isSpeedRace ? (
           <>
-            <span className={`font-bold transition-transform duration-200 inline-block ${isPulsing ? "scale-125" : "scale-100"} ${progressColors.text}`}>{remaining} left</span>
-            <span className="text-muted-foreground">{board.linesCleared}/{SPEED_RACE_TARGET_LINES}</span>
+            <span className={`font-bold transition-transform duration-200 inline-block ${isPulsing ? "scale-125" : "scale-100"} ${progressColors!.text}`}>{remaining} left</span>
             {elapsedTime != null && (
               <>
                 <span className="text-muted-foreground">·</span>
@@ -219,7 +217,7 @@ export const OpponentCanvas = memo(function OpponentCanvas({
           <>
             <span className="text-primary">L{board.level}</span>
             <span className="text-muted-foreground">·</span>
-            <span className="text-muted-foreground">{board.score.toLocaleString()}</span>
+            <span className="text-foreground">{board.score.toLocaleString()}</span>
             {elapsedTime != null && (
               <>
                 <span className="text-muted-foreground">·</span>
@@ -229,7 +227,7 @@ export const OpponentCanvas = memo(function OpponentCanvas({
           </>
         )}
         </div>
-      </div>
+      </div>}
     </div>
   );
 }, (prev, next) => {

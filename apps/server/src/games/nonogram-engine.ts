@@ -11,6 +11,7 @@ import type {
 } from "@game-hub/shared-types";
 import { NONOGRAM_DIFFICULTY_CONFIGS } from "@game-hub/shared-types";
 import type { GameEngine } from "./engine-interface.js";
+import { NONOGRAM_PATTERNS } from "./nonogram-patterns.js";
 
 export class NonogramEngine implements GameEngine {
   gameType = "nonogram" as const;
@@ -113,9 +114,11 @@ export class NonogramEngine implements GameEngine {
   }
 
   private generatePuzzle(): void {
-    this.solution = Array.from({ length: this.rows }, () =>
-      Array.from({ length: this.cols }, () => Math.random() < this.fillRatio),
-    );
+    const patterns = NONOGRAM_PATTERNS[this.difficulty];
+    const pattern = patterns[Math.floor(Math.random() * patterns.length)];
+    this.solution = pattern.map((row) => [...row]);
+    this.rows = this.solution.length;
+    this.cols = this.solution[0].length;
     this.rowHints = this.solution.map((row) => computeHints(row));
     this.colHints = Array.from({ length: this.cols }, (_, c) => {
       const col = this.solution.map((row) => row[c]);

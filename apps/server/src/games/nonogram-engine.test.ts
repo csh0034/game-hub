@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { NonogramEngine, computeHints } from "./nonogram-engine.js";
-import type { Player } from "@game-hub/shared-types";
+import { NONOGRAM_PATTERNS } from "./nonogram-patterns.js";
+import { NONOGRAM_DIFFICULTY_CONFIGS } from "@game-hub/shared-types";
+import type { Player, NonogramDifficulty } from "@game-hub/shared-types";
 
 const mockPlayers: Player[] = [
   { id: "player1", nickname: "노노그래머", isReady: true },
@@ -198,6 +200,30 @@ describe("NonogramEngine", () => {
 
     it("getDifficulty가 설정된 난이도를 반환한다", () => {
       expect(engine.getDifficulty()).toBe("tiny");
+    });
+  });
+
+  describe("패턴 정합성", () => {
+    it("모든 난이도의 패턴 크기가 설정과 일치한다", () => {
+      const difficulties = Object.keys(NONOGRAM_DIFFICULTY_CONFIGS) as NonogramDifficulty[];
+      for (const diff of difficulties) {
+        const config = NONOGRAM_DIFFICULTY_CONFIGS[diff];
+        const patterns = NONOGRAM_PATTERNS[diff];
+        expect(patterns.length).toBeGreaterThan(0);
+        for (let i = 0; i < patterns.length; i++) {
+          expect(patterns[i].length, `${diff} 패턴[${i}] 행 수`).toBe(config.rows);
+          for (let r = 0; r < patterns[i].length; r++) {
+            expect(patterns[i][r].length, `${diff} 패턴[${i}] ${r}행 열 수`).toBe(config.cols);
+          }
+        }
+      }
+    });
+
+    it("각 난이도에 최소 2개 이상의 패턴이 있다", () => {
+      const difficulties = Object.keys(NONOGRAM_DIFFICULTY_CONFIGS) as NonogramDifficulty[];
+      for (const diff of difficulties) {
+        expect(NONOGRAM_PATTERNS[diff].length, `${diff} 패턴 수`).toBeGreaterThanOrEqual(2);
+      }
     });
   });
 

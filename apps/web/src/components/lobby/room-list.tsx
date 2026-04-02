@@ -45,9 +45,19 @@ export function RoomList({ rooms, onJoinRoom, onSpectateRoom }: RoomListProps) {
                   <span className="text-xs bg-secondary px-2 py-0.5 rounded text-muted-foreground">
                     {config.name}
                   </span>
+                  {room.status === "waiting" && (
+                    <span className="text-xs bg-neon-green/15 text-neon-green px-2 py-0.5 rounded">
+                      대기 중
+                    </span>
+                  )}
                   {isPlaying && (
                     <span className="text-xs bg-neon-pink/15 text-neon-pink px-2 py-0.5 rounded flex items-center gap-1">
                       <Play className="w-3 h-3" /> 게임 중
+                    </span>
+                  )}
+                  {isFinished && (
+                    <span className="text-xs bg-neon-yellow/15 text-neon-yellow px-2 py-0.5 rounded">
+                      종료
                     </span>
                   )}
                 </div>

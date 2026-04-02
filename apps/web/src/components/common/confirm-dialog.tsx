@@ -47,7 +47,7 @@ export function ConfirmDialog({
             <h2 className="text-lg font-bold font-[family-name:var(--font-display)]">{title}</h2>
           </div>
 
-          <p className="text-sm text-muted-foreground mb-6 ml-[52px]">
+          <p className="text-sm text-muted-foreground mb-6 ml-[52px] whitespace-pre-line">
             {message}
           </p>
 

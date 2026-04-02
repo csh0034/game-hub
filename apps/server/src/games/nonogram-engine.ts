@@ -28,6 +28,8 @@ export class NonogramEngine implements GameEngine {
   private playerState: NonogramPlayerBoard | null = null;
   private playerId = "";
   private startedAt: number | null = null;
+  private history: { row: number; col: number; from: NonogramCellStatus; to: NonogramCellStatus }[][] = [];
+  private redoStack: { row: number; col: number; from: NonogramCellStatus; to: NonogramCellStatus }[][] = [];
 
   constructor(difficulty: NonogramDifficulty = "beginner") {
     this.difficulty = difficulty;
@@ -65,33 +67,101 @@ export class NonogramEngine implements GameEngine {
       return this.toPublicState();
     }
 
-    const cell = ps.board[m.row][m.col];
+    const from = ps.board[m.row][m.col];
+    let to: NonogramCellStatus;
 
     switch (m.type) {
-      case "fill": {
-        if (cell === "marked") return this.toPublicState();
-        ps.board[m.row][m.col] = cell === "filled" ? "hidden" : "filled";
-        break;
-      }
-      case "mark": {
-        if (cell === "filled") return this.toPublicState();
-        ps.board[m.row][m.col] = cell === "marked" ? "hidden" : "marked";
-        break;
-      }
-      case "clear": {
-        ps.board[m.row][m.col] = "hidden";
-        break;
-      }
+      case "fill": to = "filled"; break;
+      case "mark": to = "marked"; break;
+      case "clear": to = "hidden"; break;
     }
 
-    ps.progress = this.calculateProgress(ps.board);
+    if (from === to) return this.toPublicState();
 
+    ps.board[m.row][m.col] = to;
+    this.history.push([{ row: m.row, col: m.col, from, to }]);
+    this.redoStack = [];
+
+    this.updateProgressAndCheck(ps);
+    return this.toPublicState();
+  }
+
+  /** 여러 셀을 한 번에 변경 (드래그용, 1개의 Undo 단위) */
+  processBatchMove(playerId: string, moves: { row: number; col: number; target: NonogramCellStatus }[]): NonogramPublicState {
+    const ps = this.playerState;
+    if (!ps || ps.status !== "playing") return this.toPublicState();
+    if (playerId !== this.playerId) return this.toPublicState();
+
+    const diffs: { row: number; col: number; from: NonogramCellStatus; to: NonogramCellStatus }[] = [];
+
+    for (const m of moves) {
+      if (m.row < 0 || m.row >= this.rows || m.col < 0 || m.col >= this.cols) continue;
+      const from = ps.board[m.row][m.col];
+      if (from === m.target) continue;
+      ps.board[m.row][m.col] = m.target;
+      diffs.push({ row: m.row, col: m.col, from, to: m.target });
+    }
+
+    if (diffs.length > 0) {
+      this.history.push(diffs);
+      this.redoStack = [];
+    }
+
+    this.updateProgressAndCheck(ps);
+    return this.toPublicState();
+  }
+
+  undo(): NonogramPublicState {
+    const ps = this.playerState;
+    if (!ps || ps.status !== "playing") return this.toPublicState();
+    const entry = this.history.pop();
+    if (!entry) return this.toPublicState();
+
+    for (const diff of entry) {
+      ps.board[diff.row][diff.col] = diff.from;
+    }
+    this.redoStack.push(entry);
+
+    this.updateProgressAndCheck(ps);
+    return this.toPublicState();
+  }
+
+  redo(): NonogramPublicState {
+    const ps = this.playerState;
+    if (!ps || ps.status !== "playing") return this.toPublicState();
+    const entry = this.redoStack.pop();
+    if (!entry) return this.toPublicState();
+
+    for (const diff of entry) {
+      ps.board[diff.row][diff.col] = diff.to;
+    }
+    this.history.push(entry);
+
+    this.updateProgressAndCheck(ps);
+    return this.toPublicState();
+  }
+
+  /** 보드 초기화 (같은 퍼즐, 빈 보드로) */
+  restart(): NonogramPublicState {
+    const ps = this.playerState;
+    if (!ps || ps.status !== "playing") return this.toPublicState();
+    for (let r = 0; r < this.rows; r++) {
+      for (let c = 0; c < this.cols; c++) {
+        ps.board[r][c] = "hidden";
+      }
+    }
+    ps.progress = 0;
+    this.history = [];
+    this.redoStack = [];
+    return this.toPublicState();
+  }
+
+  private updateProgressAndCheck(ps: NonogramPlayerBoard): void {
+    ps.progress = this.calculateProgress(ps.board);
     if (this.checkSolution(ps.board)) {
       ps.status = "completed";
       ps.completedAt = Date.now();
     }
-
-    return this.toPublicState();
   }
 
   checkWin(_state: GameState): GameResult | null {
@@ -101,6 +171,21 @@ export class NonogramEngine implements GameEngine {
       return { winnerId: this.playerId, reason: `클리어 시간: ${timeStr}초` };
     }
     return null;
+  }
+
+  /** 채운 칸 중 틀린 칸 수를 반환 */
+  countErrors(): number {
+    const ps = this.playerState;
+    if (!ps) return 0;
+    let errors = 0;
+    for (let r = 0; r < this.rows; r++) {
+      for (let c = 0; c < this.cols; c++) {
+        if (ps.board[r][c] === "filled" && !this.solution[r][c]) {
+          errors++;
+        }
+      }
+    }
+    return errors;
   }
 
   getDifficulty(): NonogramDifficulty {

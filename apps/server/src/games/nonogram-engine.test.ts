@@ -69,11 +69,11 @@ describe("NonogramEngine", () => {
       expect(newState.players["player1"].board[0][0]).toBe("filled");
     });
 
-    it("fill 토글로 채운 셀을 비운다", () => {
+    it("fill을 같은 셀에 다시 보내면 변경 없다", () => {
       const state = engine.initState(mockPlayers);
       engine.processMove(state, "player1", { type: "fill", row: 0, col: 0 });
       const newState = engine.processMove(state, "player1", { type: "fill", row: 0, col: 0 });
-      expect(newState.players["player1"].board[0][0]).toBe("hidden");
+      expect(newState.players["player1"].board[0][0]).toBe("filled");
     });
 
     it("mark로 X 마킹한다", () => {
@@ -82,25 +82,25 @@ describe("NonogramEngine", () => {
       expect(newState.players["player1"].board[0][0]).toBe("marked");
     });
 
-    it("mark 토글로 X 마킹을 해제한다", () => {
+    it("mark를 같은 셀에 다시 보내면 변경 없다", () => {
       const state = engine.initState(mockPlayers);
       engine.processMove(state, "player1", { type: "mark", row: 0, col: 0 });
       const newState = engine.processMove(state, "player1", { type: "mark", row: 0, col: 0 });
-      expect(newState.players["player1"].board[0][0]).toBe("hidden");
-    });
-
-    it("marked 셀은 fill할 수 없다", () => {
-      const state = engine.initState(mockPlayers);
-      engine.processMove(state, "player1", { type: "mark", row: 0, col: 0 });
-      const newState = engine.processMove(state, "player1", { type: "fill", row: 0, col: 0 });
       expect(newState.players["player1"].board[0][0]).toBe("marked");
     });
 
-    it("filled 셀은 mark할 수 없다", () => {
+    it("marked 셀에 fill을 보내면 filled로 변경된다", () => {
+      const state = engine.initState(mockPlayers);
+      engine.processMove(state, "player1", { type: "mark", row: 0, col: 0 });
+      const newState = engine.processMove(state, "player1", { type: "fill", row: 0, col: 0 });
+      expect(newState.players["player1"].board[0][0]).toBe("filled");
+    });
+
+    it("filled 셀에 mark를 보내면 marked로 변경된다", () => {
       const state = engine.initState(mockPlayers);
       engine.processMove(state, "player1", { type: "fill", row: 0, col: 0 });
       const newState = engine.processMove(state, "player1", { type: "mark", row: 0, col: 0 });
-      expect(newState.players["player1"].board[0][0]).toBe("filled");
+      expect(newState.players["player1"].board[0][0]).toBe("marked");
     });
 
     it("clear로 셀을 초기화한다", () => {
@@ -241,6 +241,122 @@ describe("NonogramEngine", () => {
       engine.initState(mockPlayers);
       const time = engine.getCompletionTime();
       expect(time).toBeNull();
+    });
+  });
+
+  describe("countErrors", () => {
+    it("틀린 칸이 없으면 0을 반환한다", () => {
+      const state = engine.initState(mockPlayers);
+      engine._setSolution([
+        [true, false],
+        [false, true],
+      ]);
+      engine.processMove(state, "player1", { type: "fill", row: 0, col: 0 });
+      expect(engine.countErrors()).toBe(0);
+    });
+
+    it("틀린 칸 수를 정확히 반환한다", () => {
+      const state = engine.initState(mockPlayers);
+      engine._setSolution([
+        [true, false],
+        [false, true],
+      ]);
+      // (0,1)은 false인데 fill → 오류 1개
+      engine.processMove(state, "player1", { type: "fill", row: 0, col: 1 });
+      expect(engine.countErrors()).toBe(1);
+    });
+
+    it("아무것도 채우지 않으면 0을 반환한다", () => {
+      engine.initState(mockPlayers);
+      expect(engine.countErrors()).toBe(0);
+    });
+
+    it("marked 셀은 오류로 세지 않는다", () => {
+      const state = engine.initState(mockPlayers);
+      engine._setSolution([
+        [true, false],
+        [false, true],
+      ]);
+      engine.processMove(state, "player1", { type: "mark", row: 0, col: 1 });
+      expect(engine.countErrors()).toBe(0);
+    });
+  });
+
+  describe("undo/redo", () => {
+    it("undo로 마지막 이동을 되돌린다", () => {
+      const state = engine.initState(mockPlayers);
+      engine.processMove(state, "player1", { type: "fill", row: 0, col: 0 });
+      engine.undo();
+      expect(engine._getPlayerState()?.board[0][0]).toBe("hidden");
+    });
+
+    it("redo로 되돌린 이동을 다시 적용한다", () => {
+      const state = engine.initState(mockPlayers);
+      engine.processMove(state, "player1", { type: "fill", row: 0, col: 0 });
+      engine.undo();
+      engine.redo();
+      expect(engine._getPlayerState()?.board[0][0]).toBe("filled");
+    });
+
+    it("새 이동 시 redo 스택이 초기화된다", () => {
+      const state = engine.initState(mockPlayers);
+      engine.processMove(state, "player1", { type: "fill", row: 0, col: 0 });
+      engine.undo();
+      engine.processMove(state, "player1", { type: "mark", row: 0, col: 0 });
+      engine.redo(); // redo 스택 비어있으므로 변화 없음
+      expect(engine._getPlayerState()?.board[0][0]).toBe("marked");
+    });
+
+    it("히스토리가 비었을 때 undo는 변화 없다", () => {
+      engine.initState(mockPlayers);
+      engine.undo();
+      expect(engine._getPlayerState()?.board[0][0]).toBe("hidden");
+    });
+  });
+
+  describe("restart", () => {
+    it("보드를 초기 상태로 되돌린다", () => {
+      const state = engine.initState(mockPlayers);
+      engine.processMove(state, "player1", { type: "fill", row: 0, col: 0 });
+      engine.processMove(state, "player1", { type: "mark", row: 0, col: 1 });
+      engine.restart();
+      const ps = engine._getPlayerState();
+      expect(ps?.board[0][0]).toBe("hidden");
+      expect(ps?.board[0][1]).toBe("hidden");
+      expect(ps?.progress).toBe(0);
+    });
+
+    it("히스토리와 redo 스택을 초기화한다", () => {
+      const state = engine.initState(mockPlayers);
+      engine.processMove(state, "player1", { type: "fill", row: 0, col: 0 });
+      engine.restart();
+      engine.undo(); // 히스토리 비어있으므로 변화 없음
+      expect(engine._getPlayerState()?.board[0][0]).toBe("hidden");
+    });
+  });
+
+  describe("processBatchMove", () => {
+    it("여러 셀을 한 번에 변경한다", () => {
+      engine.initState(mockPlayers);
+      engine.processBatchMove("player1", [
+        { row: 0, col: 0, target: "filled" },
+        { row: 0, col: 1, target: "marked" },
+      ]);
+      const ps = engine._getPlayerState();
+      expect(ps?.board[0][0]).toBe("filled");
+      expect(ps?.board[0][1]).toBe("marked");
+    });
+
+    it("batch 이동은 1개의 undo 단위이다", () => {
+      engine.initState(mockPlayers);
+      engine.processBatchMove("player1", [
+        { row: 0, col: 0, target: "filled" },
+        { row: 0, col: 1, target: "filled" },
+      ]);
+      engine.undo();
+      const ps = engine._getPlayerState();
+      expect(ps?.board[0][0]).toBe("hidden");
+      expect(ps?.board[0][1]).toBe("hidden");
     });
   });
 });

@@ -769,6 +769,63 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
     }
   });
 
+  socket.on("game:nonogram-verify", (callback) => {
+    const roomId = socket.data.roomId;
+    if (!roomId) return;
+    const engine = gameManager.getNonogramEngine(roomId);
+    if (!engine) return;
+    callback({ errorCount: engine.countErrors() });
+  });
+
+  socket.on("game:nonogram-batch-move", (moves, callback) => {
+    const roomId = socket.data.roomId;
+    if (!roomId) return;
+    const engine = gameManager.getNonogramEngine(roomId);
+    if (!engine) return;
+    const newState = engine.processBatchMove(socket.id!, moves);
+    io.to(roomId).emit("game:state-updated", newState);
+    const result = engine.checkWin(newState);
+    if (result) {
+      io.to(roomId).emit("game:ended", result);
+      const updatedRoom = gameManager.getRoom(roomId);
+      if (updatedRoom) {
+        updatedRoom.status = "finished";
+        io.emit("lobby:room-updated", updatedRoom);
+      }
+    }
+    callback(true);
+  });
+
+  socket.on("game:nonogram-restart", (callback) => {
+    const roomId = socket.data.roomId;
+    if (!roomId) return;
+    const engine = gameManager.getNonogramEngine(roomId);
+    if (!engine) return;
+    const newState = engine.restart();
+    io.to(roomId).emit("game:state-updated", newState);
+    callback(true);
+  });
+
+  socket.on("game:nonogram-undo", (callback) => {
+    const roomId = socket.data.roomId;
+    if (!roomId) return;
+    const engine = gameManager.getNonogramEngine(roomId);
+    if (!engine) return;
+    const newState = engine.undo();
+    io.to(roomId).emit("game:state-updated", newState);
+    callback(true);
+  });
+
+  socket.on("game:nonogram-redo", (callback) => {
+    const roomId = socket.data.roomId;
+    if (!roomId) return;
+    const engine = gameManager.getNonogramEngine(roomId);
+    if (!engine) return;
+    const newState = engine.redo();
+    io.to(roomId).emit("game:state-updated", newState);
+    callback(true);
+  });
+
   socket.on("game:rematch", () => {
     const roomId = socket.data.roomId;
     if (!roomId) return;

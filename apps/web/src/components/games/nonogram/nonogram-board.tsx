@@ -79,6 +79,17 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
     return Math.max(...state.colHints.map((h) => h.length));
   }, [state]);
 
+  // 힌트 체크 상태 (클라이언트 전용) — key: "row-r-i" 또는 "col-c-i"
+  const [checkedHints, setCheckedHints] = useState<Set<string>>(new Set());
+  const toggleHint = useCallback((key: string) => {
+    setCheckedHints((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
+
   if (!state || !playerBoard) return null;
 
   const difficultyConfig = NONOGRAM_DIFFICULTY_CONFIGS[state.difficulty];
@@ -125,11 +136,19 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
               className="flex flex-col items-center justify-end pb-0.5"
               style={{ fontSize: hintFontSize }}
             >
-              {hints.map((h, i) => (
-                <span key={i} className="leading-tight text-muted-foreground font-mono">
-                  {h}
-                </span>
-              ))}
+              {hints.map((h, i) => {
+                const key = `col-${c}-${i}`;
+                const checked = checkedHints.has(key);
+                return (
+                  <span
+                    key={i}
+                    className={`leading-tight font-mono cursor-pointer select-none transition-colors ${checked ? "text-primary/40 line-through" : "text-muted-foreground"}`}
+                    onClick={() => toggleHint(key)}
+                  >
+                    {h}
+                  </span>
+                );
+              })}
             </div>
           ))}
 
@@ -141,11 +160,19 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
                 className="flex items-center justify-end gap-0.5 pr-1"
                 style={{ fontSize: hintFontSize }}
               >
-                {state.rowHints[r].map((h, i) => (
-                  <span key={i} className="text-muted-foreground font-mono">
-                    {h}
-                  </span>
-                ))}
+                {state.rowHints[r].map((h, i) => {
+                  const key = `row-${r}-${i}`;
+                  const checked = checkedHints.has(key);
+                  return (
+                    <span
+                      key={i}
+                      className={`font-mono cursor-pointer select-none transition-colors ${checked ? "text-primary/40 line-through" : "text-muted-foreground"}`}
+                      onClick={() => toggleHint(key)}
+                    >
+                      {h}
+                    </span>
+                  );
+                })}
               </div>
 
               {/* Cells */}

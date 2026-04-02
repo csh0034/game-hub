@@ -185,3 +185,6 @@ Docker 멀티스테이지 빌드로 프로덕션 이미지를 생성한다. `Doc
 3. `server/src/games/game-manager.ts` — 엔진 등록
 4. `web/src/components/games/<name>/` — 게임 UI 작성
 5. `web/src/lib/game-registry.tsx` — lazy import 등록
+6. `web/src/components/lobby/game-card-grid.tsx` — 게임 카드 렌더링 + `getQuickStartBadges()`에 빠른 시작 라벨 추가
+7. `web/src/components/lobby/room-list.tsx` — `getOptionsSummary()`에 방 목록 옵션 요약 추가
+8. `web/src/components/lobby/room-view.tsx` — 대기실 옵션 UI (방장: 설정 변경, 참가자: 읽기 전용 표시)

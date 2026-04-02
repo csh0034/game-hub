@@ -1,4 +1,4 @@
-export type GameType = "gomoku" | "minesweeper" | "tetris" | "liar-drawing" | "catch-mind" | "typing";
+export type GameType = "gomoku" | "minesweeper" | "tetris" | "liar-drawing" | "catch-mind" | "typing" | "nonogram";
 
 export interface GameConfig {
   gameType: GameType;
@@ -12,6 +12,14 @@ export interface GameConfig {
 }
 
 export const GAME_CONFIGS: Record<GameType, GameConfig> = {
+  nonogram: {
+    gameType: "nonogram",
+    name: "노노그램",
+    description: "행/열 숫자 힌트를 보고 칸을 채워 숨겨진 그림을 완성하는 퍼즐",
+    minPlayers: 1,
+    maxPlayers: 1,
+    icon: "🧩",
+  },
   typing: {
     gameType: "typing",
     name: "타자 게임",
@@ -375,8 +383,51 @@ export interface TypingMove {
   word: string;
 }
 
-export type GameState = GomokuState | MinesweeperPublicState | TetrisPublicState | LiarDrawingPublicState | CatchMindPublicState | TypingPublicState;
-export type GameMove = GomokuMove | MinesweeperMove | TetrisMove | LiarDrawingMove | CatchMindMove | TypingMove;
+// Nonogram types
+export type NonogramDifficulty = "tiny" | "beginner" | "intermediate" | "expert" | "extreme";
+
+export interface NonogramDifficultyConfig {
+  rows: number;
+  cols: number;
+  fillRatio: number;
+  label: string;
+}
+
+export const NONOGRAM_DIFFICULTY_CONFIGS: Record<NonogramDifficulty, NonogramDifficultyConfig> = {
+  tiny: { rows: 5, cols: 5, fillRatio: 0.5, label: "입문" },
+  beginner: { rows: 10, cols: 10, fillRatio: 0.45, label: "초급" },
+  intermediate: { rows: 15, cols: 15, fillRatio: 0.4, label: "중급" },
+  expert: { rows: 20, cols: 20, fillRatio: 0.35, label: "고급" },
+  extreme: { rows: 40, cols: 40, fillRatio: 0.3, label: "극한" },
+};
+
+export type NonogramCellStatus = "hidden" | "filled" | "marked";
+
+export interface NonogramPlayerBoard {
+  board: NonogramCellStatus[][];
+  progress: number; // 0~100
+  status: "playing" | "completed";
+  completedAt: number | null;
+}
+
+export interface NonogramPublicState {
+  players: Record<string, NonogramPlayerBoard>;
+  rows: number;
+  cols: number;
+  rowHints: number[][];
+  colHints: number[][];
+  difficulty: NonogramDifficulty;
+  startedAt: number | null;
+}
+
+export interface NonogramMove {
+  type: "fill" | "mark" | "clear";
+  row: number;
+  col: number;
+}
+
+export type GameState = GomokuState | MinesweeperPublicState | TetrisPublicState | LiarDrawingPublicState | CatchMindPublicState | TypingPublicState | NonogramPublicState;
+export type GameMove = GomokuMove | MinesweeperMove | TetrisMove | LiarDrawingMove | CatchMindMove | TypingMove | NonogramMove;
 
 export interface GameResult {
   winnerId: string | null; // null = draw

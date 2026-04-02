@@ -1,7 +1,7 @@
 "use client";
 
 import type { Room } from "@game-hub/shared-types";
-import { GAME_CONFIGS, MAX_SPECTATORS, MINESWEEPER_DIFFICULTY_CONFIGS, TETRIS_DIFFICULTY_CONFIGS, TYPING_DIFFICULTY_CONFIGS } from "@game-hub/shared-types";
+import { GAME_CONFIGS, MAX_SPECTATORS, MINESWEEPER_DIFFICULTY_CONFIGS, TETRIS_DIFFICULTY_CONFIGS, TYPING_DIFFICULTY_CONFIGS, NONOGRAM_DIFFICULTY_CONFIGS } from "@game-hub/shared-types";
 import { Users, Clock, Play, Eye, MessageCircle, MessageCircleOff } from "lucide-react";
 
 interface RoomListProps {
@@ -154,6 +154,10 @@ function getOptionsSummary(room: Room): string | null {
       parts.push(`${opts?.typingTimeLimit ?? 60}초`);
       parts.push(`❤️×${opts?.typingLives ?? 3}`);
       return parts.join(" · ");
+    }
+    case "nonogram": {
+      const diff = NONOGRAM_DIFFICULTY_CONFIGS[opts?.nonogramDifficulty ?? "beginner"];
+      return `${diff.label} (${diff.rows}×${diff.cols})`;
     }
     default:
       return null;

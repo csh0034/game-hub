@@ -1,8 +1,8 @@
 "use client";
 
 import { Suspense, useEffect, useState, useCallback, useRef } from "react";
-import type { Room, ChatMessage, GameOptions, MinesweeperDifficulty, TetrisDifficulty, TypingDifficulty } from "@game-hub/shared-types";
-import { GAME_CONFIGS, MAX_SPECTATORS, MAX_ROOM_NAME_LENGTH, MINESWEEPER_DIFFICULTY_CONFIGS, TETRIS_DIFFICULTY_CONFIGS, TYPING_DIFFICULTY_CONFIGS } from "@game-hub/shared-types";
+import type { Room, ChatMessage, GameOptions, MinesweeperDifficulty, TetrisDifficulty, TypingDifficulty, NonogramDifficulty } from "@game-hub/shared-types";
+import { GAME_CONFIGS, MAX_SPECTATORS, MAX_ROOM_NAME_LENGTH, MINESWEEPER_DIFFICULTY_CONFIGS, TETRIS_DIFFICULTY_CONFIGS, TYPING_DIFFICULTY_CONFIGS, NONOGRAM_DIFFICULTY_CONFIGS } from "@game-hub/shared-types";
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { useGame } from "@/hooks/use-game";
 import { GameRenderer } from "@/lib/game-registry";
@@ -501,6 +501,29 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
                   </div>
                 </div>
               )}
+              {room.gameType === "nonogram" && (
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">난이도</label>
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {(Object.entries(NONOGRAM_DIFFICULTY_CONFIGS) as [NonogramDifficulty, typeof NONOGRAM_DIFFICULTY_CONFIGS[NonogramDifficulty]][]).map(([key, config]) => (
+                      <button
+                        key={key}
+                        onClick={() => handleOptionChange({ ...localOptions, nonogramDifficulty: key })}
+                        className={`p-1.5 rounded-lg border text-sm text-center transition-colors ${
+                          (localOptions.nonogramDifficulty ?? "beginner") === key
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border hover:border-border/80"
+                        }`}
+                      >
+                        <div className="font-medium text-xs">{config.label}</div>
+                        <div className="text-[10px] text-muted-foreground mt-0.5">
+                          {config.rows}×{config.cols}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               {room.gameType === "tetris" && (
                 <div className="space-y-3">
                   <div>
@@ -770,6 +793,15 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
                   <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
                     <span className="text-muted-foreground">난이도</span>
                     <span className="font-medium">{diff.label} ({diff.rows}×{diff.cols} · 💣{diff.mineCount})</span>
+                  </div>
+                );
+              })()}
+              {room.gameType === "nonogram" && (() => {
+                const diff = NONOGRAM_DIFFICULTY_CONFIGS[room.gameOptions?.nonogramDifficulty ?? "beginner"];
+                return (
+                  <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
+                    <span className="text-muted-foreground">난이도</span>
+                    <span className="font-medium">{diff.label} ({diff.rows}×{diff.cols})</span>
                   </div>
                 );
               })()}

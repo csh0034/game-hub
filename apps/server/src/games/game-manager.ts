@@ -7,6 +7,7 @@ import { TetrisEngine } from "./tetris-engine.js";
 import { LiarDrawingEngine } from "./liar-drawing-engine.js";
 import { CatchMindEngine } from "./catch-mind-engine.js";
 import { TypingEngine } from "./typing-engine.js";
+import { NonogramEngine } from "./nonogram-engine.js";
 import type { GameEngine } from "./engine-interface.js";
 import type { RoomStore } from "../storage/index.js";
 
@@ -26,6 +27,7 @@ export class GameManager {
     this.engines.set("liar-drawing", new LiarDrawingEngine());
     this.engines.set("catch-mind", new CatchMindEngine());
     this.engines.set("typing", new TypingEngine());
+    this.engines.set("nonogram", new NonogramEngine());
   }
 
   async loadRoomsFromStore(): Promise<void> {
@@ -209,6 +211,16 @@ export class GameManager {
       return state;
     }
 
+    if (room.gameType === "nonogram") {
+      const difficulty = room.gameOptions?.nonogramDifficulty ?? "beginner";
+      const nonogramEngine = new NonogramEngine(difficulty);
+      this.roomEngines.set(roomId, nonogramEngine);
+      const state = nonogramEngine.initState(room.players);
+      this.gameStates.set(roomId, state);
+      this.persistRoom(room);
+      return state;
+    }
+
     const state = engine.initState(room.players);
     this.gameStates.set(roomId, state);
     this.persistRoom(room);
@@ -370,6 +382,11 @@ export class GameManager {
   getTypingEngine(roomId: string): TypingEngine | null {
     const engine = this.roomEngines.get(roomId);
     return engine instanceof TypingEngine ? engine : null;
+  }
+
+  getNonogramEngine(roomId: string): NonogramEngine | null {
+    const engine = this.roomEngines.get(roomId);
+    return engine instanceof NonogramEngine ? engine : null;
   }
 
   private cleanupRoomState(roomId: string): void {

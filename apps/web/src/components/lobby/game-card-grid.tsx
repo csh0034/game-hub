@@ -4,9 +4,11 @@ import {
   GAME_CONFIGS,
   COMING_SOON_GAMES,
   MINESWEEPER_DIFFICULTY_CONFIGS,
+  NONOGRAM_DIFFICULTY_CONFIGS,
   type GameType,
   type CreateRoomPayload,
   type MinesweeperDifficulty,
+  type NonogramDifficulty,
 } from "@game-hub/shared-types";
 import type { Room } from "@game-hub/shared-types";
 import { Users, Zap } from "lucide-react";
@@ -15,7 +17,7 @@ interface GameCardGridProps {
   onCreateRoom: (payload: CreateRoomPayload) => Promise<Room>;
 }
 
-const NEW_GAMES: GameType[] = ["typing"];
+const NEW_GAMES: GameType[] = ["nonogram", "typing"];
 
 function getQuickStartBadges(gameType: GameType): string[] | null {
   switch (gameType) {
@@ -29,6 +31,8 @@ function getQuickStartBadges(gameType: GameType): string[] | null {
       return ["60초", "3라운드", "글자 수 힌트 OFF"];
     case "typing":
       return ["초급", "60초", "❤️×3"];
+    case "nonogram":
+      return null;
     default:
       return null;
   }
@@ -67,11 +71,50 @@ export function GameCardGrid({ onCreateRoom }: GameCardGridProps) {
     });
   };
 
+  const handleNonogramCreate = async (difficulty: NonogramDifficulty) => {
+    await onCreateRoom({
+      name: "노노그램 방",
+      gameType: "nonogram",
+      gameOptions: { nonogramDifficulty: difficulty },
+    });
+  };
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {games.map((game) => (
         <div key={game.gameType}>
-          {game.gameType === "minesweeper" ? (
+          {game.gameType === "nonogram" ? (
+            <div className="group relative w-full h-full bg-card border border-border rounded-xl p-6 text-left transition-all duration-300 neon-border-hover">
+              <div className="relative">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-4xl">{game.icon}</span>
+                  <span className="text-xs font-bold bg-neon-green/20 text-neon-green px-2 py-0.5 rounded-full animate-pulse">
+                    NEW
+                  </span>
+                </div>
+                <h3 className="text-lg font-semibold font-[family-name:var(--font-display)] mb-1">{game.name}</h3>
+                <p className="text-sm text-muted-foreground mb-3 line-clamp-2 min-h-10">{game.description}</p>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {(Object.entries(NONOGRAM_DIFFICULTY_CONFIGS) as [NonogramDifficulty, typeof NONOGRAM_DIFFICULTY_CONFIGS[NonogramDifficulty]][]).map(([key, config]) => (
+                    <button
+                      key={key}
+                      onClick={() => handleNonogramCreate(key)}
+                      className="p-1.5 rounded-lg border border-border bg-background text-sm text-center hover:border-neon-cyan/50 hover:bg-neon-cyan/5 hover:shadow-[0_0_10px_rgba(0,229,255,0.1)] transition-all"
+                    >
+                      <div className="font-medium text-xs">{config.label}</div>
+                      <div className="text-[10px] text-muted-foreground mt-0.5">
+                        {config.rows}×{config.cols}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-3">
+                  <Users className="w-3 h-3" />
+                  <span>1명</span>
+                </div>
+              </div>
+            </div>
+          ) : game.gameType === "minesweeper" ? (
             <div className="group relative w-full h-full bg-card border border-border rounded-xl p-6 text-left transition-all duration-300 neon-border-hover">
               <div className="relative">
                 <div className="flex items-center justify-between mb-3">

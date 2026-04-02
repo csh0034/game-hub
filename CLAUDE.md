@@ -34,6 +34,7 @@ pnpm --filter web test:coverage           # 웹 테스트 + 커버리지
 
 | 게임 | 문서 |
 |------|------|
+| 노노그램 (Nonogram) | `docs/games/nonogram.md` |
 | 타자 게임 (Typing) | `docs/games/typing.md` |
 | 라이어 드로잉 (Liar Drawing) | `docs/games/liar-drawing.md` |
 | 캐치마인드 (Catch Mind) | `docs/games/catch-mind.md` |

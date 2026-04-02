@@ -420,6 +420,7 @@ export interface NonogramPublicState {
   difficulty: NonogramDifficulty;
   startedAt: number | null;
   puzzleName: string | null;
+  solution: boolean[][] | null;
 }
 
 export interface NonogramMove {

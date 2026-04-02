@@ -274,6 +274,7 @@ export class NonogramEngine implements GameEngine {
       difficulty: this.difficulty,
       startedAt: this.startedAt,
       puzzleName: isCompleted ? this.puzzleName : null,
+      solution: this.solution.map((row) => [...row]),
     };
   }
 

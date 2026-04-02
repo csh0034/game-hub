@@ -23,6 +23,7 @@ const THICK_COLOR = "rgba(0,229,255,0.35)";
 const THIN_COLOR = "rgba(94,111,145,0.4)";
 const FILLED_THICK_COLOR = "rgba(0,0,0,0.25)";
 const FILLED_THIN_COLOR = "rgba(0,0,0,0.15)";
+const SOLUTION_BG = "bg-yellow-500/15";
 
 export default function NonogramBoard({ isSpectating }: GameComponentProps) {
   const { socket } = useSocket();
@@ -296,11 +297,14 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
         // 게임 셀
         const cell = pendingMoves.get(`${gameRow}-${gameCol}`) ?? playerBoard.board[gameRow][gameCol];
         const isFilled = cell === "filled";
+        const isSolutionCell = isSpectating && state.solution?.[gameRow]?.[gameCol] && !isFilled;
         const bg = isFilled
           ? "bg-primary"
-          : cell === "marked"
-            ? "bg-muted"
-            : "bg-[#2a3150] hover:bg-[#323b5c]";
+          : isSolutionCell
+            ? SOLUTION_BG
+            : cell === "marked"
+              ? "bg-muted"
+              : "bg-[#2a3150] hover:bg-[#323b5c]";
         const cellShadow = isFilled ? buildShadow(r, c, gameRow, gameCol, false, true) : shadow;
 
         const disabled = playerBoard.status === "completed" || gameResult != null || !!isSpectating;
@@ -348,7 +352,7 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
         </button>
       </div>
 
-      {/* Header: [시간 --- 검증결과 --- 검증버튼 초기화] */}
+      {/* Header: [시간 --- 진행률 --- 검증결과 --- 검증버튼 초기화] */}
       <div className="flex items-center justify-center w-full px-2">
         <div className="flex items-center justify-between w-full max-w-sm">
           <div className="flex items-center gap-1.5 text-lg font-mono font-bold bg-card border border-border text-primary px-3 py-1.5 rounded-lg neon-glow-cyan">
@@ -366,7 +370,11 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
               {verifyMsg.text}
             </div>
           )}
-          {!isSpectating && !isGameOver ? (
+          {isSpectating ? (
+            <div className="flex items-center gap-1.5 text-lg font-mono font-bold bg-card border border-border text-primary px-3 py-1.5 rounded-lg neon-glow-cyan">
+              {playerBoard.progress}%
+            </div>
+          ) : !isGameOver ? (
             <div className="relative">
               <button
                 className="text-sm font-mono font-bold bg-primary/10 border border-primary/30 text-primary px-3 py-1.5 rounded-lg hover:bg-primary/20 hover:border-primary/50 hover:neon-glow-cyan active:scale-95 transition-all cursor-pointer"

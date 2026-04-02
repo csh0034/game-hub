@@ -190,7 +190,7 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
           )}
         </div>
 
-        {isSpectating && (room.gameType === "liar-drawing" || room.gameType === "catch-mind") && (
+        {isSpectating && (room.gameType === "liar-drawing" || room.gameType === "catch-mind" || room.gameType === "nonogram") && (
           <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-2 text-sm text-amber-600">
             관전자 모드: 모든 정보가 공개됩니다
           </div>

@@ -477,15 +477,13 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
         <span className="text-xs font-mono text-muted-foreground w-10 text-center">
           {Math.round(zoomLevel * 100)}%
         </span>
-        {zoomLevel !== 1 && (
-          <button
-            className="text-xs font-mono text-muted-foreground hover:text-primary transition-colors cursor-pointer"
-            onClick={() => setZoomLevel(1)}
-            title="줌 초기화"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-          </button>
-        )}
+        <button
+          className={`text-xs font-mono text-muted-foreground hover:text-primary transition-colors cursor-pointer ${zoomLevel === 1 ? "invisible" : ""}`}
+          onClick={() => setZoomLevel(1)}
+          title="줌 초기화"
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+        </button>
       </div>
 
       {/* 스크롤 컨테이너 — 확대 시 오버플로우 대응 */}

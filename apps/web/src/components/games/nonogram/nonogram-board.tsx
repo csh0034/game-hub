@@ -10,15 +10,19 @@ import { useGameStore } from "@/stores/game-store";
 import { getServerElapsed } from "@/lib/socket";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import { GameHelpDialog } from "@/components/common/game-help-dialog";
-import { HelpCircle } from "lucide-react";
+import { HelpCircle, Minus, Plus, RotateCcw } from "lucide-react";
 
-const CELL_SIZES: Record<NonogramDifficulty, number> = {
+const BASE_CELL_SIZES: Record<NonogramDifficulty, number> = {
   tiny: 40,
   beginner: 32,
   intermediate: 26,
   expert: 26,
   extreme: 22,
 };
+
+const ZOOM_MIN = 0.5;
+const ZOOM_MAX = 2.0;
+const ZOOM_STEP = 0.1;
 
 const THICK_COLOR = "rgba(0,229,255,0.35)";
 const THIN_COLOR = "rgba(94,111,145,0.4)";
@@ -60,7 +64,12 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
     return Math.max(...state.colHints.map((h) => h.length));
   }, [state]);
 
-  const cellSize = state ? (CELL_SIZES[state.difficulty] ?? 32) : 32;
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const clampZoom = useCallback((v: number) => Math.round(Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, v)) * 10) / 10, []);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const baseCellSize = state ? (BASE_CELL_SIZES[state.difficulty] ?? 32) : 32;
+  const cellSize = Math.round(baseCellSize * zoomLevel);
 
   // 좌클릭 사이클: hidden→filled→marked→hidden
   // 우클릭 사이클: hidden→marked→filled→hidden
@@ -202,6 +211,19 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [handleUndo, handleRedo]);
+
+  // Ctrl + 마우스 휠 줌
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    const handler = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      setZoomLevel((prev) => clampZoom(prev + (e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP)));
+    };
+    container.addEventListener("wheel", handler, { passive: false });
+    return () => container.removeEventListener("wheel", handler);
+  }, [clampZoom]);
 
   const checkedHints = useMemo(() => new Set(playerBoard?.checkedHints ?? []), [playerBoard?.checkedHints]);
   const toggleHint = useCallback((key: string) => {
@@ -359,13 +381,11 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
   if (!state || !playerBoard) return null;
 
   const difficultyConfig = NONOGRAM_DIFFICULTY_CONFIGS[state.difficulty];
-  const hintFontSize = Math.min(Math.max(Math.floor(cellSize * 0.55), 8), 13);
+  const baseHintFontSize = Math.min(Math.max(Math.floor(baseCellSize * 0.55), 8), 13);
+  const hintFontSize = Math.max(Math.round(baseHintFontSize * zoomLevel), 6);
   const isCompleted = playerBoard.status === "completed";
   const isGameOver = gameResult != null;
 
-  // 게임 영역 크기
-  const gameAreaW = state.cols * cellSize;
-  const gameAreaH = state.rows * cellSize;
 
   return (
     <div className="flex flex-col items-center gap-4">
@@ -424,19 +444,56 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
         </div>
       </div>
 
-      {/* 게임 영역 크기 래퍼 — 중앙 배치의 기준점, marginTop으로 힌트 영역 공간 확보 */}
-      <div style={{ width: gameAreaW, height: gameAreaH, position: "relative", overflow: "visible", marginTop: maxHintColLen * cellSize }}>
-        {/* 전체 그리드 (힌트 + 게임) — 우하단 고정, 힌트는 왼쪽/위로 확장 */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: 0,
-            right: 0,
-            borderRight: `2px solid ${THICK_COLOR}`,
-            borderBottom: `2px solid ${THICK_COLOR}`,
-            borderRadius: 4,
-          }}
+      {/* 줌 컨트롤 */}
+      <div className="flex items-center gap-2">
+        <button
+          className="text-sm font-mono bg-card border border-border text-muted-foreground w-7 h-7 rounded flex items-center justify-center hover:text-primary hover:border-primary/50 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+          onClick={() => setZoomLevel((v) => clampZoom(v - ZOOM_STEP))}
+          disabled={zoomLevel <= ZOOM_MIN}
         >
+          <Minus className="w-3.5 h-3.5" />
+        </button>
+        <input
+          type="range"
+          min={ZOOM_MIN * 100}
+          max={ZOOM_MAX * 100}
+          step={ZOOM_STEP * 100}
+          value={Math.round(zoomLevel * 100)}
+          onChange={(e) => setZoomLevel(clampZoom(Number(e.target.value) / 100))}
+          className="w-24 accent-primary"
+        />
+        <button
+          className="text-sm font-mono bg-card border border-border text-muted-foreground w-7 h-7 rounded flex items-center justify-center hover:text-primary hover:border-primary/50 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+          onClick={() => setZoomLevel((v) => clampZoom(v + ZOOM_STEP))}
+          disabled={zoomLevel >= ZOOM_MAX}
+        >
+          <Plus className="w-3.5 h-3.5" />
+        </button>
+        <span className="text-xs font-mono text-muted-foreground w-10 text-center">
+          {Math.round(zoomLevel * 100)}%
+        </span>
+        {zoomLevel !== 1 && (
+          <button
+            className="text-xs font-mono text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+            onClick={() => setZoomLevel(1)}
+            title="줌 초기화"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+
+      {/* 스크롤 컨테이너 — 확대 시 오버플로우 대응 */}
+      <div ref={scrollContainerRef} className="overflow-auto max-w-full">
+      {/* 전체 그리드 (힌트 + 게임) */}
+      <div
+        style={{
+          display: "inline-block",
+          borderRight: `2px solid ${THICK_COLOR}`,
+          borderBottom: `2px solid ${THICK_COLOR}`,
+          borderRadius: 4,
+        }}
+      >
           <div
             className="relative"
           >
@@ -514,7 +571,7 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
               </div>
             )}
           </div>
-        </div>
+      </div>
       </div>
 
       {/* Controls hint */}
@@ -525,6 +582,7 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
           <span>드래그 연속 적용</span>
           <span>Ctrl+Z/Y 되돌리기</span>
           <span>숫자클릭 체크</span>
+          <span>Ctrl+휠 확대/축소</span>
         </div>
       )}
 
@@ -570,6 +628,7 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
             <li>확인: 오류 유무 및 남은 칸 수 확인</li>
             <li>초기화: 빈 상태로 되돌림 (같은 퍼즐 유지)</li>
             <li>힌트 하이라이트: 퍼즐 셀에 마우스를 올리면 해당 행/열 힌트 강조</li>
+            <li>확대/축소: 슬라이더 또는 Ctrl+마우스 휠로 보드 크기 조절 (50%~200%)</li>
           </ul>
         </div>
         <div>

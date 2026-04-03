@@ -347,7 +347,7 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
         </button>
       </div>
 
-      {/* Header: [시간 --- 진행률 --- 검증결과 --- 검증버튼 초기화] */}
+      {/* Header: [시간 --- 진행률 --- 확인결과 --- 확인버튼 초기화] */}
       <div className="flex items-center justify-center w-full px-2">
         <div className="flex items-center justify-between w-full max-w-sm">
           <div className="flex items-center gap-1.5 text-lg font-mono font-bold bg-card border border-border text-primary px-3 py-1.5 rounded-lg neon-glow-cyan">
@@ -375,7 +375,7 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
                 className="text-sm font-mono font-bold bg-primary/10 border border-primary/30 text-primary px-3 py-1.5 rounded-lg hover:bg-primary/20 hover:border-primary/50 hover:neon-glow-cyan active:scale-95 transition-all cursor-pointer"
                 onClick={handleVerify}
               >
-                ✓ 검증
+                ✓ 확인
               </button>
               <button
                 className="absolute left-full ml-2 top-0 text-sm font-mono font-bold bg-destructive/10 border border-destructive/30 text-destructive px-3 py-1.5 rounded-lg hover:bg-destructive/20 hover:border-destructive/50 hover:neon-glow-pink active:scale-95 transition-all cursor-pointer whitespace-nowrap"
@@ -502,7 +502,7 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
         <div>
           <h3 className="text-foreground font-semibold mb-1">보조 기능</h3>
           <ul className="list-disc list-inside space-y-1">
-            <li>검증: 오류 유무 및 남은 칸 수 확인</li>
+            <li>확인: 오류 유무 및 남은 칸 수 확인</li>
             <li>초기화: 빈 상태로 되돌림 (같은 퍼즐 유지)</li>
           </ul>
         </div>

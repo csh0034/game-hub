@@ -172,6 +172,7 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
     if (!socket) return;
     socket.emit("game:nonogram-restart", () => {});
     setRestartDialogOpen(false);
+    setZoomLevel(1);
   }, [socket]);
 
   // Undo/Redo
@@ -275,10 +276,14 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
       if (!isLastCol) {
         const color = (atHintGameRight || at5thCol) ? thick : thin;
         shadows.push(`inset -1px 0 0 ${color}`);
+      } else {
+        shadows.push(`inset -1px 0 0 ${thick}`);
       }
       if (!isLastRow) {
         const color = (atHintGameBottom || at5thRow) ? thick : thin;
         shadows.push(`inset 0 -1px 0 ${color}`);
+      } else {
+        shadows.push(`inset 0 -1px 0 ${thick}`);
       }
       if (isFirstRow) shadows.push(`inset 0 1px 0 ${thick}`);
       if (isFirstCol) shadows.push(`inset 1px 0 0 ${thick}`);
@@ -489,9 +494,6 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
       <div
         style={{
           display: "inline-block",
-          borderRight: `2px solid ${THICK_COLOR}`,
-          borderBottom: `2px solid ${THICK_COLOR}`,
-          borderRadius: 4,
         }}
       >
           <div

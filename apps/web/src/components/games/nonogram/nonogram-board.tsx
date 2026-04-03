@@ -326,8 +326,9 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
         const cell = pendingMoves.get(`${gameRow}-${gameCol}`) ?? playerBoard.board[gameRow][gameCol];
         const isFilled = cell === "filled";
         const isSolutionCell = isSpectating && state.solution?.[gameRow]?.[gameCol] && !isFilled;
+        const isWrongCell = isSpectating && isFilled && !state.solution?.[gameRow]?.[gameCol];
         const bg = isFilled
-          ? "bg-primary"
+          ? isWrongCell ? "bg-destructive" : "bg-primary"
           : isSolutionCell
             ? SOLUTION_BG
             : cell === "marked"

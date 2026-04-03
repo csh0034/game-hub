@@ -366,7 +366,7 @@ describe("MinesweeperEngine", () => {
       expect(result!.winnerId).toBe("player1");
     });
 
-    it("lost 상태일 때 winnerId가 null이다", () => {
+    it("lost 상태일 때 completionTimeMs가 없다", () => {
       const state = engine.initState(mockPlayers);
       const board = createTestBoard(9, 9, [[0, 0]]);
       engine._setBoard(board);
@@ -376,6 +376,7 @@ describe("MinesweeperEngine", () => {
       const result = engine.checkWin(s);
       expect(result).not.toBeNull();
       expect(result!.winnerId).toBeNull();
+      expect(result!.completionTimeMs).toBeUndefined();
     });
 
     it("게임 진행 중이면 null을 반환한다", () => {
@@ -501,6 +502,55 @@ describe("MinesweeperEngine", () => {
       }
 
       expect(intermediateEngine.getCompletionTime()).toBeNull();
+    });
+
+    it("checkWin이 completionTimeMs를 포함한다", () => {
+      engine.initState(mockPlayers);
+      const mines: [number, number][] = [
+        [0, 0], [0, 3], [0, 6],
+        [3, 1], [3, 4], [3, 7],
+        [6, 0], [6, 3], [6, 6],
+        [8, 8],
+      ];
+      const board = createTestBoard(9, 9, mines);
+      engine._setBoard(board);
+      engine._setStartedAt(Date.now() - 5000);
+
+      let s = engine.toPublicState();
+      for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 9; c++) {
+          if (!board[r][c].hasMine && s.board[r][c].status === "hidden") {
+            humanTick();
+            s = engine.processMove(s, "player1", { type: "reveal", row: r, col: c });
+          }
+        }
+      }
+
+      const result = engine.checkWin(s);
+      expect(result).not.toBeNull();
+      expect(result!.completionTimeMs).toBeTypeOf("number");
+      expect(result!.completionTimeMs).toBeGreaterThanOrEqual(5000);
+    });
+
+    it("치팅 판정 시 checkWin에 completionTimeMs가 없다", () => {
+      engine.initState(mockPlayers);
+      const board = createTestBoard(9, 9, [[0, 0]]);
+      engine._setBoard(board);
+      engine._setStartedAt(Date.now()); // 너무 빠른 클리어
+
+      let s = engine.toPublicState();
+      for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 9; c++) {
+          if (!(r === 0 && c === 0)) {
+            tick();
+            s = engine.processMove(s, "player1", { type: "reveal", row: r, col: c });
+          }
+        }
+      }
+
+      const result = engine.checkWin(s);
+      expect(result).not.toBeNull();
+      expect(result!.completionTimeMs).toBeUndefined();
     });
   });
 

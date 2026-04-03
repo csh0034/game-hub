@@ -209,7 +209,12 @@ export class MinesweeperEngine implements GameEngine {
 
   checkWin(_state: GameState): GameResult | null {
     if (this.status === "won") {
-      return { winnerId: this.playerId, reason: "모든 안전한 칸을 열었습니다!" };
+      const completionTime = this.getCompletionTime();
+      return {
+        winnerId: this.playerId,
+        reason: "모든 안전한 칸을 열었습니다!",
+        ...(completionTime != null && { completionTimeMs: completionTime }),
+      };
     }
     if (this.status === "lost") {
       return { winnerId: null, reason: "지뢰를 밟았습니다!" };

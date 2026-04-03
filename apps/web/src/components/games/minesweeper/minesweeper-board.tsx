@@ -161,7 +161,7 @@ export default function MinesweeperBoard({ isSpectating }: GameComponentProps) {
         <div />
         <div className="flex items-center gap-1.5 text-lg font-mono font-bold bg-card border border-border text-primary px-3 py-1.5 rounded-lg neon-glow-cyan">
           <span className="text-base">⏱</span>
-          {(startedAt ? elapsed / 1000 : 0).toFixed(3)}
+          {(startedAt ? (gameResult?.completionTimeMs ?? elapsed) / 1000 : 0).toFixed(3)}
         </div>
       </div>
 

@@ -150,6 +150,26 @@ describe("useTetrisInput", () => {
     releaseKey("ArrowDown");
   });
 
+  it("Alt 키가 눌린 상태에서는 입력을 무시한다", () => {
+    renderHook(() => useTetrisInput({ enabled: true, onMove, onInstantMove }));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { code: "ArrowLeft", altKey: true, bubbles: true }));
+    expect(onMove).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(500);
+    expect(onMove).not.toHaveBeenCalled();
+  });
+
+  it("Ctrl/Meta 키가 눌린 상태에서도 입력을 무시한다", () => {
+    renderHook(() => useTetrisInput({ enabled: true, onMove, onInstantMove }));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { code: "ArrowRight", ctrlKey: true, bubbles: true }));
+    expect(onMove).not.toHaveBeenCalled();
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { code: "ArrowDown", metaKey: true, bubbles: true }));
+    expect(onMove).not.toHaveBeenCalled();
+  });
+
   it("한글 IME 활성 시에도 Space 키가 동작한다", () => {
     renderHook(() => useTetrisInput({ enabled: true, onMove, onInstantMove }));
 

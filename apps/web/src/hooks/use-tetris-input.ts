@@ -65,6 +65,9 @@ export function useTetrisInput(options: {
       // Ignore OS key repeats — we handle our own repeats
       if (e.repeat) return;
 
+      // Ignore when modifier keys are held — OS may swallow keyup, leaving timers stuck
+      if (e.altKey || e.ctrlKey || e.metaKey) return;
+
       // Clean up any existing timers for this key
       clearKeyTimers(e.code);
 

@@ -90,7 +90,7 @@ interface RoomViewProps {
 }
 
 export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeaveImmediate, onToggleReady, onUpdateGameOptions, onUpdateRoomName, onKickSpectators, onKickPlayer, onSwitchRole, roomMessages, onSendRoomMessage, onlinePlayers, onWhisper }: RoomViewProps) {
-  const { gameState, gameResult, playerLeftInfo, startGame, requestRematch, setPlayerLeftInfo } = useGame(socket);
+  const { gameState, playerLeftInfo, startGame, requestRematch, setPlayerLeftInfo } = useGame(socket);
   const [pendingOptions, setPendingOptions] = useState<GameOptions | null>(null);
   const [kickConfirmOpen, setKickConfirmOpen] = useState(false);
   const [rematchConfirmOpen, setRematchConfirmOpen] = useState(false);
@@ -1011,18 +1011,6 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
         onCancel={() => setKickTarget(null)}
       />
 
-      <ConfirmDialog
-        open={rematchConfirmOpen}
-        title="다시하기"
-        message="진행 중인 게임을 종료하고 대기실로 돌아갑니다."
-        confirmText="다시하기"
-        cancelText="취소"
-        onConfirm={() => {
-          setRematchConfirmOpen(false);
-          requestRematch();
-        }}
-        onCancel={() => setRematchConfirmOpen(false)}
-      />
     </div>
   );
 }

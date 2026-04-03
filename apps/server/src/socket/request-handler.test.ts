@@ -74,7 +74,7 @@ describe("setupRequestHandler", () => {
             title: "새 기능",
             description: "설명입니다",
             label: "bug",
-            author: "admin",
+            author: "관리자",
             status: "open",
           }),
         );

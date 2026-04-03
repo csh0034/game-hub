@@ -21,7 +21,7 @@ describe("setupAnnounceHandler", () => {
       expect(callback).toHaveBeenCalledWith({ success: true });
       expect(io.emit).toHaveBeenCalledWith("system:announcement", expect.objectContaining({
         message: "테스트 공지입니다",
-        nickname: "admin",
+        nickname: "관리자",
       }));
     });
 

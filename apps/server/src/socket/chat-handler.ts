@@ -10,7 +10,7 @@ import crypto from "node:crypto";
 import type { CatchMindPublicState } from "@game-hub/shared-types";
 import type { GameManager } from "../games/game-manager.js";
 import type { ChatStore, SessionStore } from "../storage/index.js";
-import { isAdmin } from "../admin.js";
+import { isAdmin, getDisplayNickname } from "../admin.js";
 import { clearCatchMindTimer } from "../games/catch-mind-timer.js";
 import { startCatchMindNextRound } from "./game-handler.js";
 
@@ -82,7 +82,7 @@ export function setupChatHandler(io: IOServer, socket: IOSocket, gameManager: Ga
           const score = rankScores[rank - 1] || 0;
           io.to(roomId).emit("game:catch-mind-correct", {
             playerId: socket.id!,
-            nickname: socket.data.nickname,
+            nickname: getDisplayNickname(socket.data.nickname),
             rank,
             score,
           });
@@ -90,7 +90,7 @@ export function setupChatHandler(io: IOServer, socket: IOSocket, gameManager: Ga
             id: crypto.randomUUID(),
             playerId: "system",
             nickname: "system",
-            message: `${socket.data.nickname}님이 정답을 맞추었습니다! (${rank}등, +${score}점)`,
+            message: `${getDisplayNickname(socket.data.nickname)}님이 정답을 맞추었습니다! (${rank}등, +${score}점)`,
             timestamp: Date.now(),
           };
           chatStore.pushRoomMessage(roomId, sysMsg);

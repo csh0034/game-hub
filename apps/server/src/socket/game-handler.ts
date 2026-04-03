@@ -24,7 +24,7 @@ import { startTetrisTicker, updateTetrisTickerInterval, clearTetrisTicker } from
 import { startLiarDrawingTimer, clearLiarDrawingTimer } from "../games/liar-drawing-timer.js";
 import { startCatchMindTimer, clearCatchMindTimer } from "../games/catch-mind-timer.js";
 import { startTypingTicker, updateTypingTickerInterval, clearTypingTicker } from "../games/typing-ticker.js";
-import { isAdmin } from "../admin.js";
+import { isAdmin, getDisplayNickname } from "../admin.js";
 
 const typingCountdownTimers: Map<string, NodeJS.Timeout> = new Map();
 
@@ -300,7 +300,7 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
             const playerId = room.players[0]?.id;
             if (playerId) {
               const playerSocket = io.sockets.sockets.get(playerId);
-              const nickname = playerSocket?.data?.nickname ?? "Unknown";
+              const nickname = getDisplayNickname(playerSocket?.data?.nickname ?? "Unknown");
               await submitRanking(io, rankingStore, "tetris", tetrisEngine.getDifficulty(), nickname, completionTime, result);
             }
           }
@@ -704,7 +704,7 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
           if (msEngine) {
             const completionTime = msEngine.getCompletionTime();
             if (completionTime != null) {
-              await submitRanking(io, rankingStore, "minesweeper", msEngine.getDifficulty(), socket.data.nickname, completionTime, result.result);
+              await submitRanking(io, rankingStore, "minesweeper", msEngine.getDifficulty(), getDisplayNickname(socket.data.nickname), completionTime, result.result);
             }
           }
         } else if (room?.gameType === "tetris") {
@@ -712,7 +712,7 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
           if (tetrisEngine && tetrisEngine.isSolo() && tetrisEngine.isSpeedRace() && result.result.winnerId) {
             const completionTime = tetrisEngine.getValidatedCompletionTime();
             if (completionTime != null) {
-              await submitRanking(io, rankingStore, "tetris", tetrisEngine.getDifficulty(), socket.data.nickname, completionTime, result.result);
+              await submitRanking(io, rankingStore, "tetris", tetrisEngine.getDifficulty(), getDisplayNickname(socket.data.nickname), completionTime, result.result);
             }
           }
         }

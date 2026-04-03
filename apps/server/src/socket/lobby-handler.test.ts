@@ -1118,3 +1118,58 @@ describe("setupLobbyHandler — 인증 가드", () => {
     expect(callback).toHaveBeenCalledWith(null, "인증이 필요합니다.");
   });
 });
+
+describe("setupLobbyHandler — 관리자 닉네임 치환", () => {
+  let adminSocket: ReturnType<typeof createMockSocket>;
+  let io: ReturnType<typeof createMockIo>;
+  let gameManager: GameManager;
+  let chatStore: InMemoryChatStore;
+
+  beforeEach(() => {
+    adminSocket = createMockSocket("socket-admin", "admin");
+    io = createMockIo({ withTo: true, sockets: [adminSocket as unknown as GameSocket] });
+    gameManager = new GameManager();
+    chatStore = new InMemoryChatStore();
+    setupLobbyHandler(io as unknown as GameServer, adminSocket as unknown as GameSocket, gameManager, chatStore);
+  });
+
+  it("관리자가 방을 생성하면 Player.nickname이 '관리자'로 표시된다", () => {
+    const callback = vi.fn();
+    adminSocket._trigger("lobby:create-room", { gameType: "gomoku", name: "Admin Room" }, callback);
+
+    const room = callback.mock.calls[0][0];
+    expect(room.players[0].nickname).toBe("관리자");
+  });
+
+  it("관리자가 방에 참가하면 Player.nickname이 '관리자'로 표시된다", () => {
+    const hostSocket = createMockSocket("socket-host", "Host");
+    setupLobbyHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager, chatStore);
+
+    const createCallback = vi.fn();
+    hostSocket._trigger("lobby:create-room", { gameType: "gomoku", name: "Test Room" }, createCallback);
+    const room = createCallback.mock.calls[0][0];
+
+    const joinCallback = vi.fn();
+    adminSocket._trigger("lobby:join-room", { roomId: room.id }, joinCallback);
+
+    const joinedRoom = joinCallback.mock.calls[0][0];
+    const adminPlayer = joinedRoom.players.find((p: { id: string }) => p.id === "socket-admin");
+    expect(adminPlayer.nickname).toBe("관리자");
+  });
+
+  it("관리자가 관전 참가하면 spectator.nickname이 '관리자'로 표시된다", () => {
+    const hostSocket = createMockSocket("socket-host", "Host");
+    setupLobbyHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager, chatStore);
+
+    const createCallback = vi.fn();
+    hostSocket._trigger("lobby:create-room", { gameType: "gomoku", name: "Test Room" }, createCallback);
+    const room = createCallback.mock.calls[0][0];
+    gameManager.updateGameOptions(room.id, "socket-host", { spectateEnabled: true });
+
+    const spectateCallback = vi.fn();
+    adminSocket._trigger("lobby:join-spectate", { roomId: room.id }, spectateCallback);
+
+    const spectateRoom = spectateCallback.mock.calls[0][0];
+    expect(spectateRoom.spectators[0].nickname).toBe("관리자");
+  });
+});

@@ -19,6 +19,7 @@ import { setupPlacardHandler } from "./socket/placard-handler.js";
 import { broadcastAuthenticatedCount } from "./socket/broadcast-player-count.js";
 import { GameManager } from "./games/game-manager.js";
 import { parseCorsOrigin } from "./cors.js";
+import { getDisplayNickname } from "./admin.js";
 import { connectRedis, closeRedis, createStorage, createInMemoryStorage, type Storage } from "./storage/index.js";
 
 function getCommitHash(): string {
@@ -114,7 +115,7 @@ async function bootstrap() {
             const willEnd = true;
             socket.to(roomId).emit("game:player-left", {
               playerId: socket.id,
-              nickname: socket.data.nickname,
+              nickname: getDisplayNickname(socket.data.nickname),
               willEnd,
             });
           }

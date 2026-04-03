@@ -9,7 +9,7 @@ import type {
 } from "@game-hub/shared-types";
 import { REQUEST_LABELS } from "@game-hub/shared-types";
 import type { RequestStore } from "../storage/index.js";
-import { isAdmin } from "../admin.js";
+import { isAdmin, getDisplayNickname } from "../admin.js";
 
 type IOServer = Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 type IOSocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
@@ -52,7 +52,7 @@ export function setupRequestHandler(
       title,
       description,
       label,
-      author: socket.data.nickname,
+      author: getDisplayNickname(socket.data.nickname),
       status: "open",
       createdAt: Date.now(),
       inProgressAt: null,

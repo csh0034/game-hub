@@ -10,6 +10,7 @@ import {
 import crypto from "node:crypto";
 import type { GameManager } from "../games/game-manager.js";
 import type { ChatStore } from "../storage/index.js";
+import { getDisplayNickname } from "../admin.js";
 import { clearGomokuTimer } from "../games/gomoku-timer.js";
 import { clearTetrisTicker } from "../games/tetris-ticker.js";
 import { clearCatchMindTimer } from "../games/catch-mind-timer.js";
@@ -36,7 +37,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
       const willEnd = true;
       socket.to(roomId).emit("game:player-left", {
         playerId: socket.id!,
-        nickname: socket.data.nickname,
+        nickname: getDisplayNickname(socket.data.nickname),
         willEnd,
       });
     }
@@ -47,7 +48,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
     if (!prevRoomId) return;
 
     if (socket.data.isSpectator) {
-      const nickname = socket.data.nickname;
+      const nickname = getDisplayNickname(socket.data.nickname);
       const prevRoom = gameManager.removeSpectator(prevRoomId, socket.id!);
       socket.leave(prevRoomId);
       socket.data.roomId = null;
@@ -61,7 +62,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
       return;
     }
 
-    const nickname = socket.data.nickname;
+    const nickname = getDisplayNickname(socket.data.nickname);
     emitPlayerLeftIfPlaying(prevRoomId);
     clearGomokuTimer(prevRoomId);
     clearTetrisTicker(prevRoomId);
@@ -98,7 +99,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
     socket.leave("lobby");
     const player = {
       id: socket.id!,
-      nickname: socket.data.nickname,
+      nickname: getDisplayNickname(socket.data.nickname),
       isReady: false,
     };
     const room = gameManager.createRoom(payload, player);
@@ -119,7 +120,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
     socket.leave("lobby");
     const player = {
       id: socket.id!,
-      nickname: socket.data.nickname,
+      nickname: getDisplayNickname(socket.data.nickname),
       isReady: false,
     };
     const room = gameManager.joinRoom(payload.roomId, player);
@@ -142,7 +143,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
     if (!roomId) return;
 
     if (socket.data.isSpectator) {
-      const nickname = socket.data.nickname;
+      const nickname = getDisplayNickname(socket.data.nickname);
       const room = gameManager.removeSpectator(roomId, socket.id!);
       socket.leave(roomId);
       socket.data.roomId = null;
@@ -157,7 +158,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
       return;
     }
 
-    const nickname = socket.data.nickname;
+    const nickname = getDisplayNickname(socket.data.nickname);
     emitPlayerLeftIfPlaying(roomId);
     clearGomokuTimer(roomId);
     clearTetrisTicker(roomId);
@@ -220,7 +221,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
     socket.leave("lobby");
     const player = {
       id: socket.id!,
-      nickname: socket.data.nickname,
+      nickname: getDisplayNickname(socket.data.nickname),
       isReady: false,
     };
     const room = gameManager.addSpectator(payload.roomId, player);
@@ -305,7 +306,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
       socket.data.isSpectator = false;
       io.to(roomId).emit("lobby:room-updated", room);
       io.emit("lobby:room-updated", room);
-      emitSystemMessage(roomId, `${socket.data.nickname}님이 플레이어로 전환했습니다.`);
+      emitSystemMessage(roomId, `${getDisplayNickname(socket.data.nickname)}님이 플레이어로 전환했습니다.`);
       callback({ success: true, role: "player" });
     } else {
       const room = gameManager.switchToSpectator(roomId, socket.id!);
@@ -313,7 +314,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
       socket.data.isSpectator = true;
       io.to(roomId).emit("lobby:room-updated", room);
       io.emit("lobby:room-updated", room);
-      emitSystemMessage(roomId, `${socket.data.nickname}님이 관전자로 전환했습니다.`);
+      emitSystemMessage(roomId, `${getDisplayNickname(socket.data.nickname)}님이 관전자로 전환했습니다.`);
       callback({ success: true, role: "spectator" });
     }
   });

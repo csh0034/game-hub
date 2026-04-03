@@ -8,7 +8,7 @@ import type {
 import { broadcastAuthenticatedCount } from "./broadcast-player-count.js";
 import type { SessionStore } from "../storage/index.js";
 import type { GameManager } from "../games/game-manager.js";
-import { isAdmin } from "../admin.js";
+import { isAdmin, getDisplayNickname } from "../admin.js";
 
 const GITHUB_REPO_URL = process.env.GITHUB_REPO_URL || "https://github.com/csh0034/game-hub";
 
@@ -83,7 +83,7 @@ export function setupNicknameHandler(
 
     // 방에 있는 경우 닉네임 동기화
     if (socket.data.roomId) {
-      const updatedRoom = gameManager.updatePlayerNickname(socket.data.roomId, socket.id!, trimmed);
+      const updatedRoom = gameManager.updatePlayerNickname(socket.data.roomId, socket.id!, getDisplayNickname(trimmed));
       if (updatedRoom) {
         io.to(socket.data.roomId).emit("lobby:room-updated", updatedRoom);
         io.emit("lobby:room-updated", updatedRoom);

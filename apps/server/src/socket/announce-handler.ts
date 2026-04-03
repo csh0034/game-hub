@@ -5,7 +5,7 @@ import type {
   InterServerEvents,
   SocketData,
 } from "@game-hub/shared-types";
-import { isAdmin } from "../admin.js";
+import { isAdmin, getDisplayNickname } from "../admin.js";
 
 type IOServer = Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 type IOSocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
@@ -23,7 +23,7 @@ export function setupAnnounceHandler(io: IOServer, socket: IOSocket) {
     }
     io.emit("system:announcement", {
       message: trimmed,
-      nickname: socket.data.nickname,
+      nickname: getDisplayNickname(socket.data.nickname),
       timestamp: Date.now(),
     });
     callback({ success: true });

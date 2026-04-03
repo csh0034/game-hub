@@ -132,6 +132,17 @@ describe("useGame", () => {
     expect(useGameStore.getState().gameState).toBeNull();
   });
 
+  it("quickRestart가 game:quick-restart를 emit한다", () => {
+    const socket = createMockSocket();
+    const { result } = renderHook(() => useGame(socket as never));
+
+    act(() => {
+      result.current.quickRestart();
+    });
+
+    expect(socket.emit).toHaveBeenCalledWith("game:quick-restart");
+  });
+
   it("socket이 null이면 makeMove가 아무 동작도 하지 않는다", () => {
     const { result } = renderHook(() => useGame(null));
 

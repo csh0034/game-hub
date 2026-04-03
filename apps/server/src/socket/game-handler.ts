@@ -842,6 +842,30 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
     callback(true);
   });
 
+  socket.on("game:quick-restart", () => {
+    const roomId = socket.data.roomId;
+    if (!roomId) return;
+    if (socket.data.isSpectator) return;
+
+    const currentRoom = gameManager.getRoom(roomId);
+    if (!currentRoom || currentRoom.hostId !== socket.id) return;
+    if (currentRoom.status !== "finished") return;
+    if (currentRoom.players.length !== 1) return;
+
+    clearTetrisTicker(roomId);
+    cleanupTetrisFlush(roomId);
+
+    const state = gameManager.quickRestart(roomId);
+    if (!state) return;
+
+    io.to(roomId).emit("game:started", state);
+    io.emit("lobby:room-updated", currentRoom);
+
+    if (currentRoom.gameType === "tetris") {
+      startTetrisServerTick(roomId);
+    }
+  });
+
   socket.on("game:rematch", () => {
     const roomId = socket.data.roomId;
     if (!roomId) return;

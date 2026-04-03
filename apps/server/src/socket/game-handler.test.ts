@@ -32,7 +32,7 @@ vi.mock("../games/catch-mind-timer.js", () => ({
 }));
 
 import { startGomokuTimer, clearGomokuTimer } from "../games/gomoku-timer.js";
-import { clearTetrisTicker } from "../games/tetris-ticker.js";
+import { startTetrisTicker, clearTetrisTicker } from "../games/tetris-ticker.js";
 import { clearLiarDrawingTimer } from "../games/liar-drawing-timer.js";
 import { clearCatchMindTimer } from "../games/catch-mind-timer.js";
 
@@ -428,6 +428,90 @@ describe("setupGameHandler", () => {
       hostSocket._trigger("game:rematch");
 
       expect(clearCatchMindTimer).toHaveBeenCalledWith(room.id);
+    });
+  });
+
+  describe("game:quick-restart", () => {
+    it("finished 상태의 지뢰찾기 방을 즉시 재시작한다", () => {
+      const host = { id: "host-1", nickname: "Host", isReady: true };
+      const room = gameManager.createRoom({ name: "지뢰찾기", gameType: "minesweeper" }, host);
+      hostSocket.data.roomId = room.id;
+      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager, mockRankingStore);
+
+      hostSocket._trigger("game:start");
+      room.status = "finished";
+      vi.clearAllMocks();
+
+      hostSocket._trigger("game:quick-restart");
+
+      expect(io._toEmit).toHaveBeenCalledWith("game:started", expect.any(Object));
+      expect(io.emit).toHaveBeenCalledWith("lobby:room-updated", expect.objectContaining({ status: "playing" }));
+    });
+
+    it("finished 상태의 테트리스 방을 즉시 재시작하고 ticker를 시작한다", () => {
+      const host = { id: "host-1", nickname: "Host", isReady: true };
+      const room = gameManager.createRoom({ name: "테트리스", gameType: "tetris" }, host);
+      hostSocket.data.roomId = room.id;
+      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager, mockRankingStore);
+
+      hostSocket._trigger("game:start");
+      room.status = "finished";
+      vi.clearAllMocks();
+
+      hostSocket._trigger("game:quick-restart");
+
+      expect(io._toEmit).toHaveBeenCalledWith("game:started", expect.any(Object));
+      expect(startTetrisTicker).toHaveBeenCalled();
+    });
+
+    it("finished가 아닌 상태에서는 무시한다", () => {
+      const host = { id: "host-1", nickname: "Host", isReady: true };
+      const room = gameManager.createRoom({ name: "지뢰찾기", gameType: "minesweeper" }, host);
+      hostSocket.data.roomId = room.id;
+      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager, mockRankingStore);
+
+      hostSocket._trigger("game:start");
+      vi.clearAllMocks();
+
+      hostSocket._trigger("game:quick-restart");
+
+      expect(io._toEmit).not.toHaveBeenCalledWith("game:started", expect.any(Object));
+    });
+
+    it("멀티플레이어 방에서는 무시한다", () => {
+      const host = { id: "host-1", nickname: "Host", isReady: true };
+      const guest = { id: "guest-1", nickname: "Guest", isReady: true };
+      const room = gameManager.createRoom({ name: "테트리스", gameType: "tetris" }, host);
+      gameManager.joinRoom(room.id, guest);
+      hostSocket.data.roomId = room.id;
+      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager, mockRankingStore);
+
+      hostSocket._trigger("game:start");
+      room.status = "finished";
+      vi.clearAllMocks();
+
+      hostSocket._trigger("game:quick-restart");
+
+      expect(io._toEmit).not.toHaveBeenCalledWith("game:started", expect.any(Object));
+    });
+
+    it("관전자는 quick-restart할 수 없다", () => {
+      const host = { id: "host-1", nickname: "Host", isReady: true };
+      const room = gameManager.createRoom({ name: "지뢰찾기", gameType: "minesweeper" }, host);
+      const spectatorSocket = createMockSocket("spec-1", "Spec");
+      spectatorSocket.data.roomId = room.id;
+      spectatorSocket.data.isSpectator = true;
+      setupGameHandler(io as unknown as GameServer, spectatorSocket as unknown as GameSocket, gameManager, mockRankingStore);
+
+      hostSocket.data.roomId = room.id;
+      setupGameHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager, mockRankingStore);
+      hostSocket._trigger("game:start");
+      room.status = "finished";
+      vi.clearAllMocks();
+
+      spectatorSocket._trigger("game:quick-restart");
+
+      expect(io._toEmit).not.toHaveBeenCalledWith("game:started", expect.any(Object));
     });
   });
 

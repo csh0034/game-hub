@@ -296,6 +296,37 @@ describe("GameManager", () => {
     });
   });
 
+  describe("quickRestart", () => {
+    it("finished 상태의 방을 즉시 재시작한다", () => {
+      const room = gm.createRoom({ name: "지뢰찾기", gameType: "minesweeper" }, host);
+      gm.startGame(room.id);
+      // 게임을 finished 상태로 변경
+      room.status = "finished";
+      const state = gm.quickRestart(room.id);
+      expect(state).not.toBeNull();
+      expect(room.status).toBe("playing");
+    });
+
+    it("finished가 아닌 방에 대해 null을 반환한다", () => {
+      const room = gm.createRoom({ name: "지뢰찾기", gameType: "minesweeper" }, host);
+      gm.startGame(room.id);
+      expect(gm.quickRestart(room.id)).toBeNull();
+    });
+
+    it("존재하지 않는 방에 대해 null을 반환한다", () => {
+      expect(gm.quickRestart("invalid")).toBeNull();
+    });
+
+    it("테트리스 방을 즉시 재시작한다", () => {
+      const room = gm.createRoom({ name: "테트리스", gameType: "tetris" }, host);
+      gm.startGame(room.id);
+      room.status = "finished";
+      const state = gm.quickRestart(room.id);
+      expect(state).not.toBeNull();
+      expect(room.status).toBe("playing");
+    });
+  });
+
   describe("관전자 관리", () => {
     const spectator: Player = { id: "spec-1", nickname: "Spectator", isReady: false };
     const spectator2: Player = { id: "spec-2", nickname: "Spectator2", isReady: false };

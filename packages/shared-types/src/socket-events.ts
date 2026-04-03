@@ -33,6 +33,7 @@ export interface ClientToServerEvents {
   "game:move": (move: GameMove) => void;
   "game:start": () => void;
   "game:rematch": () => void;
+  "game:quick-restart": () => void;
   "game:draw-points": (points: DrawPoint[]) => void;
   "game:nonogram-verify": (callback: (result: { errorCount: number; remaining: number }) => void) => void;
   "game:nonogram-batch-move": (moves: { row: number; col: number; target: "filled" | "marked" | "hidden" }[], callback: (success: boolean) => void) => void;

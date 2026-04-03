@@ -143,6 +143,10 @@ export class GameManager {
     if (otherPlayers.length > 0 && !otherPlayers.every((p) => p.isReady)) return null;
     room.status = "playing";
 
+    return this.initEngine(roomId, room);
+  }
+
+  private initEngine(roomId: string, room: Room): GameState {
     if (room.gameType === "minesweeper") {
       const difficulty = room.gameOptions?.minesweeperDifficulty ?? "beginner";
       const minesweeperEngine = new MinesweeperEngine(difficulty);
@@ -221,6 +225,7 @@ export class GameManager {
       return state;
     }
 
+    const engine = this.engines.get(room.gameType)!;
     const state = engine.initState(room.players);
     this.gameStates.set(roomId, state);
     this.persistRoom(room);
@@ -243,6 +248,15 @@ export class GameManager {
       this.persistRoom(room);
     }
     return { state: newState, result };
+  }
+
+  quickRestart(roomId: string): GameState | null {
+    const room = this.rooms.get(roomId);
+    if (!room) return null;
+    if (room.status !== "finished") return null;
+    this.cleanupRoomState(roomId);
+    room.status = "playing";
+    return this.initEngine(roomId, room);
   }
 
   resetRoom(roomId: string): Room | null {

@@ -7,6 +7,7 @@ import { useTetrisInput } from "@/hooks/use-tetris-input";
 import { useTetrisBoardStore } from "@/stores/tetris-board-store";
 import { useLobbyStore } from "@/stores/lobby-store";
 import { OpponentCanvas } from "./opponent-canvas";
+import { RotateCcw } from "lucide-react";
 import {
   TETROMINO_SHAPES,
   getPieceCells,
@@ -225,7 +226,7 @@ const PlayerBoard = memo(function PlayerBoard({
             <>
               <div className="text-center">
                 <div className={`${textSm} text-primary/50 font-display tracking-widest uppercase`}>Time</div>
-                <div className={`${textLg} font-bold font-mono text-foreground`}>{((elapsedTime ?? 0) / 1000).toFixed(3)}<span className="text-muted-foreground text-xs">s</span></div>
+                <div className={`${textLg} font-bold font-mono text-foreground`}>{((elapsedTime ?? 0) / 1000).toFixed(3)}</div>
               </div>
               <div className="text-center">
                 <div className={`${textSm} text-primary/50 font-display tracking-widest uppercase`}>Left</div>
@@ -266,7 +267,7 @@ const PlayerBoard = memo(function PlayerBoard({
               </div>
               <div className="text-center">
                 <div className={`${textSm} text-primary/50 font-display tracking-widest uppercase`}>Time</div>
-                <div className={`${textLg} font-bold font-mono text-foreground`}>{((elapsedTime ?? 0) / 1000).toFixed(3)}<span className="text-muted-foreground text-xs">s</span></div>
+                <div className={`${textLg} font-bold font-mono text-foreground`}>{((elapsedTime ?? 0) / 1000).toFixed(3)}</div>
               </div>
             </>
           )}
@@ -348,9 +349,11 @@ function getOpponentCellSize(count: number): number {
 export default function TetrisBoard({ isSpectating }: GameComponentProps) {
   const { socket } = useSocket();
   // useGame is still needed for socket event listening
-  const { gameResult, makeMove } = useGame(socket);
+  const { gameResult, makeMove, quickRestart } = useGame(socket);
 
-  const roomPlayers = useLobbyStore((s) => s.currentRoom?.players ?? []);
+  const currentRoom = useLobbyStore((s) => s.currentRoom);
+  const roomPlayers = currentRoom?.players ?? [];
+  const isHost = socket?.id === currentRoom?.hostId;
 
   // Tetris board store: fine-grained per-player subscriptions
   const myBoard = useTetrisBoardStore((s) => s.myBoard);
@@ -464,6 +467,20 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
 
   const isSoloSpeedRaceClear = isSolo && isSpeedRace && gameResult != null && gameResult.winnerId != null;
 
+  const canQuickRestart = isHost && !isSpectating && isSolo && gameResult != null;
+
+  useEffect(() => {
+    if (!canQuickRestart) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        quickRestart();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [canQuickRestart, quickRestart]);
+
   const soloResultOverlay = useMemo(() => {
     if (!gameResult) return undefined;
 
@@ -481,6 +498,15 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
               {gameResult.rankingResult.isNewRecord ? "🏆 새로운 1위!" : `전체 ${gameResult.rankingResult.rank}위`}
             </span>
           )}
+          {isHost && !isSpectating && (
+            <button
+              onClick={quickRestart}
+              className="mt-2 flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              <RotateCcw className="w-4 h-4" />
+              재도전
+            </button>
+          )}
         </div>
       );
     }
@@ -496,9 +522,18 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
             {gameResult.rankingResult.isNewRecord ? "🏆 새로운 1위!" : `전체 ${gameResult.rankingResult.rank}위`}
           </span>
         )}
+        {isHost && !isSpectating && (
+          <button
+            onClick={quickRestart}
+            className="mt-2 flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          >
+            <RotateCcw className="w-4 h-4" />
+            재도전
+          </button>
+        )}
       </div>
     );
-  }, [isSoloGameOver, isSoloSpeedRaceClear, gameResult, elapsedTime]);
+  }, [isSoloGameOver, isSoloSpeedRaceClear, gameResult, elapsedTime, isHost, isSpectating, quickRestart]);
 
   const versusResultOverlay = useMemo(() => {
     if (!isWinner && !isLoser && !isDraw) return undefined;

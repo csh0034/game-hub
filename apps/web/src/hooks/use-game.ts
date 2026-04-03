@@ -101,5 +101,10 @@ export function useGame(socket: GameSocket | null) {
     useTetrisBoardStore.getState().reset();
   }, [socket, reset]);
 
-  return { gameState, gameResult, privateState, playerLeftInfo, makeMove, startGame, requestRematch, setPlayerLeftInfo, reset };
+  const quickRestart = useCallback(() => {
+    if (!socket) return;
+    socket.emit("game:quick-restart");
+  }, [socket]);
+
+  return { gameState, gameResult, privateState, playerLeftInfo, makeMove, startGame, requestRematch, quickRestart, setPlayerLeftInfo, reset };
 }

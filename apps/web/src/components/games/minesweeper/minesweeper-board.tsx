@@ -7,6 +7,8 @@ import type { MinesweeperPublicState, MinesweeperMove, MinesweeperDifficulty } f
 import { MINESWEEPER_DIFFICULTY_CONFIGS } from "@game-hub/shared-types";
 import type { GameComponentProps } from "@/lib/game-registry";
 import { useGameStore } from "@/stores/game-store";
+import { useLobbyStore } from "@/stores/lobby-store";
+import { RotateCcw } from "lucide-react";
 import { getServerElapsed } from "@/lib/socket";
 
 const NUMBER_COLORS: Record<number, string> = {
@@ -28,20 +30,39 @@ const CELL_SIZES: Record<MinesweeperDifficulty, number> = {
 
 export default function MinesweeperBoard({ isSpectating }: GameComponentProps) {
   const { socket } = useSocket();
-  const { gameState, makeMove } = useGame(socket);
+  const { gameState, makeMove, quickRestart } = useGame(socket);
   const gameResult = useGameStore((s) => s.gameResult);
+  const currentRoom = useLobbyStore((s) => s.currentRoom);
+  const isHost = socket?.id === currentRoom?.hostId;
   const [elapsed, setElapsed] = useState(0);
 
   const state = gameState as MinesweeperPublicState | null;
 
-  useEffect(() => {
-    if (!state?.startedAt || state.status !== "playing") return;
+  const startedAt = state?.startedAt ?? null;
+  const isPlaying = state?.status === "playing";
 
-    const update = () => setElapsed(Math.floor(getServerElapsed(state.startedAt!) / 1000));
+  useEffect(() => {
+    if (!startedAt || !isPlaying) return;
+
+    const update = () => setElapsed(getServerElapsed(startedAt));
     update();
-    const interval = setInterval(update, 1000);
+    const interval = setInterval(update, 100);
     return () => clearInterval(interval);
-  }, [state?.startedAt, state?.status]);
+  }, [startedAt, isPlaying]);
+
+  const canQuickRestart = isHost && !isSpectating && state?.status != null && state.status !== "playing";
+
+  useEffect(() => {
+    if (!canQuickRestart) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        quickRestart();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [canQuickRestart, quickRestart]);
 
   const handleReveal = useCallback(
     (row: number, col: number) => {
@@ -140,7 +161,7 @@ export default function MinesweeperBoard({ isSpectating }: GameComponentProps) {
         <div />
         <div className="flex items-center gap-1.5 text-lg font-mono font-bold bg-card border border-border text-primary px-3 py-1.5 rounded-lg neon-glow-cyan">
           <span className="text-base">⏱</span>
-          {String(elapsed).padStart(3, "0")}
+          {(startedAt ? elapsed / 1000 : 0).toFixed(3)}
         </div>
       </div>
 
@@ -234,6 +255,15 @@ export default function MinesweeperBoard({ isSpectating }: GameComponentProps) {
               <span className="text-sm text-primary font-bold">
                 {gameResult.rankingResult.isNewRecord ? "🏆 새로운 1위!" : `전체 ${gameResult.rankingResult.rank}위`}
               </span>
+            )}
+            {isHost && !isSpectating && (
+              <button
+                onClick={quickRestart}
+                className="mt-2 flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              >
+                <RotateCcw className="w-4 h-4" />
+                재도전
+              </button>
             )}
           </div>
         )}

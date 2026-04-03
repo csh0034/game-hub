@@ -25,6 +25,7 @@ const THIN_COLOR = "rgba(94,111,145,0.4)";
 const FILLED_THICK_COLOR = "rgba(0,0,0,0.25)";
 const FILLED_THIN_COLOR = "rgba(0,0,0,0.15)";
 const SOLUTION_BG = "bg-yellow-500/15";
+const HIGHLIGHT_BG = "rgba(0,229,255,0.08)";
 
 export default function NonogramBoard({ isSpectating }: GameComponentProps) {
   const { socket } = useSocket();
@@ -82,6 +83,8 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
     moves: { row: number; col: number; target: "filled" | "marked" | "hidden" }[];
   } | null>(null);
   const gridContainerRef = useRef<HTMLDivElement>(null);
+  const rowHighlightRef = useRef<HTMLDivElement>(null);
+  const colHighlightRef = useRef<HTMLDivElement>(null);
   const [pendingMoves, setPendingMoves] = useState<Map<string, "filled" | "marked" | "hidden">>(new Map());
 
   const handlePointerDown = useCallback((e: React.PointerEvent, row: number, col: number, currentCell: string) => {
@@ -94,10 +97,25 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
     setPendingMoves(new Map([[key, target]]));
   }, [isSpectating, nextState]);
 
+  const showHighlight = useCallback((gameRow: number, gameCol: number) => {
+    if (rowHighlightRef.current) {
+      rowHighlightRef.current.style.display = "block";
+      rowHighlightRef.current.style.top = `${(maxHintColLen + gameRow) * cellSize}px`;
+    }
+    if (colHighlightRef.current) {
+      colHighlightRef.current.style.display = "block";
+      colHighlightRef.current.style.left = `${(maxHintRowLen + gameCol) * cellSize}px`;
+    }
+  }, [maxHintColLen, maxHintRowLen, cellSize]);
+
+  const clearHighlight = useCallback(() => {
+    if (rowHighlightRef.current) rowHighlightRef.current.style.display = "none";
+    if (colHighlightRef.current) colHighlightRef.current.style.display = "none";
+  }, []);
+
   const handleGridPointerMove = useCallback((e: React.PointerEvent) => {
-    const drag = dragRef.current;
     const grid = gridContainerRef.current;
-    if (!drag?.active || !grid || !state) return;
+    if (!grid || !state) return;
 
     const rect = grid.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -107,13 +125,23 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
     const gameRow = gridRow - maxHintColLen;
     const gameCol = gridCol - maxHintRowLen;
 
+    // 힌트 하이라이트
+    if (gameRow >= 0 && gameRow < state.rows && gameCol >= 0 && gameCol < state.cols) {
+      showHighlight(gameRow, gameCol);
+    } else {
+      clearHighlight();
+    }
+
+    // 드래그 처리
+    const drag = dragRef.current;
+    if (!drag?.active) return;
     if (gameRow < 0 || gameRow >= state.rows || gameCol < 0 || gameCol >= state.cols) return;
     const key = `${gameRow}-${gameCol}`;
     if (drag.cells.has(key)) return;
     drag.cells.add(key);
     drag.moves.push({ row: gameRow, col: gameCol, target: drag.target });
     setPendingMoves(prev => new Map(prev).set(key, drag.target));
-  }, [cellSize, maxHintColLen, maxHintRowLen, state]);
+  }, [cellSize, maxHintColLen, maxHintRowLen, state, showHighlight, clearHighlight]);
 
   const handlePointerUp = useCallback(() => {
     const drag = dragRef.current;
@@ -147,6 +175,11 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
     if (!socket) return;
     socket.emit("game:nonogram-redo", () => {});
   }, [socket]);
+
+  const handleGridPointerLeave = useCallback(() => {
+    handlePointerUp();
+    clearHighlight();
+  }, [handlePointerUp, clearHighlight]);
 
   // 그리드 밖에서 마우스 놓아도 드래그 종료 + batch 전송
   useEffect(() => {
@@ -416,10 +449,41 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
               }}
               onPointerMove={handleGridPointerMove}
               onPointerUp={handlePointerUp}
-              onPointerLeave={handlePointerUp}
+              onPointerLeave={handleGridPointerLeave}
             >
               {gridCells}
             </div>
+
+            {/* 힌트 하이라이트 바 — 행 힌트 영역 */}
+            <div
+              ref={rowHighlightRef}
+              style={{
+                display: "none",
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: maxHintRowLen * cellSize,
+                height: cellSize,
+                backgroundColor: HIGHLIGHT_BG,
+                pointerEvents: "none",
+                zIndex: 5,
+              }}
+            />
+            {/* 힌트 하이라이트 바 — 열 힌트 영역 */}
+            <div
+              ref={colHighlightRef}
+              style={{
+                display: "none",
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: cellSize,
+                height: maxHintColLen * cellSize,
+                backgroundColor: HIGHLIGHT_BG,
+                pointerEvents: "none",
+                zIndex: 5,
+              }}
+            />
 
             {/* Game result overlay — 게임 셀 영역만 덮음 */}
             {isGameOver && (
@@ -504,6 +568,7 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
           <ul className="list-disc list-inside space-y-1">
             <li>확인: 오류 유무 및 남은 칸 수 확인</li>
             <li>초기화: 빈 상태로 되돌림 (같은 퍼즐 유지)</li>
+            <li>힌트 하이라이트: 퍼즐 셀에 마우스를 올리면 해당 행/열 힌트 강조</li>
           </ul>
         </div>
         <div>

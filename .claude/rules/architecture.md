@@ -61,7 +61,8 @@ game-hub/
 │   ├── catch-mind-timer.ts   # 캐치마인드 그리기 타이머
 │   ├── typing-engine.ts
 │   ├── typing-ticker.ts      # 타자 게임 단어 스폰 타이머
-│   └── nonogram-engine.ts
+│   ├── nonogram-engine.ts
+│   └── nonogram-patterns.ts # 노노그램 패턴 데이터
 └── socket/
     ├── lobby-handler.ts     # lobby:* 이벤트 (방 CRUD, 방 이름 수정, 관전, 강퇴)
     ├── chat-handler.ts      # chat:* 이벤트 (ChatStore 사용)
@@ -105,12 +106,13 @@ game-hub/
 │   ├── game-hub.tsx         # 메인 앱 로직 (닉네임, 로비, 방, URL 동기화)
 │   ├── common/confirm-dialog.tsx       # 공통 확인 다이얼로그
 │   ├── common/placard-dialog.tsx      # 플랜카드 설정 다이얼로그
+│   ├── common/placard-carousel.tsx    # 플랜카드 캐러셀 표시
 │   ├── common/announce-dialog.tsx     # 관리자 공지 입력 다이얼로그
 │   ├── common/announcement-overlay.tsx # 공지 오버레이 표시
 │   ├── common/game-help-dialog.tsx    # 게임 도움말 다이얼로그
 │   ├── layout/navbar.tsx
 │   ├── layout/footer.tsx
-│   ├── lobby/               # 로비 UI (방 목록, 생성, 입장)
+│   ├── lobby/               # 로비 UI (방 목록, 생성, 입장, 닉네임 폼)
 │   ├── chat/chat-panel.tsx  # 채팅 UI (로비/방 공용)
 │   ├── ranking/
 │   │   ├── ranking-card.tsx         # 랭킹 카드 UI (난이도별 Top 10)

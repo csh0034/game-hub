@@ -93,6 +93,7 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
   const { gameState, gameResult, playerLeftInfo, startGame, requestRematch, setPlayerLeftInfo } = useGame(socket);
   const [pendingOptions, setPendingOptions] = useState<GameOptions | null>(null);
   const [kickConfirmOpen, setKickConfirmOpen] = useState(false);
+  const [rematchConfirmOpen, setRematchConfirmOpen] = useState(false);
   const [pendingKickOptions, setPendingKickOptions] = useState<GameOptions | null>(null);
   const [kickTarget, setKickTarget] = useState<{ id: string; nickname: string } | null>(null);
   const [isEditingName, setIsEditingName] = useState(false);
@@ -179,10 +180,10 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
               </span>
             )}
           </div>
-          {isHost && (
+          {isHost && room.status !== "waiting" && (
             <button
-              onClick={requestRematch}
-              className={`flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium transition-colors ${gameResult ? "visible" : "invisible"}`}
+              onClick={() => room.status === "finished" ? requestRematch() : setRematchConfirmOpen(true)}
+              className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium transition-colors"
             >
               <RotateCcw className="w-4 h-4" />
               다시하기
@@ -226,6 +227,19 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
             </div>
           </div>
         )}
+
+        <ConfirmDialog
+          open={rematchConfirmOpen}
+          title="다시하기"
+          message="진행 중인 게임을 종료하고 대기실로 돌아갑니다."
+          confirmText="다시하기"
+          cancelText="취소"
+          onConfirm={() => {
+            setRematchConfirmOpen(false);
+            requestRematch();
+          }}
+          onCancel={() => setRematchConfirmOpen(false)}
+        />
       </div>
     );
   }
@@ -995,6 +1009,19 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
           setKickTarget(null);
         }}
         onCancel={() => setKickTarget(null)}
+      />
+
+      <ConfirmDialog
+        open={rematchConfirmOpen}
+        title="다시하기"
+        message="진행 중인 게임을 종료하고 대기실로 돌아갑니다."
+        confirmText="다시하기"
+        cancelText="취소"
+        onConfirm={() => {
+          setRematchConfirmOpen(false);
+          requestRematch();
+        }}
+        onCancel={() => setRematchConfirmOpen(false)}
       />
     </div>
   );

@@ -174,8 +174,8 @@ describe("billiards-physics", () => {
       const angleWithSpin = Math.atan2(ballWithSpin.vz, ballWithSpin.vx);
 
       expect(Math.abs(angleWithSpin - angleNoSpin)).toBeGreaterThan(0);
-      // 스쿼트 각도는 최대 1도 이내로 제한된다
-      expect(Math.abs(angleWithSpin - angleNoSpin)).toBeLessThanOrEqual(Math.PI / 180 + 0.001);
+      // 스쿼트 각도는 최대 2도 이내로 제한된다
+      expect(Math.abs(angleWithSpin - angleNoSpin)).toBeLessThanOrEqual((2 * Math.PI) / 180 + 0.001);
     });
   });
 
@@ -302,7 +302,7 @@ describe("billiards-physics", () => {
 
       // 여러 스텝 후 스핀 크기가 감소한다
       let stopCount = 0;
-      for (let i = 0; i < 50; i++) {
+      for (let i = 0; i < 100; i++) {
         const result = simulateStep(balls, "cue", stopCount);
         stopCount = result.stopFrameCount;
       }
@@ -434,25 +434,29 @@ describe("billiards-physics", () => {
       expect(relVelAfter).toBeLessThan(relVelBefore);
     });
 
-    it("롤링 스핀이 있는 공끼리 비스듬히 충돌하면 spinZ가 변화한다 (Z축 슬립 보정)", () => {
+    it("롤링 스핀이 있는 공끼리 비스듬히 충돌하면 spinX/spinY가 변화한다 (수직 슬립 보정)", () => {
       // 비스듬한 충돌: 법선이 (nx, nz) 모두 성분을 가지도록 45도 배치
       // 두 공의 spinX 합 ≠ 0 이어야 vertSlip이 발생
       const contactDist = BALL_RADIUS * 2;
       const comp = contactDist / (2 * Math.sqrt(2));
+      const initialSpinX = 30;
       const balls: PhysicsBall[] = [
-        makeBall("cue", { x: -comp, z: -comp, vx: 5, vz: 5, spinX: 30, spinY: 0, spinZ: 0 }),
-        makeBall("red", { x: comp, z: comp, spinX: 30, spinY: 0, spinZ: 0 }),
+        makeBall("cue", { x: -comp, z: -comp, vx: 5, vz: 5, spinX: initialSpinX, spinY: 0, spinZ: 0 }),
+        makeBall("red", { x: comp, z: comp, spinX: initialSpinX, spinY: 0, spinZ: 0 }),
         makeBall("yellow", { x: 2, z: -2 }),
       ];
 
       simulateStep(balls, "cue", 0);
 
-      // spinX 합(60) × nz(≠0) → vertSlip 발생 → spinZ가 변화
-      const totalSpinZ = Math.abs(balls[0].spinZ) + Math.abs(balls[1].spinZ);
-      expect(totalSpinZ).toBeGreaterThan(0);
+      // vertSlip에 의한 마찰 토크가 수평축(spinX/spinY)에 적용된다
+      const spinXChanged = Math.abs(balls[0].spinX - initialSpinX) > 0.01
+        || Math.abs(balls[1].spinX - initialSpinX) > 0.01;
+      const spinYChanged = Math.abs(balls[0].spinY) > 0.01
+        || Math.abs(balls[1].spinY) > 0.01;
+      expect(spinXChanged || spinYChanged).toBe(true);
     });
 
-    it("저속 충돌 시 반발계수가 감소한다", () => {
+    it("저속/고속 충돌 모두 일정한 반발계수를 유지한다", () => {
       // 고속 충돌
       const ballsHigh: PhysicsBall[] = [
         makeBall("cue", { x: -BALL_RADIUS, z: 0, vx: 5, vz: 0 }),
@@ -475,8 +479,9 @@ describe("billiards-physics", () => {
       const relAfter2 = Math.abs(ballsLow[0].vx - ballsLow[1].vx);
       const eLow = relAfter2 / relBefore2;
 
-      // 저속 충돌의 반발계수가 고속보다 낮다
-      expect(eLow).toBeLessThan(eHigh);
+      // 페놀 수지 공은 속도와 무관하게 반발계수가 거의 일정하다
+      // (시뮬레이션 서브스텝 마찰 누적으로 측정 오차가 발생할 수 있음)
+      expect(Math.abs(eHigh - eLow)).toBeLessThan(0.3);
     });
   });
 

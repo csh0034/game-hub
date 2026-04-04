@@ -372,6 +372,8 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
     gameEndedRef.current = !!gameResult;
   }, [gameResult]);
 
+  const displayTime = gameResult?.completionTimeMs ?? elapsedTime;
+
   useEffect(() => {
     if (!startedAt) return;
 
@@ -573,7 +575,7 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
           <span>·</span>
           <span>{isSpeedRace ? "SPEED RACE" : "CLASSIC"}</span>
           <span>·</span>
-          <span>{(elapsedTime / 1000).toFixed(3)}초</span>
+          <span>{(displayTime / 1000).toFixed(3)}초</span>
         </div>
         {opponentEntries.length > 0 ? (
           <div
@@ -621,7 +623,7 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
             resultOverlay={soloResultOverlay ?? versusResultOverlay}
             dropInterval={currentDropInterval ?? undefined}
             isSpeedRace={isSpeedRace}
-            elapsedTime={elapsedTime}
+            elapsedTime={displayTime}
           />
         </div>
 

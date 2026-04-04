@@ -10,9 +10,9 @@ const CUSHION_THICKNESS = 0.05;
 // Colors from billiards-ui.md spec
 const CLOTH_COLOR = "#1d4ed8";
 const FRAME_COLOR = "#3a2a1f";
-const BODY_COLOR = "#2b1d15";
+const _BODY_COLOR = "#2b1d15";
 const DIAMOND_COLOR = "#d7d0c2";
-const POCKET_COLOR = "#1a1a1a";
+const _POCKET_COLOR = "#1a1a1a";
 
 const CUSHION_GAP = 0;
 

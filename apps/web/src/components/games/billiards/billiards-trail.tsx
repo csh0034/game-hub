@@ -106,8 +106,8 @@ function TrailLine({ id, fadeStartRef, offsetX, offsetZ, offsetY }: {
       while (count > 1) {
         const px = points[count - 1].x;
         const pz = points[count - 1].z;
-        const dx = px - bx;
-        const dz = pz - bz;
+        const _dx = px - bx;
+        const _dz = pz - bz;
         // If this trail point is further from the previous point than the ball is, trim it
         const prevPx = points[count - 2].x;
         const prevPz = points[count - 2].z;

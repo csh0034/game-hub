@@ -381,7 +381,7 @@ export default function NonogramBoard({ isSpectating }: GameComponentProps) {
       }
     }
     return cells;
-  }, [state, playerBoard, maxHintColLen, maxHintRowLen, checkedHints, toggleHint, gameResult, isSpectating, handlePointerDown, cellSize, pendingMoves]);
+  }, [state, playerBoard, maxHintColLen, maxHintRowLen, checkedHints, toggleHint, gameResult, isSpectating, handlePointerDown, pendingMoves]);
 
   if (!state || !playerBoard) return null;
 

@@ -484,8 +484,8 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
                 <section>
                   <div className="flex items-center justify-between mb-6">
                     <div>
-                      <h1 className="text-3xl font-bold font-[family-name:var(--font-display)] tracking-wide">빠른 시작</h1>
-                      <p className="text-muted-foreground mt-1">
+                      <h1 className="text-2xl font-bold font-[family-name:var(--font-display)] tracking-wide">빠른 시작</h1>
+                      <p className="text-xs text-muted-foreground mt-1">
                         게임을 클릭하면 기본 설정으로 바로 방이 만들어집니다
                       </p>
                     </div>

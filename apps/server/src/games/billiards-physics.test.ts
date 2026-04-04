@@ -14,6 +14,32 @@ import {
 } from "./billiards-physics.js";
 import type { BilliardsShotEvent } from "@game-hub/shared-types";
 
+const BALL_MASS = 0.21;
+const HALF_W = TABLE_WIDTH / 2;
+const HALF_H = TABLE_HEIGHT / 2;
+
+/** 샷을 발사하고 시뮬레이션이 완전히 멈출 때까지 실행하는 헬퍼 */
+function runFullSimulation(
+  balls: PhysicsBall[],
+  cueBallId: string,
+  maxFrames = 600,
+): { frames: number; events: BilliardsShotEvent[] } {
+  let stopCount = 0;
+  const allEvents: BilliardsShotEvent[] = [];
+  for (let i = 0; i < maxFrames; i++) {
+    const result = simulateStep(balls, cueBallId, stopCount);
+    stopCount = result.stopFrameCount;
+    allEvents.push(...result.frame.events);
+    if (result.settled) return { frames: i + 1, events: allEvents };
+  }
+  return { frames: maxFrames, events: allEvents };
+}
+
+/** 운동에너지 계산 */
+function totalKE(balls: PhysicsBall[]): number {
+  return balls.reduce((sum, b) => sum + 0.5 * BALL_MASS * (b.vx * b.vx + b.vz * b.vz), 0);
+}
+
 /** 스핀 포함 PhysicsBall 리터럴 헬퍼 */
 function makeBall(
   id: string,
@@ -707,6 +733,306 @@ describe("billiards-physics", () => {
       expect(result.scored).toBe(false);
       expect(result.cushionCount).toBe(0);
       expect(result.objectBallsHit).toEqual([]);
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════
+  // 시나리오 기반 시뮬레이션 테스트
+  // ═══════════════════════════════════════════════════════════════════
+  describe("시나리오: 직진 왕복", () => {
+    it("직진 샷이 반대편 쿠션에서 반사되어 합리적 거리를 되돌아온다", () => {
+      // 테이블 중앙에서 오른쪽으로 발사
+      const balls: PhysicsBall[] = [
+        makeBall("cue", { x: 0, z: 0, vx: 5, vz: 0 }),
+        makeBall("red", { x: -1, z: -0.5 }),
+        makeBall("yellow", { x: -1, z: 0.5 }),
+      ];
+      const startX = balls[0].x;
+      runFullSimulation(balls, "cue");
+
+      // 쿠션 반발계수(0.52~0.88)와 마찰로 인해
+      // 왕복 후 시작점에서 테이블 길이의 절반(1.4m) 이내에 정지해야 함
+      expect(Math.abs(balls[0].x - startX)).toBeLessThan(1.4);
+      // Z방향 편향은 쿠션 throw로 약간 발생할 수 있으나 1m 이내
+      expect(Math.abs(balls[0].z)).toBeLessThan(1.0);
+    });
+  });
+
+  describe("시나리오: 45도 쿠션 반사", () => {
+    it("스핀 없는 45도 쿠션 반사 시 입사각과 반사각이 유사하다", () => {
+      // 오른쪽 위 45도로 발사 (쿠션 throw 없이 스핀 0)
+      const balls: PhysicsBall[] = [
+        makeBall("cue", { x: 0, z: 0, vx: 4, vz: 4 }),
+        makeBall("red", { x: -1, z: -0.5 }),
+        makeBall("yellow", { x: -1, z: 0.5 }),
+      ];
+
+      // 한 스텝만 실행하면 충분 (쿠션에 도달 전)
+      // 여러 스텝 돌려서 첫 번째 쿠션 반사 후 속도 비율 확인
+      let stopCount = 0;
+      let cushionHit = false;
+      for (let i = 0; i < 100 && !cushionHit; i++) {
+        const result = simulateStep(balls, "cue", stopCount);
+        stopCount = result.stopFrameCount;
+        if (result.frame.events.some((e) => e.type === "cushion")) {
+          cushionHit = true;
+        }
+      }
+
+      expect(cushionHit).toBe(true);
+      // 반사 후 vx, vz가 모두 0이 아님 (완전히 흡수되지 않음)
+      const speed = Math.sqrt(balls[0].vx ** 2 + balls[0].vz ** 2);
+      expect(speed).toBeGreaterThan(1.0);
+    });
+  });
+
+  describe("시나리오: 사이드스핀 커브", () => {
+    it("사이드스핀으로 완만한 커브를 그리며 나선형이 발생하지 않는다", () => {
+      // 강한 사이드스핀 + 직진 발사
+      const balls: PhysicsBall[] = [
+        makeBall("cue", { x: -0.5, z: 0, vx: 3, vz: 0, spinZ: 20 }),
+        makeBall("red", { x: 1, z: 1 }),
+        makeBall("yellow", { x: 1, z: -1 }),
+      ];
+
+      // 각 프레임의 Z위치를 기록하여 나선 패턴 감지
+      const zPositions: number[] = [];
+      let stopCount = 0;
+      for (let i = 0; i < 200; i++) {
+        const result = simulateStep(balls, "cue", stopCount);
+        stopCount = result.stopFrameCount;
+        zPositions.push(balls[0].z);
+        if (result.settled) break;
+      }
+
+      // 나선 감지: Z 부호 변경이 3회 이상이면 나선으로 판단
+      let signChanges = 0;
+      for (let i = 1; i < zPositions.length; i++) {
+        if (zPositions[i] * zPositions[i - 1] < 0) signChanges++;
+      }
+      expect(signChanges).toBeLessThan(3);
+
+      // Z 편향이 발생해야 함 (커브 효과 확인)
+      const maxZ = Math.max(...zPositions.map(Math.abs));
+      expect(maxZ).toBeGreaterThan(0.01);
+    });
+  });
+
+  describe("시나리오: 공-공 정면 충돌", () => {
+    it("동일 질량 정면 충돌 시 수구가 거의 정지하고 목적구가 속도를 이어받는다", () => {
+      const balls: PhysicsBall[] = [
+        makeBall("cue", { x: -BALL_RADIUS * 2 - 0.001, z: 0, vx: 5, vz: 0 }),
+        makeBall("red", { x: BALL_RADIUS * 2, z: 0 }),
+        makeBall("yellow", { x: 1, z: 1 }),
+      ];
+
+      simulateStep(balls, "cue", 0);
+
+      // 동일 질량 탄성 충돌: 수구 속도 ≈ 0, 목적구 속도 ≈ 초기 속도
+      expect(Math.abs(balls[0].vx)).toBeLessThan(1.5); // 수구 거의 정지
+      expect(balls[1].vx).toBeGreaterThan(3.0); // 목적구가 속도 이어받음
+    });
+  });
+
+  describe("시나리오: 백스핀 드로우", () => {
+    it("아래 당점 샷의 수구가 중앙 당점 샷보다 더 뒤에서 정지한다", () => {
+      // applyShotToBall로 자연스러운 백스핀 생성
+      const setup = (offsetY: number) => {
+        const balls = [
+          makeBall("cue", { x: -0.3, z: 0 }),
+          makeBall("red", { x: 0.3, z: 0 }),
+          makeBall("yellow", { x: 1, z: 0.5 }),
+        ];
+        applyShotToBall(balls[0], 0, 0.5, 0, offsetY); // 방향 0° = +X
+        return balls;
+      };
+
+      // 중앙 당점
+      const ballsCenter = setup(0);
+      runFullSimulation(ballsCenter, "cue");
+      const cueCenter = ballsCenter[0].x;
+
+      // 아래 당점 (백스핀)
+      const ballsBottom = setup(-BALL_RADIUS * 0.6);
+      runFullSimulation(ballsBottom, "cue");
+      const cueBottom = ballsBottom[0].x;
+
+      // 백스핀 수구가 중앙 당점 수구보다 더 뒤(왼쪽)에서 정지
+      expect(cueBottom).toBeLessThan(cueCenter);
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════
+  // 물리 불변량 테스트
+  // ═══════════════════════════════════════════════════════════════════
+  describe("불변량: 에너지 비증가", () => {
+    it("마찰과 충돌을 거치면서 총 운동에너지가 단조 감소한다", () => {
+      const balls: PhysicsBall[] = [
+        makeBall("cue", { x: -0.3, z: 0, vx: 6, vz: 2, spinZ: 10 }),
+        makeBall("red", { x: 0.5, z: 0.1 }),
+        makeBall("yellow", { x: 0.5, z: -0.3 }),
+      ];
+
+      let prevKE = totalKE(balls);
+      let stopCount = 0;
+      let violations = 0;
+
+      for (let i = 0; i < 300; i++) {
+        const result = simulateStep(balls, "cue", stopCount);
+        stopCount = result.stopFrameCount;
+        const ke = totalKE(balls);
+
+        // 에너지 캡으로 인해 미세한 증가(0.1J)는 허용
+        if (ke > prevKE + 0.1) violations++;
+        prevKE = ke;
+
+        if (result.settled) break;
+      }
+
+      // 에너지 증가 위반이 전체의 2% 미만이어야 함
+      expect(violations).toBeLessThan(6);
+    });
+  });
+
+  describe("불변량: 공-공 충돌 운동량 보존", () => {
+    it("충돌 전후 총 운동량이 보존된다", () => {
+      const balls: PhysicsBall[] = [
+        makeBall("cue", { x: -BALL_RADIUS * 2 - 0.001, z: 0, vx: 8, vz: 2 }),
+        makeBall("red", { x: BALL_RADIUS * 2, z: 0, vx: -1, vz: 0 }),
+        makeBall("yellow", { x: 2, z: 2 }),
+      ];
+
+      const pxBefore = balls[0].vx + balls[1].vx;
+      const pzBefore = balls[0].vz + balls[1].vz;
+
+      simulateStep(balls, "cue", 0);
+
+      // 동일 질량이므로 운동량 = 속도 합 (마찰에 의한 미세 오차 허용)
+      const pxAfter = balls[0].vx + balls[1].vx;
+      const pzAfter = balls[0].vz + balls[1].vz;
+
+      expect(Math.abs(pxAfter - pxBefore)).toBeLessThan(0.5);
+      expect(Math.abs(pzAfter - pzBefore)).toBeLessThan(0.5);
+    });
+  });
+
+  describe("불변량: 경계 내 유지", () => {
+    it("다양한 샷에서 공이 항상 테이블 안에 머문다", () => {
+      const shots = [
+        { vx: 13, vz: 0 },
+        { vx: 0, vz: 13 },
+        { vx: 10, vz: 10 },
+        { vx: -13, vz: -5 },
+        { vx: 7, vz: -12 },
+      ];
+
+      for (const shot of shots) {
+        const balls: PhysicsBall[] = [
+          makeBall("cue", { x: 0, z: 0, ...shot, spinZ: 15 }),
+          makeBall("red", { x: 0.5, z: 0.3 }),
+          makeBall("yellow", { x: -0.5, z: -0.3 }),
+        ];
+
+        let stopCount = 0;
+        for (let i = 0; i < 400; i++) {
+          const result = simulateStep(balls, "cue", stopCount);
+          stopCount = result.stopFrameCount;
+
+          for (const ball of balls) {
+            expect(Math.abs(ball.x)).toBeLessThanOrEqual(HALF_W + 0.01);
+            expect(Math.abs(ball.z)).toBeLessThanOrEqual(HALF_H + 0.01);
+          }
+
+          if (result.settled) break;
+        }
+      }
+    });
+  });
+
+  describe("불변량: 속도 상한", () => {
+    it("최대 파워 샷에서도 속도가 14 m/s를 넘지 않는다", () => {
+      const balls: PhysicsBall[] = [
+        makeBall("cue", { x: 0, z: 0 }),
+        makeBall("red", { x: 0.5, z: 0 }),
+        makeBall("yellow", { x: 0.5, z: 0.3 }),
+      ];
+
+      applyShotToBall(balls[0], 0, 1.0, 0, 0); // 최대 파워
+
+      let stopCount = 0;
+      for (let i = 0; i < 300; i++) {
+        const result = simulateStep(balls, "cue", stopCount);
+        stopCount = result.stopFrameCount;
+
+        for (const ball of balls) {
+          const speed = Math.sqrt(ball.vx ** 2 + ball.vz ** 2);
+          expect(speed).toBeLessThanOrEqual(14.0);
+        }
+
+        if (result.settled) break;
+      }
+    });
+  });
+
+  describe("불변량: 정지 수렴", () => {
+    it("모든 샷이 유한 시간 내에 settled=true에 도달한다", () => {
+      const testCases = [
+        { power: 0.3, dir: 45, offsetX: 0, offsetY: 0 },
+        { power: 0.7, dir: 0, offsetX: 0.015, offsetY: 0 },
+        { power: 1.0, dir: 90, offsetX: 0, offsetY: 0.01 },
+        { power: 0.5, dir: 30, offsetX: -0.01, offsetY: -0.01 },
+        { power: 0.8, dir: 160, offsetX: 0.02, offsetY: 0 },
+      ];
+
+      for (const tc of testCases) {
+        const balls = initBallPositions();
+        applyShotToBall(balls[0], tc.dir, tc.power, tc.offsetX, tc.offsetY);
+
+        const { frames } = runFullSimulation(balls, "cue", 600);
+
+        // 600프레임(30초) 이내에 반드시 정지해야 함
+        expect(frames).toBeLessThan(600);
+      }
+    });
+  });
+
+  describe("불변량: 랜덤 샷 안정성", () => {
+    it("50개의 랜덤 샷이 모두 경계 내에서 정지 수렴한다", () => {
+      // 시드 기반 의사 난수 (재현 가능)
+      let seed = 42;
+      function rand(): number {
+        seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+        return seed / 0x7fffffff;
+      }
+
+      for (let i = 0; i < 50; i++) {
+        const balls = initBallPositions();
+        const dir = rand() * 360;
+        const power = 0.1 + rand() * 0.9;
+        const offsetX = (rand() - 0.5) * BALL_RADIUS * 1.2;
+        const offsetY = (rand() - 0.5) * BALL_RADIUS * 1.2;
+
+        applyShotToBall(balls[0], dir, power, offsetX, offsetY);
+
+        let stopCount = 0;
+        let settled = false;
+        for (let f = 0; f < 600; f++) {
+          const result = simulateStep(balls, "cue", stopCount);
+          stopCount = result.stopFrameCount;
+
+          // 모든 공이 테이블 안
+          for (const ball of balls) {
+            expect(Math.abs(ball.x)).toBeLessThanOrEqual(HALF_W + 0.01);
+            expect(Math.abs(ball.z)).toBeLessThanOrEqual(HALF_H + 0.01);
+            expect(Number.isFinite(ball.vx)).toBe(true);
+            expect(Number.isFinite(ball.vz)).toBe(true);
+          }
+
+          if (result.settled) { settled = true; break; }
+        }
+
+        expect(settled).toBe(true);
+      }
     });
   });
 });

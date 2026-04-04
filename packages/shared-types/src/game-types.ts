@@ -15,7 +15,7 @@ export const GAME_CONFIGS: Record<GameType, GameConfig> = {
   billiards: {
     gameType: "billiards",
     name: "3쿠션 당구",
-    description: "수구로 목적구 2개를 맞히되 쿠션 3회 이상 터치해야 득점",
+    description: "쿠션 3회 터치 후 목적구 2개를 맞혀 득점",
     minPlayers: 1,
     maxPlayers: 8,
     icon: "🎱",
@@ -23,7 +23,7 @@ export const GAME_CONFIGS: Record<GameType, GameConfig> = {
   nonogram: {
     gameType: "nonogram",
     name: "노노그램",
-    description: "행/열 숫자 힌트를 보고 칸을 채워 숨겨진 그림을 완성하는 퍼즐",
+    description: "숫자 힌트로 칸을 채워 그림을 완성하는 퍼즐",
     minPlayers: 1,
     maxPlayers: 1,
     icon: "🧩",
@@ -31,7 +31,7 @@ export const GAME_CONFIGS: Record<GameType, GameConfig> = {
   typing: {
     gameType: "typing",
     name: "타자 게임",
-    description: "위에서 내려오는 단어를 빠르게 입력하여 제거하는 타자 레이스",
+    description: "내려오는 단어를 빠르게 타이핑!",
     minPlayers: 1,
     maxPlayers: 8,
     icon: "⌨️",
@@ -39,7 +39,7 @@ export const GAME_CONFIGS: Record<GameType, GameConfig> = {
   "liar-drawing": {
     gameType: "liar-drawing",
     name: "라이어 드로잉",
-    description: "라이어를 찾아라! 소셜 디덕션 그림 게임",
+    description: "그림 속 라이어를 찾아내는 추리 게임",
     minPlayers: 3,
     maxPlayers: 8,
     icon: "🎨",
@@ -47,7 +47,7 @@ export const GAME_CONFIGS: Record<GameType, GameConfig> = {
   "catch-mind": {
     gameType: "catch-mind",
     name: "캐치마인드",
-    description: "출제자가 그린 그림을 보고 정답을 맞추는 드로잉 퀴즈 게임",
+    description: "그림을 보고 정답을 맞추는 드로잉 퀴즈",
     minPlayers: 3,
     maxPlayers: 8,
     icon: "🖼️",
@@ -55,7 +55,7 @@ export const GAME_CONFIGS: Record<GameType, GameConfig> = {
   tetris: {
     gameType: "tetris",
     name: "테트리스",
-    description: "떨어지는 블록을 쌓아 줄을 완성하는 퍼즐 게임",
+    description: "블록을 쌓아 줄을 완성하는 클래식 퍼즐",
     minPlayers: 1,
     maxPlayers: 8,
     icon: "🧱",
@@ -63,7 +63,7 @@ export const GAME_CONFIGS: Record<GameType, GameConfig> = {
   gomoku: {
     gameType: "gomoku",
     name: "오목",
-    description: "15×15 보드에서 5개를 연속으로 놓으면 승리",
+    description: "5개를 연속으로 놓으면 승리",
     minPlayers: 2,
     maxPlayers: 2,
     icon: "⚫",

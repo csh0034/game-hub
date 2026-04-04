@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { BilliardsPublicState } from "@game-hub/shared-types";
+import { getServerElapsed } from "@/lib/socket";
 import { useBilliardsStore, MAX_OFFSET } from "./billiards-store";
 
 interface BilliardsHudProps {
@@ -18,11 +19,11 @@ export function BilliardsHud({ state, myPlayerId }: BilliardsHudProps) {
     if (!isAiming) return;
 
     const update = () => {
-      const elapsed = (Date.now() - state.turnStartedAt!) / 1000;
+      const elapsed = getServerElapsed(state.turnStartedAt!) / 1000;
       setRemainingTime(Math.max(0, state.turnTimeSeconds - elapsed));
     };
     update();
-    const interval = setInterval(update, 100);
+    const interval = setInterval(update, 200);
     return () => clearInterval(interval);
   }, [isAiming, state.turnStartedAt, state.turnTimeSeconds]);
 

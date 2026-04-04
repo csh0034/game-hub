@@ -49,6 +49,9 @@ game-hub/
 ├── games/
 │   ├── engine-interface.ts  # GameEngine 인터페이스
 │   ├── game-manager.ts      # GameType → GameEngine 매핑 + RoomStore write-through
+│   ├── billiards-engine.ts
+│   ├── billiards-physics.ts # 3쿠션 당구 물리엔진
+│   ├── billiards-ticker.ts  # 당구 시뮬레이션 틱 타이머
 │   ├── gomoku-engine.ts
 │   ├── gomoku-renju-rule.ts # 오목 렌주룰 금수 판정 (장목/삼삼/사사)
 │   ├── gomoku-timer.ts      # 오목 턴 타이머
@@ -119,6 +122,7 @@ game-hub/
 │   │   └── lobby-ranking-panel.tsx  # 로비 랭킹 패널 (게임/난이도 탭 + RankingCard)
 │   ├── request-board/       # 요청사항 게시판 UI (목록, 작성, 수락/거부/완료 처리)
 │   └── games/               # 게임별 UI
+│       ├── billiards/
 │       ├── typing/
 │       ├── gomoku/
 │       ├── minesweeper/

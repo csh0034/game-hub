@@ -11,6 +11,7 @@ import type {
   TetrisPlayerBoard,
   LiarDrawingPublicState,
   CatchMindPublicState,
+  BilliardsPublicState,
   DrawPoint,
   GameResult,
   RankingKey,
@@ -24,6 +25,7 @@ import { startTetrisTicker, updateTetrisTickerInterval, clearTetrisTicker } from
 import { startLiarDrawingTimer, clearLiarDrawingTimer } from "../games/liar-drawing-timer.js";
 import { startCatchMindTimer, clearCatchMindTimer } from "../games/catch-mind-timer.js";
 import { startTypingTicker, updateTypingTickerInterval, clearTypingTicker } from "../games/typing-ticker.js";
+import { startBilliardsTicker, clearBilliardsTicker, startBilliardsTurnTimer, clearBilliardsTurnTimer, clearAllBilliardsTimers } from "../games/billiards-ticker.js";
 import { isAdmin, getDisplayNickname } from "../admin.js";
 
 const typingCountdownTimers: Map<string, NodeJS.Timeout> = new Map();
@@ -466,6 +468,126 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
     });
   }
 
+  function startBilliardsGame(roomId: string) {
+    const billiardsEngine = gameManager.getBilliardsEngine(roomId);
+    const state = gameManager.getGameState(roomId) as BilliardsPublicState | null;
+    if (!billiardsEngine || !state) return;
+
+    startBilliardsTurnTimer(roomId, state.turnTimeSeconds * 1000, () => {
+      handleBilliardsTurnTimeout(roomId);
+    });
+  }
+
+  function handleBilliardsTurnTimeout(roomId: string) {
+    const billiardsEngine = gameManager.getBilliardsEngine(roomId);
+    const state = gameManager.getGameState(roomId) as BilliardsPublicState | null;
+    const room = gameManager.getRoom(roomId);
+    if (!billiardsEngine || !state || !room || room.status !== "playing") return;
+    if (state.phase !== "aiming") return;
+
+    // Timeout: advance turn without scoring
+    const nextState = billiardsEngine.advanceTurn({
+      ...state,
+      lastShotResult: { scored: false, cushionCount: 0, objectBallsHit: [] },
+    });
+    gameManager.setGameState(roomId, nextState);
+    io.to(roomId).emit("game:billiards-turn-changed", {
+      currentTurnIndex: nextState.currentTurnIndex,
+      turnStartedAt: nextState.turnStartedAt!,
+    });
+    io.to(roomId).emit("game:state-updated", nextState);
+
+    startBilliardsTurnTimer(roomId, nextState.turnTimeSeconds * 1000, () => {
+      handleBilliardsTurnTimeout(roomId);
+    });
+  }
+
+  function startBilliardsSimulation(roomId: string) {
+    const billiardsEngine = gameManager.getBilliardsEngine(roomId);
+    if (!billiardsEngine) return;
+
+    startBilliardsTicker(roomId, () => {
+      const state = gameManager.getGameState(roomId) as BilliardsPublicState | null;
+      const room = gameManager.getRoom(roomId);
+      if (!billiardsEngine || !state || !room || room.status !== "playing") {
+        clearBilliardsTicker(roomId);
+        return;
+      }
+
+      const { frame, settled, updatedState } = billiardsEngine.simulationTick(state);
+      gameManager.setGameState(roomId, updatedState);
+
+      io.to(roomId).emit("game:billiards-frame", {
+        balls: frame.balls.map((b) => ({ id: b.id, x: b.x, z: b.z, vx: b.vx, vz: b.vz, spinX: b.spinX, spinY: b.spinY, spinZ: b.spinZ })),
+        shotEvents: frame.events,
+        cushionCount: updatedState.cushionCount,
+        objectBallsHit: updatedState.objectBallsHit,
+      });
+
+      if (settled) {
+        clearBilliardsTicker(roomId);
+
+        io.to(roomId).emit("game:billiards-shot-result", {
+          scored: updatedState.lastShotResult?.scored ?? false,
+          cushionCount: updatedState.lastShotResult?.cushionCount ?? 0,
+          objectBallsHit: updatedState.lastShotResult?.objectBallsHit ?? [],
+        });
+
+        // Advance turn after a short delay
+        setTimeout(() => {
+          const currentState = gameManager.getGameState(roomId) as BilliardsPublicState | null;
+          const currentRoom = gameManager.getRoom(roomId);
+          if (!currentState || !currentRoom || currentRoom.status !== "playing") return;
+
+          const nextState = billiardsEngine.advanceTurn(currentState);
+          gameManager.setGameState(roomId, nextState);
+
+          const winResult = billiardsEngine.checkWin(nextState);
+          if (winResult) {
+            clearAllBilliardsTimers(roomId);
+            currentRoom.status = "finished";
+            io.to(roomId).emit("game:state-updated", nextState);
+            io.to(roomId).emit("game:ended", winResult);
+            io.emit("lobby:room-updated", currentRoom);
+          } else {
+            io.to(roomId).emit("game:billiards-turn-changed", {
+              currentTurnIndex: nextState.currentTurnIndex,
+              turnStartedAt: nextState.turnStartedAt!,
+            });
+            io.to(roomId).emit("game:state-updated", nextState);
+
+            startBilliardsTurnTimer(roomId, nextState.turnTimeSeconds * 1000, () => {
+              handleBilliardsTurnTimeout(roomId);
+            });
+          }
+        }, 1500);
+      }
+    });
+  }
+
+  socket.on("game:billiards-shot", (move) => {
+    const roomId = socket.data.roomId;
+    if (!roomId) return;
+    if (socket.data.isSpectator) return;
+
+    const room = gameManager.getRoom(roomId);
+    if (!room || room.gameType !== "billiards" || room.status !== "playing") return;
+
+    const state = gameManager.getGameState(roomId) as BilliardsPublicState | null;
+    if (!state || state.phase !== "aiming") return;
+
+    const currentPlayer = state.players[state.currentTurnIndex];
+    if (currentPlayer.id !== socket.id) return;
+
+    clearBilliardsTurnTimer(roomId);
+
+    const result = gameManager.processMove(roomId, socket.id!, { type: "shot", directionDeg: move.directionDeg, power: move.power, impactOffsetX: move.impactOffsetX, impactOffsetY: move.impactOffsetY });
+    if (!result) return;
+
+    io.to(roomId).emit("game:state-updated", result.state);
+    startBilliardsSimulation(roomId);
+  });
+
   socket.on("game:start", () => {
     const roomId = socket.data.roomId;
     if (!roomId) return;
@@ -496,6 +618,10 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
 
     if (room.gameType === "typing") {
       startTypingServerTick(roomId);
+    }
+
+    if (room.gameType === "billiards") {
+      startBilliardsGame(roomId);
     }
 
     // For liar-drawing, send private states and start role-reveal timer
@@ -696,6 +822,7 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
       clearTetrisTicker(roomId);
       cleanupTetrisFlush(roomId, io);
       clearTypingTicker(roomId);
+      clearAllBilliardsTimers(roomId);
 
       {
         // Submit ranking for single-player games
@@ -880,6 +1007,7 @@ export function setupGameHandler(io: IOServer, socket: IOSocket, gameManager: Ga
     clearLiarDrawingTimer(roomId);
     clearCatchMindTimer(roomId);
     clearTypingTicker(roomId);
+    clearAllBilliardsTimers(roomId);
     const typingCountdown = typingCountdownTimers.get(roomId);
     if (typingCountdown) {
       clearTimeout(typingCountdown);

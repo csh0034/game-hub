@@ -1,5 +1,5 @@
 import type { Room, CreateRoomPayload, JoinRoomPayload, GameOptions } from "./lobby-types";
-import type { GameState, GameMove, GameResult, LiarDrawingPrivateState, CatchMindPrivateState, DrawPoint, TetrisPlayerUpdate, TetrisPieceUpdate, TypingWord, TypingPlayerState, TypingTickResult } from "./game-types";
+import type { GameState, GameMove, GameResult, LiarDrawingPrivateState, CatchMindPrivateState, DrawPoint, TetrisPlayerUpdate, TetrisPieceUpdate, TypingWord, TypingPlayerState, TypingTickResult, BilliardsFrameData } from "./game-types";
 import type { Player } from "./player-types";
 import type { FeatureRequest, CreateRequestPayload, ChangeStatusPayload, UpdateRequestPayload, ChangeLabelPayload } from "./request-types";
 import type { RankingKey, RankingEntry } from "./ranking-types";
@@ -41,6 +41,7 @@ export interface ClientToServerEvents {
   "game:nonogram-restart": (callback: (success: boolean) => void) => void;
   "game:nonogram-redo": (callback: (success: boolean) => void) => void;
   "game:nonogram-toggle-hint": (hintKey: string, callback: (success: boolean) => void) => void;
+  "game:billiards-shot": (move: { directionDeg: number; power: number; impactOffsetX?: number; impactOffsetY?: number }) => void;
 
   // Player
   "player:set-nickname": (
@@ -107,6 +108,9 @@ export interface ServerToClientEvents {
   "game:typing-word-cleared": (data: { playerId: string; wordId: number }) => void;
   "game:typing-all-player-words": (data: Record<string, TypingWord[]>) => void;
   "game:typing-player-updated": (data: { playerId: string; player: TypingPlayerState }) => void;
+  "game:billiards-frame": (data: BilliardsFrameData) => void;
+  "game:billiards-shot-result": (data: { scored: boolean; cushionCount: number; objectBallsHit: string[] }) => void;
+  "game:billiards-turn-changed": (data: { currentTurnIndex: number; turnStartedAt: number }) => void;
   "game:player-left": (data: { playerId: string; nickname: string; willEnd: boolean }) => void;
   "game:rematch-requested": (playerId: string) => void;
 

@@ -17,6 +17,7 @@ interface ChatPanelProps {
   disabled?: boolean;
   onlinePlayers?: { nickname: string }[];
   onWhisper?: (targetNickname: string, message: string) => void;
+  hideHeader?: boolean;
 }
 
 
@@ -31,6 +32,7 @@ export function ChatPanel({
   disabled = false,
   onlinePlayers,
   onWhisper,
+  hideHeader = false,
 }: ChatPanelProps) {
   const [input, setInput] = useState("");
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
@@ -109,9 +111,11 @@ export function ChatPanel({
 
   return (
     <div className="flex flex-col h-full bg-card border border-border rounded-xl overflow-hidden neon-border-hover">
-      <div className="px-4 py-2.5 border-b border-border">
-        <h3 className="text-sm font-semibold font-[family-name:var(--font-display)] tracking-wide text-neon-cyan/80">CHAT</h3>
-      </div>
+      {!hideHeader && (
+        <div className="px-4 py-2.5 border-b border-border">
+          <h3 className="text-sm font-semibold font-[family-name:var(--font-display)] tracking-wide text-neon-cyan/80">CHAT</h3>
+        </div>
+      )}
 
       <div className="relative flex-1 min-h-0">
         <div

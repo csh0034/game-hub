@@ -8,6 +8,7 @@ import { LiarDrawingEngine } from "./liar-drawing-engine.js";
 import { CatchMindEngine } from "./catch-mind-engine.js";
 import { TypingEngine } from "./typing-engine.js";
 import { NonogramEngine } from "./nonogram-engine.js";
+import { BilliardsEngine } from "./billiards-engine.js";
 import type { GameEngine } from "./engine-interface.js";
 import type { RoomStore } from "../storage/index.js";
 
@@ -28,6 +29,7 @@ export class GameManager {
     this.engines.set("catch-mind", new CatchMindEngine());
     this.engines.set("typing", new TypingEngine());
     this.engines.set("nonogram", new NonogramEngine());
+    this.engines.set("billiards", new BilliardsEngine());
   }
 
   async loadRoomsFromStore(): Promise<void> {
@@ -225,6 +227,17 @@ export class GameManager {
       return state;
     }
 
+    if (room.gameType === "billiards") {
+      const targetScore = room.gameOptions?.billiardsTargetScore ?? 10;
+      const turnTime = room.gameOptions?.billiardsTurnTime ?? 30;
+      const billiardsEngine = new BilliardsEngine(targetScore, turnTime);
+      this.roomEngines.set(roomId, billiardsEngine);
+      const state = billiardsEngine.initState(room.players);
+      this.gameStates.set(roomId, state);
+      this.persistRoom(room);
+      return state;
+    }
+
     const engine = this.engines.get(room.gameType)!;
     const state = engine.initState(room.players);
     this.gameStates.set(roomId, state);
@@ -413,6 +426,11 @@ export class GameManager {
   getNonogramEngine(roomId: string): NonogramEngine | null {
     const engine = this.roomEngines.get(roomId);
     return engine instanceof NonogramEngine ? engine : null;
+  }
+
+  getBilliardsEngine(roomId: string): BilliardsEngine | null {
+    const engine = this.roomEngines.get(roomId);
+    return engine instanceof BilliardsEngine ? engine : null;
   }
 
   private cleanupRoomState(roomId: string): void {

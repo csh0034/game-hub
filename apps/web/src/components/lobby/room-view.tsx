@@ -5,7 +5,7 @@ import type { Room, ChatMessage, GameOptions, MinesweeperDifficulty, TetrisDiffi
 import { GAME_CONFIGS, MAX_SPECTATORS, MAX_ROOM_NAME_LENGTH, MINESWEEPER_DIFFICULTY_CONFIGS, TETRIS_DIFFICULTY_CONFIGS, TYPING_DIFFICULTY_CONFIGS, NONOGRAM_DIFFICULTY_CONFIGS } from "@game-hub/shared-types";
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { useGame } from "@/hooks/use-game";
-import { GameRenderer } from "@/lib/game-registry";
+import { GameRenderer, FULLSCREEN_GAME_TYPES } from "@/lib/game-registry";
 import type { GameSocket } from "@/lib/socket";
 import { toast } from "sonner";
 import {
@@ -152,6 +152,47 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
 
 
   if (isPlaying && gameState) {
+    const isFullscreen = FULLSCREEN_GAME_TYPES.includes(room.gameType);
+
+    if (isFullscreen) {
+      return (
+        <div className="fixed inset-0 top-[var(--navbar-height,56px)] z-40 bg-gray-950">
+          {playerLeftInfo && (
+            <PlayerLeftOverlay
+              nickname={playerLeftInfo.nickname}
+              willEnd={playerLeftInfo.willEnd}
+              onDismiss={handlePlayerLeftDismiss}
+              onReset={handlePlayerLeftReset}
+            />
+          )}
+          {/* Minimal header overlay */}
+          <div className="pointer-events-auto absolute top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-2">
+            <button
+              onClick={onLeave}
+              className="text-white/70 hover:text-white transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            {isSpectating && (
+              <span className="text-xs bg-amber-500/20 text-amber-600 px-2 py-0.5 rounded flex items-center gap-1">
+                <Eye className="w-3 h-3" /> 관전 중
+              </span>
+            )}
+          </div>
+
+          <Suspense
+            fallback={
+              <div className="flex items-center justify-center h-full text-muted-foreground">
+                로딩 중...
+              </div>
+            }
+          >
+            <GameRenderer gameType={room.gameType} roomId={room.id} isSpectating={isSpectating} />
+          </Suspense>
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-4 relative">
         {playerLeftInfo && (
@@ -717,6 +758,38 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
                         className="flex-1"
                       />
                       <span className="text-sm font-semibold tabular-nums min-w-14 text-center text-primary bg-primary/10 rounded-md px-2 py-0.5">❤️×{localOptions.typingLives ?? 3}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {room.gameType === "billiards" && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">목표 점수</label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="range"
+                        min={3}
+                        max={20}
+                        value={localOptions.billiardsTargetScore ?? 10}
+                        onChange={(e) => handleOptionChange({ ...localOptions, billiardsTargetScore: Number(e.target.value) })}
+                        className="flex-1"
+                      />
+                      <span className="text-sm font-semibold tabular-nums min-w-14 text-center text-primary bg-primary/10 rounded-md px-2 py-0.5">{localOptions.billiardsTargetScore ?? 10}점</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">턴 제한시간</label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="range"
+                        min={10}
+                        max={60}
+                        value={localOptions.billiardsTurnTime ?? 30}
+                        onChange={(e) => handleOptionChange({ ...localOptions, billiardsTurnTime: Number(e.target.value) })}
+                        className="flex-1"
+                      />
+                      <span className="text-sm font-semibold tabular-nums min-w-14 text-center text-primary bg-primary/10 rounded-md px-2 py-0.5">{localOptions.billiardsTurnTime ?? 30}초</span>
                     </div>
                   </div>
                 </div>

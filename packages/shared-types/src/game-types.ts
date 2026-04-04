@@ -1,4 +1,4 @@
-export type GameType = "gomoku" | "minesweeper" | "tetris" | "liar-drawing" | "catch-mind" | "typing" | "nonogram";
+export type GameType = "billiards" | "gomoku" | "minesweeper" | "tetris" | "liar-drawing" | "catch-mind" | "typing" | "nonogram";
 
 export interface GameConfig {
   gameType: GameType;
@@ -12,6 +12,14 @@ export interface GameConfig {
 }
 
 export const GAME_CONFIGS: Record<GameType, GameConfig> = {
+  billiards: {
+    gameType: "billiards",
+    name: "3쿠션 당구",
+    description: "수구로 목적구 2개를 맞히되 쿠션 3회 이상 터치해야 득점",
+    minPlayers: 1,
+    maxPlayers: 8,
+    icon: "🎱",
+  },
   nonogram: {
     gameType: "nonogram",
     name: "노노그램",
@@ -429,8 +437,73 @@ export interface NonogramMove {
   col: number;
 }
 
-export type GameState = GomokuState | MinesweeperPublicState | TetrisPublicState | LiarDrawingPublicState | CatchMindPublicState | TypingPublicState | NonogramPublicState;
-export type GameMove = GomokuMove | MinesweeperMove | TetrisMove | LiarDrawingMove | CatchMindMove | TypingMove | NonogramMove;
+// Billiards types
+export type BilliardsPhase = "aiming" | "simulating" | "scored" | "missed";
+
+export interface BilliardsBall {
+  id: "cue" | "red" | "yellow";
+  x: number;
+  z: number;
+  vx: number;
+  vz: number;
+}
+
+export interface BilliardsPlayerState {
+  id: string;
+  nickname: string;
+  score: number;
+  cueBallId: "cue" | "yellow";
+}
+
+export interface BilliardsShotEvent {
+  type: "cushion" | "ball-hit";
+  ballId: string;
+  targetId?: string;
+  timestamp: number;
+}
+
+export interface BilliardsPublicState {
+  balls: BilliardsBall[];
+  players: BilliardsPlayerState[];
+  currentTurnIndex: number;
+  phase: BilliardsPhase;
+  targetScore: number;
+  turnTimeSeconds: number;
+  turnStartedAt: number | null;
+  shotEvents: BilliardsShotEvent[];
+  cushionCount: number;
+  objectBallsHit: string[];
+  lastShotResult: { scored: boolean; cushionCount: number; objectBallsHit: string[] } | null;
+}
+
+export interface BilliardsMove {
+  type: "shot";
+  directionDeg: number;
+  power: number;
+  impactOffsetX?: number; // 당점 좌우 오프셋
+  impactOffsetY?: number; // 당점 상하 오프셋
+}
+
+export interface BilliardsFrameBall {
+  id: string;
+  x: number;
+  z: number;
+  vx: number;
+  vz: number;
+  spinX: number;
+  spinY: number;
+  spinZ: number;
+}
+
+export interface BilliardsFrameData {
+  balls: BilliardsFrameBall[];
+  shotEvents: BilliardsShotEvent[];
+  cushionCount: number;
+  objectBallsHit: string[];
+}
+
+export type GameState = GomokuState | MinesweeperPublicState | TetrisPublicState | LiarDrawingPublicState | CatchMindPublicState | TypingPublicState | NonogramPublicState | BilliardsPublicState;
+export type GameMove = GomokuMove | MinesweeperMove | TetrisMove | LiarDrawingMove | CatchMindMove | TypingMove | NonogramMove | BilliardsMove;
 
 export interface GameResult {
   winnerId: string | null; // null = draw

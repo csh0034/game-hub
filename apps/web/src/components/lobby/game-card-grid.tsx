@@ -17,7 +17,7 @@ interface GameCardGridProps {
   onCreateRoom: (payload: CreateRoomPayload) => Promise<Room>;
 }
 
-const NEW_GAMES: GameType[] = ["nonogram", "typing"];
+const NEW_GAMES: GameType[] = ["billiards", "nonogram", "typing"];
 
 function getQuickStartBadges(gameType: GameType): string[] | null {
   switch (gameType) {
@@ -33,6 +33,8 @@ function getQuickStartBadges(gameType: GameType): string[] | null {
       return ["초급", "60초", "❤️×3"];
     case "nonogram":
       return null;
+    case "billiards":
+      return ["10점", "30초"];
     default:
       return null;
   }
@@ -94,6 +96,9 @@ export function GameCardGrid({ onCreateRoom }: GameCardGridProps) {
     }
     if (gameType === "typing") {
       payload.gameOptions = { typingDifficulty: "beginner", typingTimeLimit: 60, typingLives: 3 };
+    }
+    if (gameType === "billiards") {
+      payload.gameOptions = { billiardsTargetScore: 10, billiardsTurnTime: 30 };
     }
     await onCreateRoom(payload);
   };

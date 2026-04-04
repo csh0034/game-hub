@@ -7,6 +7,7 @@ export interface GameComponentProps {
 }
 
 const GAME_COMPONENTS: Record<GameType, React.LazyExoticComponent<ComponentType<GameComponentProps>>> = {
+  billiards: lazy(() => import("@/components/games/billiards/billiards-board")),
   "liar-drawing": lazy(() => import("@/components/games/liar-drawing/liar-drawing-board")),
   "catch-mind": lazy(() => import("@/components/games/catch-mind/catch-mind-board")),
   tetris: lazy(() => import("@/components/games/tetris/tetris-board")),
@@ -20,6 +21,7 @@ export function getGameComponent(gameType: GameType) {
   return GAME_COMPONENTS[gameType];
 }
 
+const BilliardsGame = GAME_COMPONENTS["billiards"];
 const LiarDrawingGame = GAME_COMPONENTS["liar-drawing"];
 const CatchMindGame = GAME_COMPONENTS["catch-mind"];
 const TetrisGame = GAME_COMPONENTS["tetris"];
@@ -30,6 +32,8 @@ const NonogramGame = GAME_COMPONENTS["nonogram"];
 
 export function GameRenderer({ gameType, roomId, isSpectating }: { gameType: GameType; roomId: string; isSpectating?: boolean }) {
   switch (gameType) {
+    case "billiards":
+      return <BilliardsGame roomId={roomId} isSpectating={isSpectating} />;
     case "liar-drawing":
       return <LiarDrawingGame roomId={roomId} isSpectating={isSpectating} />;
     case "catch-mind":
@@ -46,3 +50,5 @@ export function GameRenderer({ gameType, roomId, isSpectating }: { gameType: Gam
       return <NonogramGame roomId={roomId} isSpectating={isSpectating} />;
   }
 }
+
+export const FULLSCREEN_GAME_TYPES: GameType[] = ["billiards"];

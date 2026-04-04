@@ -170,6 +170,8 @@ function getOptionsSummary(room: Room): string | null {
       const diff = NONOGRAM_DIFFICULTY_CONFIGS[opts?.nonogramDifficulty ?? "beginner"];
       return `${diff.label} (${diff.rows}×${diff.cols})`;
     }
+    case "billiards":
+      return `${opts?.billiardsTargetScore ?? 10}점 · 턴 ${opts?.billiardsTurnTime ?? 30}초`;
     default:
       return null;
   }

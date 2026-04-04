@@ -21,6 +21,8 @@ export interface GameOptions {
   typingTimeLimit?: number;
   typingLives?: number;
   nonogramDifficulty?: NonogramDifficulty;
+  billiardsTargetScore?: number;
+  billiardsTurnTime?: number;
   spectateEnabled?: boolean;
   spectateChatEnabled?: boolean;
   spectateInGameEnabled?: boolean;

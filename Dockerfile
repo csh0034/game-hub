@@ -47,6 +47,8 @@ COPY --from=builder /app/apps/web/public ./apps/web/public
 
 # Express 서버 빌드 결과 복사
 COPY --from=builder /app/apps/server/dist ./apps/server/dist
+# 디자인 컨셉 HTML (투표 미리보기용)
+COPY --from=builder /app/concepts ./concepts
 COPY --from=builder /app/apps/server/package.json ./apps/server/
 
 # shared-types 빌드 결과 복사 (프로덕션에서는 dist 사용)

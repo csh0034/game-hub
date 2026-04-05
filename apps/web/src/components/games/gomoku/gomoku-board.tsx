@@ -47,7 +47,7 @@ export default function GomokuBoard({ isSpectating }: GameComponentProps) {
     if (gameResult) return;
     if (!isMyTurn) return;
     if (state.board[row][col] !== null) return;
-    if (isForbidden(row, col)) return;
+    if (myColor === "black" && isForbidden(row, col)) return;
     const move: GomokuMove = { row, col };
     makeMove(move);
   };
@@ -206,7 +206,7 @@ export default function GomokuBoard({ isSpectating }: GameComponentProps) {
                   height: CELL_SIZE - 2,
                 }}
                 onClick={() => handleClick(row, col)}
-                disabled={!!gameResult || !isMyTurn || stone !== null || isForbidden(row, col)}
+                disabled={!!gameResult || !isMyTurn || stone !== null || (myColor === "black" && isForbidden(row, col))}
               >
                 {stone && (
                   <div
@@ -217,7 +217,7 @@ export default function GomokuBoard({ isSpectating }: GameComponentProps) {
                     } ${isLast ? "ring-2 ring-accent" : ""} ${isWinCell(row, col) ? "ring-2 ring-neon-yellow shadow-[0_0_8px_rgba(251,191,36,0.4)] scale-110" : ""}`}
                   />
                 )}
-                {!stone && isMyTurn && !gameResult && !isForbidden(row, col) && (
+                {!stone && isMyTurn && !gameResult && !(myColor === "black" && isForbidden(row, col)) && (
                   <div className={`w-[30px] h-[30px] rounded-full mx-auto opacity-0 hover:opacity-25 transition-opacity ${
                     myColor === "black" ? "bg-gray-900" : "bg-white"
                   }`} />

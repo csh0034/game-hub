@@ -59,7 +59,7 @@ function QuickBadges({ gameType }: { gameType: GameType }) {
   const badges = getQuickStartBadges(gameType);
   if (!badges) return null;
   return (
-    <div className="flex items-center gap-1 text-[10px] text-neon-cyan/50 mt-1.5 leading-none">
+    <div className="flex items-center gap-1 text-[11px] text-neon-cyan/50 mt-1.5 leading-none">
       <Zap className="w-2.5 h-2.5 shrink-0 text-neon-cyan/30" />
       <span className="truncate tracking-tight">{badges.join(" · ")}</span>
     </div>
@@ -111,14 +111,14 @@ export function GameCardGrid({ onCreateRoom }: GameCardGridProps) {
   };
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-3">
       {games.map((game) => (
         <div key={game.gameType}>
           {game.gameType === "nonogram" ? (
-            <div className="group relative h-full flex flex-col bg-card border border-border rounded-lg p-3 text-left transition-all duration-200 neon-border-hover">
+            <div className="group relative h-full flex flex-col bg-card border border-border rounded-lg p-4 text-left transition-all duration-200 neon-border-hover">
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-xl leading-none">{game.icon}</span>
-                <span className="text-sm font-semibold font-[family-name:var(--font-display)] truncate">{game.name}</span>
+                <span className="text-2xl leading-none">{game.icon}</span>
+                <span className="text-base font-semibold font-[family-name:var(--font-display)] truncate">{game.name}</span>
                 <StatusBadge type="new" text="NEW" />
               </div>
               <div className="grid grid-cols-5 gap-1 mt-auto">
@@ -137,10 +137,10 @@ export function GameCardGrid({ onCreateRoom }: GameCardGridProps) {
               </div>
             </div>
           ) : game.gameType === "minesweeper" ? (
-            <div className="group relative h-full flex flex-col bg-card border border-border rounded-lg p-3 text-left transition-all duration-200 neon-border-hover">
+            <div className="group relative h-full flex flex-col bg-card border border-border rounded-lg p-4 text-left transition-all duration-200 neon-border-hover">
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-xl leading-none">{game.icon}</span>
-                <span className="text-sm font-semibold font-[family-name:var(--font-display)] truncate">{game.name}</span>
+                <span className="text-2xl leading-none">{game.icon}</span>
+                <span className="text-base font-semibold font-[family-name:var(--font-display)] truncate">{game.name}</span>
               </div>
               <div className="grid grid-cols-3 gap-1 mt-auto">
                 {(Object.entries(MINESWEEPER_DIFFICULTY_CONFIGS) as [MinesweeperDifficulty, typeof MINESWEEPER_DIFFICULTY_CONFIGS[MinesweeperDifficulty]][]).map(([key, config]) => (
@@ -161,7 +161,7 @@ export function GameCardGrid({ onCreateRoom }: GameCardGridProps) {
             <button
               onClick={() => handleQuickCreate(game.gameType)}
               disabled={game.disabled}
-              className={`group relative w-full h-full flex flex-col bg-card border border-border rounded-lg p-3 text-left transition-all duration-200 ${game.disabled ? "opacity-50 cursor-default" : "neon-border-hover hover:shadow-[0_0_15px_rgba(0,229,255,0.06)]"}`}
+              className={`group relative w-full h-full flex flex-col bg-card border border-border rounded-lg p-4 text-left transition-all duration-200 ${game.disabled ? "opacity-50 cursor-default" : "neon-border-hover hover:shadow-[0_0_15px_rgba(0,229,255,0.06)]"}`}
             >
               <div className="absolute inset-0 bg-gradient-to-br from-neon-cyan/5 to-transparent rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="relative flex flex-col flex-1">
@@ -176,7 +176,7 @@ export function GameCardGrid({ onCreateRoom }: GameCardGridProps) {
                         ? <StatusBadge type="beta" text="BETA" />
                         : null}
                 </div>
-                <p className="text-[11px] text-foreground/40 mt-1.5 line-clamp-1 leading-tight">{game.description}</p>
+                <p className="text-xs text-foreground/40 mt-1.5 line-clamp-1 leading-tight">{game.description}</p>
                 {!game.disabled && <QuickBadges gameType={game.gameType} />}
               </div>
             </button>
@@ -187,14 +187,14 @@ export function GameCardGrid({ onCreateRoom }: GameCardGridProps) {
         <div key={game.name}>
           <button
             disabled
-            className="group relative w-full h-full flex flex-col bg-card border border-border rounded-lg p-3 text-left transition-all duration-200 opacity-40 cursor-default"
+            className="group relative w-full h-full flex flex-col bg-card border border-border rounded-lg p-4 text-left transition-all duration-200 opacity-40 cursor-default"
           >
             <div className="flex items-center gap-2">
               <span className="text-xl leading-none">{game.icon}</span>
               <span className="text-sm font-semibold font-[family-name:var(--font-display)] truncate">{game.name}</span>
               <StatusBadge type="coming" text="오픈 예정" />
             </div>
-            <p className="text-[11px] text-foreground/40 mt-1.5 line-clamp-1 leading-tight">{game.description}</p>
+            <p className="text-xs text-foreground/40 mt-1.5 line-clamp-1 leading-tight">{game.description}</p>
           </button>
         </div>
       ))}

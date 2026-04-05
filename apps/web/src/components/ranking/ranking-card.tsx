@@ -31,9 +31,10 @@ interface RankingCardProps {
   myNickname: string;
   socket: GameSocket | null;
   isAdmin?: boolean;
+  compact?: boolean;
 }
 
-export default function RankingCard({ gameType, difficulty, myNickname, socket, isAdmin }: RankingCardProps) {
+export default function RankingCard({ gameType, difficulty, myNickname, socket, isAdmin, compact }: RankingCardProps) {
   const { rankings, fetchRankings, deleteRanking } = useRanking(socket);
   const key: RankingKey = `${gameType}:${difficulty}`;
   const entries = rankings[key] ?? [];
@@ -56,15 +57,21 @@ export default function RankingCard({ gameType, difficulty, myNickname, socket, 
   };
 
   return (
-    <div className="bg-card border border-border rounded-xl p-6 neon-border-hover">
-      <h2 className="text-lg font-semibold font-[family-name:var(--font-display)] mb-3 flex items-center gap-2">
-        <Trophy className="w-5 h-5 text-neon-yellow" />
-        <span className="tracking-wide">RANKING</span>
-        <span className="text-sm text-muted-foreground font-normal">({DIFFICULTY_LABELS[difficulty] ?? difficulty})</span>
-      </h2>
+    <div className={`bg-card border border-border rounded-xl neon-border-hover ${compact ? "p-4" : "p-6"}`}>
+      {compact ? (
+        <h3 className="text-sm font-semibold font-[family-name:var(--font-display)] mb-2 text-center text-muted-foreground">
+          {DIFFICULTY_LABELS[difficulty] ?? difficulty}
+        </h3>
+      ) : (
+        <h2 className="text-lg font-semibold font-[family-name:var(--font-display)] mb-3 flex items-center gap-2">
+          <Trophy className="w-5 h-5 text-neon-yellow" />
+          <span className="tracking-wide">RANKING</span>
+          <span className="text-sm text-muted-foreground font-normal">({DIFFICULTY_LABELS[difficulty] ?? difficulty})</span>
+        </h2>
+      )}
 
       {entries.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-4">
+        <p className={`text-sm text-muted-foreground text-center ${compact ? "py-2" : "py-4"}`}>
           아직 기록이 없습니다.
         </p>
       ) : (

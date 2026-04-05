@@ -23,7 +23,8 @@ import { AnnouncementOverlay } from "@/components/common/announcement-overlay";
 import { PlacardDialog } from "@/components/common/placard-dialog";
 import { PlacardCarousel } from "@/components/common/placard-carousel";
 import { RequestBoard } from "@/components/request-board/request-board";
-import LobbyRankingPanel from "@/components/ranking/lobby-ranking-panel";
+import RankingDashboard from "@/components/ranking/ranking-dashboard";
+import MiniRankingStrip from "@/components/ranking/mini-ranking-strip";
 
 const NICKNAME_KEY = "game-hub-nickname";
 
@@ -60,7 +61,7 @@ function nicknameStore() {
 const store = nicknameStore();
 
 interface GameHubProps {
-  activeTab?: "lobby" | "requests";
+  activeTab?: "lobby" | "requests" | "ranking";
 }
 
 export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
@@ -455,6 +456,16 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
                 로비
               </Link>
               <Link
+                href="/ranking"
+                className={`px-4 py-2.5 text-sm font-medium font-[family-name:var(--font-display)] tracking-wide border-b-2 transition-all ${
+                  activeTab === "ranking"
+                    ? "border-neon-cyan text-neon-cyan"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                랭킹
+              </Link>
+              <Link
                 href="/request"
                 className={`px-4 py-2.5 text-sm font-medium font-[family-name:var(--font-display)] tracking-wide border-b-2 transition-all ${
                   activeTab === "requests"
@@ -505,11 +516,19 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
                   <GameCardGrid onCreateRoom={wrappedCreateRoom} />
                 </section>
 
+                <MiniRankingStrip socket={socket} />
+
                 <section>
                   <h2 className="text-2xl font-bold font-[family-name:var(--font-display)] tracking-wide mb-4">방 목록</h2>
                   <RoomList rooms={rooms} onJoinRoom={wrappedJoinRoom} onSpectateRoom={wrappedSpectateRoom} onGhostSpectateRoom={isAdmin ? wrappedGhostSpectateRoom : undefined} />
                 </section>
               </>
+            ) : activeTab === "ranking" ? (
+              <RankingDashboard
+                myNickname={nickname ?? ""}
+                socket={socket}
+                isAdmin={isAdmin}
+              />
             ) : (
               <RequestBoard
                 requests={requests}
@@ -525,7 +544,7 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
 
           {activeTab === "lobby" && (
             <aside className="mt-8 lg:mt-0 flex flex-col gap-4">
-              <div className="h-[400px]">
+              <div className="h-[500px]">
                 <ChatPanel
                   messages={lobbyMessages}
                   onSendMessage={sendLobbyMessage}
@@ -538,11 +557,6 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
                   onWhisper={sendWhisper}
                 />
               </div>
-              <LobbyRankingPanel
-                myNickname={nickname ?? ""}
-                socket={socket}
-                isAdmin={isAdmin}
-              />
             </aside>
           )}
         </div>

@@ -104,5 +104,53 @@ describe("RedisSessionStore", () => {
       const result = await store.findSessionByNickname("없는닉네임");
       expect(result).toBeNull();
     });
+
+    it("닉네임은 있지만 세션이 없으면 null을 반환한다", async () => {
+      redis.get
+        .mockResolvedValueOnce("socket-1") // nickname:홍길동
+        .mockResolvedValueOnce(null); // session:socket-1
+      const result = await store.findSessionByNickname("홍길동");
+      expect(result).toBeNull();
+    });
+
+    it("Redis 에러 시 null을 반환한다", async () => {
+      redis.get.mockRejectedValue(new Error("fail"));
+      const result = await store.findSessionByNickname("홍길동");
+      expect(result).toBeNull();
+    });
+  });
+
+  describe("에러 처리", () => {
+    it("saveSession Redis 에러 시 예외를 던지지 않는다", async () => {
+      redis.setex.mockRejectedValue(new Error("fail"));
+      await expect(store.saveSession("socket-1", sessionData)).resolves.toBeUndefined();
+    });
+
+    it("getSession Redis 에러 시 null을 반환한다", async () => {
+      redis.get.mockRejectedValue(new Error("fail"));
+      const result = await store.getSession("socket-1");
+      expect(result).toBeNull();
+    });
+
+    it("deleteSession Redis 에러 시 예외를 던지지 않는다", async () => {
+      redis.del.mockRejectedValue(new Error("fail"));
+      await expect(store.deleteSession("socket-1")).resolves.toBeUndefined();
+    });
+
+    it("isNicknameTaken Redis 에러 시 false를 반환한다", async () => {
+      redis.get.mockRejectedValue(new Error("fail"));
+      const result = await store.isNicknameTaken("홍길동", "socket-1");
+      expect(result).toBe(false);
+    });
+
+    it("reserveNickname Redis 에러 시 예외를 던지지 않는다", async () => {
+      redis.setex.mockRejectedValue(new Error("fail"));
+      await expect(store.reserveNickname("홍길동", "socket-1")).resolves.toBeUndefined();
+    });
+
+    it("releaseNickname Redis 에러 시 예외를 던지지 않는다", async () => {
+      redis.del.mockRejectedValue(new Error("fail"));
+      await expect(store.releaseNickname("홍길동")).resolves.toBeUndefined();
+    });
   });
 });

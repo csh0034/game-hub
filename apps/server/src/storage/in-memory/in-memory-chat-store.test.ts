@@ -92,4 +92,51 @@ describe("InMemoryChatStore", () => {
       await expect(store.deleteRoomHistory("unknown")).resolves.toBeUndefined();
     });
   });
+
+  describe("deleteLobbyMessage", () => {
+    it("로비 메시지를 ID로 삭제한다", async () => {
+      const msg1 = createMsg(1);
+      const msg2 = createMsg(2);
+      await store.pushLobbyMessage(msg1);
+      await store.pushLobbyMessage(msg2);
+
+      const result = await store.deleteLobbyMessage("id-1");
+      expect(result).toBe(true);
+
+      const history = await store.getLobbyHistory();
+      expect(history).toEqual([msg2]);
+    });
+
+    it("존재하지 않는 메시지 삭제 시 false를 반환한다", async () => {
+      await store.pushLobbyMessage(createMsg(1));
+      const result = await store.deleteLobbyMessage("nonexistent");
+      expect(result).toBe(false);
+    });
+  });
+
+  describe("deleteRoomMessage", () => {
+    it("방 메시지를 ID로 삭제한다", async () => {
+      const msg1 = createMsg(1);
+      const msg2 = createMsg(2);
+      await store.pushRoomMessage("room-1", msg1);
+      await store.pushRoomMessage("room-1", msg2);
+
+      const result = await store.deleteRoomMessage("room-1", "id-1");
+      expect(result).toBe(true);
+
+      const history = await store.getRoomHistory("room-1");
+      expect(history).toEqual([msg2]);
+    });
+
+    it("존재하지 않는 방의 메시지 삭제 시 false를 반환한다", async () => {
+      const result = await store.deleteRoomMessage("unknown", "id-1");
+      expect(result).toBe(false);
+    });
+
+    it("존재하지 않는 메시지 삭제 시 false를 반환한다", async () => {
+      await store.pushRoomMessage("room-1", createMsg(1));
+      const result = await store.deleteRoomMessage("room-1", "nonexistent");
+      expect(result).toBe(false);
+    });
+  });
 });

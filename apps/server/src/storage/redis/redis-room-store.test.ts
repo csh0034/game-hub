@@ -85,11 +85,61 @@ describe("RedisRoomStore", () => {
     });
   });
 
+  describe("getAllRooms — stale ID 정리", () => {
+    it("data가 null인 stale ID를 SET에서 제거한다", async () => {
+      redis.smembers.mockResolvedValue(["ABC123", "stale-id"]);
+      const pipeline = createMockPipeline();
+      pipeline.exec.mockResolvedValue([
+        [null, JSON.stringify(room)],
+        [null, null], // stale
+      ]);
+      redis.pipeline.mockReturnValue(pipeline as never);
+
+      const result = await store.getAllRooms();
+      expect(result).toEqual([room]);
+      expect(redis.srem).toHaveBeenCalledWith("rooms", "stale-id");
+    });
+
+    it("pipeline.exec이 null을 반환하면 빈 배열을 반환한다", async () => {
+      redis.smembers.mockResolvedValue(["ABC123"]);
+      const pipeline = createMockPipeline();
+      pipeline.exec.mockResolvedValue(null);
+      redis.pipeline.mockReturnValue(pipeline as never);
+
+      const result = await store.getAllRooms();
+      expect(result).toEqual([]);
+    });
+  });
+
   describe("deleteRoom", () => {
     it("방을 삭제하고 rooms SET에서 제거한다", async () => {
       await store.deleteRoom("ABC123");
       expect(redis._pipeline.del).toHaveBeenCalledWith("room:ABC123");
       expect(redis._pipeline.srem).toHaveBeenCalledWith("rooms", "ABC123");
+    });
+  });
+
+  describe("에러 처리", () => {
+    it("saveRoom Redis 에러 시 예외를 던지지 않는다", async () => {
+      redis._pipeline.exec.mockRejectedValue(new Error("fail"));
+      await expect(store.saveRoom(room)).resolves.toBeUndefined();
+    });
+
+    it("getRoom Redis 에러 시 null을 반환한다", async () => {
+      redis.get.mockRejectedValue(new Error("fail"));
+      const result = await store.getRoom("ABC123");
+      expect(result).toBeNull();
+    });
+
+    it("getAllRooms Redis 에러 시 빈 배열을 반환한다", async () => {
+      redis.smembers.mockRejectedValue(new Error("fail"));
+      const result = await store.getAllRooms();
+      expect(result).toEqual([]);
+    });
+
+    it("deleteRoom Redis 에러 시 예외를 던지지 않는다", async () => {
+      redis._pipeline.exec.mockRejectedValue(new Error("fail"));
+      await expect(store.deleteRoom("ABC123")).resolves.toBeUndefined();
     });
   });
 });

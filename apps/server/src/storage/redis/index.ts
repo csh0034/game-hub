@@ -4,3 +4,4 @@ export { RedisSessionStore } from "./redis-session-store.js";
 export { RedisRequestStore } from "./redis-request-store.js";
 export { RedisRankingStore } from "./redis-ranking-store.js";
 export { RedisPlacardStore } from "./redis-placard-store.js";
+export { RedisConceptVoteStore } from "./redis-concept-vote-store.js";

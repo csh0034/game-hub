@@ -1,5 +1,7 @@
 import express from "express";
 import { createServer } from "http";
+import { existsSync } from "fs";
+import path from "path";
 import { execSync } from "child_process";
 import { Server } from "socket.io";
 import cors from "cors";
@@ -16,6 +18,7 @@ import { setupNicknameHandler } from "./socket/nickname-handler.js";
 import { setupRequestHandler } from "./socket/request-handler.js";
 import { setupAnnounceHandler } from "./socket/announce-handler.js";
 import { setupPlacardHandler } from "./socket/placard-handler.js";
+import { setupConceptVoteHandler } from "./socket/concept-vote-handler.js";
 import { broadcastAuthenticatedCount } from "./socket/broadcast-player-count.js";
 import { GameManager } from "./games/game-manager.js";
 import { parseCorsOrigin } from "./cors.js";
@@ -73,7 +76,10 @@ async function bootstrap() {
     gameManager = new GameManager(storage.roomStore);
   }
 
-  const { chatStore, sessionStore, requestStore, rankingStore, placardStore } = storage;
+  const { chatStore, sessionStore, requestStore, rankingStore, placardStore, conceptVoteStore } = storage;
+
+  const conceptsDir = [path.resolve(process.cwd(), "concepts"), path.resolve(process.cwd(), "../../concepts")].find((d) => existsSync(d));
+  if (conceptsDir) app.use("/concepts", express.static(conceptsDir));
 
   app.get("/health", (_req, res) => {
     res.json({ status: "ok", rooms: gameManager.getRoomCount() });
@@ -97,6 +103,7 @@ async function bootstrap() {
     setupRequestHandler(io, socket, requestStore);
     setupAnnounceHandler(io, socket);
     setupPlacardHandler(io, socket, placardStore);
+    setupConceptVoteHandler(io, socket, conceptVoteStore);
 
     socket.on("disconnect", async () => {
       console.log(`[disconnect] ${socket.id}`);

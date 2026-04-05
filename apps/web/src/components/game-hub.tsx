@@ -25,6 +25,7 @@ import { PlacardCarousel } from "@/components/common/placard-carousel";
 import { RequestBoard } from "@/components/request-board/request-board";
 import RankingDashboard from "@/components/ranking/ranking-dashboard";
 import MiniRankingStrip from "@/components/ranking/mini-ranking-strip";
+import { ConceptVotePanel } from "@/components/lobby/concept-vote-panel";
 
 const NICKNAME_KEY = "game-hub-nickname";
 
@@ -557,6 +558,7 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
                   onWhisper={sendWhisper}
                 />
               </div>
+              <ConceptVotePanel socket={socket} />
             </aside>
           )}
         </div>

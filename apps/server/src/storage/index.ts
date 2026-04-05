@@ -5,8 +5,9 @@ import type { SessionStore } from "./interfaces/session-store.js";
 import type { RequestStore } from "./interfaces/request-store.js";
 import type { RankingStore } from "./interfaces/ranking-store.js";
 import type { PlacardStore } from "./interfaces/placard-store.js";
-import { RedisChatStore, RedisRoomStore, RedisSessionStore, RedisRequestStore, RedisRankingStore, RedisPlacardStore } from "./redis/index.js";
-import { InMemoryChatStore, InMemoryRoomStore, InMemorySessionStore, InMemoryRequestStore, InMemoryRankingStore, InMemoryPlacardStore } from "./in-memory/index.js";
+import type { ConceptVoteStore } from "./interfaces/concept-vote-store.js";
+import { RedisChatStore, RedisRoomStore, RedisSessionStore, RedisRequestStore, RedisRankingStore, RedisPlacardStore, RedisConceptVoteStore } from "./redis/index.js";
+import { InMemoryChatStore, InMemoryRoomStore, InMemorySessionStore, InMemoryRequestStore, InMemoryRankingStore, InMemoryPlacardStore, InMemoryConceptVoteStore } from "./in-memory/index.js";
 
 export type { ChatStore } from "./interfaces/index.js";
 export type { RoomStore } from "./interfaces/index.js";
@@ -14,6 +15,7 @@ export type { SessionStore } from "./interfaces/index.js";
 export type { RequestStore } from "./interfaces/index.js";
 export type { RankingStore } from "./interfaces/index.js";
 export type { PlacardStore } from "./interfaces/index.js";
+export type { ConceptVoteStore } from "./interfaces/index.js";
 export { getRedisClient, connectRedis, closeRedis } from "./redis-client.js";
 
 export interface Storage {
@@ -23,6 +25,7 @@ export interface Storage {
   requestStore: RequestStore;
   rankingStore: RankingStore;
   placardStore: PlacardStore;
+  conceptVoteStore: ConceptVoteStore;
 }
 
 export function createStorage(redis: Redis): Storage {
@@ -33,6 +36,7 @@ export function createStorage(redis: Redis): Storage {
     requestStore: new RedisRequestStore(redis),
     rankingStore: new RedisRankingStore(redis),
     placardStore: new RedisPlacardStore(redis),
+    conceptVoteStore: new RedisConceptVoteStore(redis),
   };
 }
 
@@ -44,5 +48,6 @@ export function createInMemoryStorage(): Storage {
     requestStore: new InMemoryRequestStore(),
     rankingStore: new InMemoryRankingStore(),
     placardStore: new InMemoryPlacardStore(),
+    conceptVoteStore: new InMemoryConceptVoteStore(),
   };
 }

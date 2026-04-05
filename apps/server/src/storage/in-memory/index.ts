@@ -4,3 +4,4 @@ export { InMemorySessionStore } from "./in-memory-session-store.js";
 export { InMemoryRequestStore } from "./in-memory-request-store.js";
 export { InMemoryRankingStore } from "./in-memory-ranking-store.js";
 export { InMemoryPlacardStore } from "./in-memory-placard-store.js";
+export { InMemoryConceptVoteStore } from "./in-memory-concept-vote-store.js";

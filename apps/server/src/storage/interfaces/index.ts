@@ -4,3 +4,4 @@ export type { SessionStore } from "./session-store.js";
 export type { RequestStore } from "./request-store.js";
 export type { RankingStore } from "./ranking-store.js";
 export type { PlacardStore } from "./placard-store.js";
+export type { ConceptVoteStore } from "./concept-vote-store.js";

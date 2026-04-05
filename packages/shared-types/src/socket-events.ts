@@ -76,6 +76,10 @@ export interface ClientToServerEvents {
   // Placard
   "placard:set": (items: string[], callback: (result: { success: boolean; error?: string }) => void) => void;
   "placard:get": (callback: (items: string[]) => void) => void;
+
+  // Concept Vote
+  "concept-vote:toggle": (conceptFile: string, browserId: string, callback: (result: { success: boolean; error?: string }) => void) => void;
+  "concept-vote:get": (browserId: string, callback: (data: ConceptVoteSummary) => void) => void;
 }
 
 // Server → Client
@@ -141,6 +145,13 @@ export interface ServerToClientEvents {
   "system:version": (data: { commitHash: string }) => void;
   "system:server-time": (data: { serverTime: number }) => void;
   "system:announcement": (data: { message: string; nickname: string; timestamp: number }) => void;
+
+  // Concept Vote
+  "concept-vote:updated": (data: ConceptVoteSummary) => void;
+}
+
+export interface ConceptVoteSummary {
+  votes: Record<string, string[]>;
 }
 
 export interface InterServerEvents {

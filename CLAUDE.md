@@ -56,6 +56,7 @@ pnpm --filter web test:coverage           # 웹 테스트 + 커버리지
 | 관리자 공지 | `docs/announcement.md` |
 | 플랜카드 | `docs/placard.md` |
 | 방 운영 | `docs/room.md` |
+| 투표 | `docs/vote.md` |
 
 ## 기타 문서
 

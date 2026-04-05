@@ -464,6 +464,13 @@ describe("GomokuEngine (renju rule)", () => {
       expect(s.forbiddenMoves).not.toBeNull();
       expect(s.forbiddenMoves).toContainEqual({ row: 7, col: 7 });
     });
+
+    it("백 차례에는 forbiddenMoves가 빈 배열이다", () => {
+      let s = engine.initState(mockPlayers);
+      s = engine.processMove(s, "player1", { row: 7, col: 5 }); // 흑 → 백 차례
+      expect(s.currentTurn).toBe("white");
+      expect(s.forbiddenMoves).toEqual([]);
+    });
   });
 
   describe("checkWin", () => {

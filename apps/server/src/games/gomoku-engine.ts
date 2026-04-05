@@ -63,9 +63,9 @@ export class GomokuEngine implements GameEngine {
       lastMove: { row, col },
       moveCount: state.moveCount + 1,
       turnStartedAt: Date.now(),
-      forbiddenMoves: this.ruleType === "renju" && nextTurn === "black"
-        ? getForbiddenMoves(newBoard)
-        : state.forbiddenMoves,
+      forbiddenMoves: this.ruleType === "renju"
+        ? (nextTurn === "black" ? getForbiddenMoves(newBoard) : [])
+        : null,
     };
   }
 

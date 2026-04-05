@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { TetrisEngine } from "./tetris-engine.js";
 import type { Player, TetrisPublicState, TetrisMove } from "@game-hub/shared-types";
+import { getDropInterval, TETRIS_MAX_LEVEL, TETRIS_DIFFICULTY_CONFIGS } from "@game-hub/shared-types";
+import type { TetrisDifficulty } from "@game-hub/shared-types";
 
 const mockPlayers: Player[] = [
   { id: "player1", nickname: "테트리스유저", isReady: true },
@@ -67,10 +69,10 @@ describe("TetrisEngine", () => {
       expect(p.status).toBe("playing");
     });
 
-    it("난이도별 초기 레벨이 다르다", () => {
+    it("모든 난이도의 초기 레벨이 1이다", () => {
       const expertEngine = new TetrisEngine("expert");
       const state = expertEngine.initState(mockPlayers);
-      expect(state.players["player1"].level).toBe(5);
+      expect(state.players["player1"].level).toBe(1);
       expect(state.difficulty).toBe("expert");
     });
 
@@ -81,7 +83,7 @@ describe("TetrisEngine", () => {
 
       const intermediateEngine = new TetrisEngine("intermediate");
       const intermediateState = intermediateEngine.initState(mockPlayers);
-      expect(intermediateState.dropInterval).toBe(600);
+      expect(intermediateState.dropInterval).toBe(500);
     });
   });
 
@@ -503,13 +505,20 @@ describe("TetrisEngine", () => {
       expect(state.players["player1"].level).toBe(1);
     });
 
+    it("intermediate 난이도가 올바르게 설정된다", () => {
+      const intermediateEngine = new TetrisEngine("intermediate");
+      const state = intermediateEngine.initState(mockPlayers);
+      expect(state.difficulty).toBe("intermediate");
+      expect(state.dropInterval).toBe(500);
+      expect(state.players["player1"].level).toBe(1);
+    });
+
     it("expert 난이도가 올바르게 설정된다", () => {
       const expertEngine = new TetrisEngine("expert");
       const state = expertEngine.initState(mockPlayers);
       expect(state.difficulty).toBe("expert");
-      // expert: base 400, startLevel 5, interval = max(400 - 0*50, 100) = 400
-      expect(state.dropInterval).toBe(400);
-      expect(state.players["player1"].level).toBe(5);
+      expect(state.dropInterval).toBe(300);
+      expect(state.players["player1"].level).toBe(1);
     });
   });
 
@@ -858,6 +867,41 @@ describe("TetrisEngine", () => {
       classicEngine.initState(mockVersusPlayers);
 
       expect(classicEngine.getValidatedClassicScore()).toBeNull();
+    });
+  });
+
+  describe("속도 테이블 (getDropInterval)", () => {
+    it("각 난이도의 레벨 1 속도가 올바르다", () => {
+      expect(getDropInterval("beginner", 1)).toBe(800);
+      expect(getDropInterval("intermediate", 1)).toBe(500);
+      expect(getDropInterval("expert", 1)).toBe(300);
+    });
+
+    it("각 난이도의 최대 레벨 속도가 올바르다", () => {
+      expect(getDropInterval("beginner", 15)).toBe(100);
+      expect(getDropInterval("intermediate", 15)).toBe(70);
+      expect(getDropInterval("expert", 15)).toBe(50);
+    });
+
+    it("레벨이 올라갈수록 속도가 빨라진다 (간격 감소)", () => {
+      const difficulties: TetrisDifficulty[] = ["beginner", "intermediate", "expert"];
+      for (const diff of difficulties) {
+        for (let lv = 2; lv <= TETRIS_MAX_LEVEL; lv++) {
+          expect(getDropInterval(diff, lv)).toBeLessThanOrEqual(getDropInterval(diff, lv - 1));
+        }
+      }
+    });
+
+    it("범위 밖 레벨은 경계값으로 클램핑된다", () => {
+      expect(getDropInterval("beginner", 0)).toBe(800);
+      expect(getDropInterval("beginner", 20)).toBe(100);
+    });
+
+    it("모든 난이도의 speedTable 길이가 TETRIS_MAX_LEVEL과 같다", () => {
+      const difficulties: TetrisDifficulty[] = ["beginner", "intermediate", "expert"];
+      for (const diff of difficulties) {
+        expect(TETRIS_DIFFICULTY_CONFIGS[diff].speedTable.length).toBe(TETRIS_MAX_LEVEL);
+      }
     });
   });
 });

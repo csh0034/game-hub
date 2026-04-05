@@ -619,7 +619,7 @@ export function RoomView({ room, socket, nickname, isSpectating, isGhostSpectati
                         >
                           <div className="font-medium">{config.label}</div>
                           <div className="text-xs text-muted-foreground mt-0.5">
-                            Lv.{config.startLevel} · {config.initialInterval}ms
+                            {config.speedTable[0]}ms → {config.speedTable[config.speedTable.length - 1]}ms
                           </div>
                         </button>
                       ))}
@@ -904,7 +904,7 @@ export function RoomView({ room, socket, nickname, isSpectating, isGhostSpectati
                     </div>
                     <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-2">
                       <span className="text-muted-foreground">난이도</span>
-                      <span className="font-medium">{diff.label} (Lv.{diff.startLevel} · {diff.initialInterval}ms)</span>
+                      <span className="font-medium">{diff.label} ({diff.speedTable[0]}ms → {diff.speedTable[diff.speedTable.length - 1]}ms)</span>
                     </div>
                   </>
                 );

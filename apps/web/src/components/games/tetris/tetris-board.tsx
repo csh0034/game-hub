@@ -15,10 +15,10 @@ import {
   tryRotate,
   calculateGhostRow,
   SPEED_RACE_TARGET_LINES,
+  getDropInterval,
 } from "@game-hub/shared-types";
 import type {
   TetrisPlayerBoard,
-  TetrisDifficulty,
   TetrominoType,
   TetrisActivePiece,
 } from "@game-hub/shared-types";
@@ -327,16 +327,6 @@ function getSpeedRaceProgress(linesCleared: number) {
   return { text: "text-primary", bar: "bg-gradient-to-r from-primary to-neon-purple", glow: false };
 }
 
-const DIFFICULTY_CONFIGS = {
-  beginner: { baseInterval: 800, startLevel: 1 },
-  intermediate: { baseInterval: 600, startLevel: 1 },
-  expert: { baseInterval: 400, startLevel: 5 },
-} as const;
-
-function calculateDropInterval(difficulty: TetrisDifficulty, maxLevel: number): number {
-  const config = DIFFICULTY_CONFIGS[difficulty];
-  return Math.max(config.baseInterval - (maxLevel - config.startLevel) * 50, 100);
-}
 
 function getOpponentCellSize(count: number): number {
   if (count <= 1) return 16;
@@ -413,7 +403,7 @@ export default function TetrisBoard({ isSpectating }: GameComponentProps) {
     for (const board of Object.values(opponentBoards)) {
       if (board.level > maxLevel) maxLevel = board.level;
     }
-    return calculateDropInterval(difficulty, maxLevel);
+    return getDropInterval(difficulty, maxLevel);
   }, [difficulty, myBoard?.level, opponentBoards]);
 
   // Apply client-side prediction for movement/rotation

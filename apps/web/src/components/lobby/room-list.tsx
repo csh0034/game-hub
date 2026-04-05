@@ -154,7 +154,7 @@ function getOptionsSummary(room: Room): string | null {
       if (!opts?.tetrisDifficulty) return null;
       const diff = TETRIS_DIFFICULTY_CONFIGS[opts.tetrisDifficulty];
       const mode = opts?.tetrisMode === "speed-race" ? "스피드 레이스" : "클래식";
-      return `${mode} · ${diff.label} (Lv.${diff.startLevel})`;
+      return `${mode} · ${diff.label}`;
     }
     case "liar-drawing": {
       const parts: string[] = [];

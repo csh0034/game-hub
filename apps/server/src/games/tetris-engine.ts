@@ -12,7 +12,7 @@ import type {
   GameState,
   GameMove,
 } from "@game-hub/shared-types";
-import { SPEED_RACE_TARGET_LINES } from "@game-hub/shared-types";
+import { SPEED_RACE_TARGET_LINES, TETRIS_MAX_LEVEL, getDropInterval } from "@game-hub/shared-types";
 import type { GameEngine } from "./engine-interface.js";
 
 const VISIBLE_ROWS = 20;
@@ -21,8 +21,6 @@ const BOARD_ROWS = VISIBLE_ROWS + BUFFER_ROWS; // 24 rows internally, top 4 hidd
 const BOARD_COLS = 10;
 const NEXT_PREVIEW_COUNT = 2;
 const LINES_PER_LEVEL = 10;
-const MIN_DROP_INTERVAL = 100;
-const DROP_SPEED_DECREASE = 50;
 const MAX_LOCK_DELAY_RESETS = 5;
 
 const ALL_TETROMINOS: TetrominoType[] = ["I", "O", "T", "S", "Z", "J", "L"];
@@ -145,17 +143,12 @@ export class TetrisEngine implements GameEngine {
   private startedAt: number | null = null;
   private completedAt: number | null = null;
 
-  private baseInterval: number;
-  private startLevel: number;
   private dirtyPlayers: Set<string> = new Set();
   private boardDirtyPlayers: Set<string> = new Set(); // players whose board (not just piece) changed
 
   constructor(difficulty: TetrisDifficulty = "beginner", gameMode: TetrisGameMode = "classic") {
     this.difficulty = difficulty;
     this.gameMode = gameMode;
-    const configs = { beginner: { initialInterval: 800, startLevel: 1 }, intermediate: { initialInterval: 600, startLevel: 1 }, expert: { initialInterval: 400, startLevel: 5 } };
-    this.baseInterval = configs[difficulty].initialInterval;
-    this.startLevel = configs[difficulty].startLevel;
   }
 
   initState(players: Player[]): TetrisPublicState {
@@ -173,7 +166,7 @@ export class TetrisEngine implements GameEngine {
         canHold: true,
         nextPieces: [],
         score: 0,
-        level: this.startLevel,
+        level: 1,
         linesCleared: 0,
         status: "playing",
         pendingGarbage: 0,
@@ -579,7 +572,7 @@ export class TetrisEngine implements GameEngine {
 
       ps.linesCleared += cleared;
 
-      const newLevel = this.startLevel + Math.floor(ps.linesCleared / LINES_PER_LEVEL);
+      const newLevel = Math.min(1 + Math.floor(ps.linesCleared / LINES_PER_LEVEL), TETRIS_MAX_LEVEL);
       if (newLevel > ps.level) {
         ps.level = newLevel;
       }
@@ -684,11 +677,11 @@ export class TetrisEngine implements GameEngine {
   }
 
   private calculateDropInterval(): number {
-    let maxLevel = this.startLevel;
+    let maxLevel = 1;
     for (const ps of this.playerStates.values()) {
       if (ps.level > maxLevel) maxLevel = ps.level;
     }
-    return Math.max(this.baseInterval - (maxLevel - this.startLevel) * DROP_SPEED_DECREASE, MIN_DROP_INTERVAL);
+    return getDropInterval(this.difficulty, maxLevel);
   }
 
   tickAll(): TetrisPublicState {

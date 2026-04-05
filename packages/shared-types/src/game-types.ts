@@ -148,17 +148,34 @@ export const SPEED_RACE_TARGET_LINES = 40;
 
 export type TetrisDifficulty = "beginner" | "intermediate" | "expert";
 
+export const TETRIS_MAX_LEVEL = 15;
+
 export interface TetrisDifficultyConfig {
-  initialInterval: number;
-  startLevel: number;
+  speedTable: readonly number[];
   label: string;
 }
 
 export const TETRIS_DIFFICULTY_CONFIGS: Record<TetrisDifficulty, TetrisDifficultyConfig> = {
-  beginner: { initialInterval: 800, startLevel: 1, label: "초급" },
-  intermediate: { initialInterval: 600, startLevel: 1, label: "중급" },
-  expert: { initialInterval: 400, startLevel: 5, label: "고급" },
+  beginner: {
+    //        Lv1  Lv2  Lv3  Lv4  Lv5  Lv6  Lv7  Lv8  Lv9 Lv10 Lv11 Lv12 Lv13 Lv14 Lv15
+    speedTable: [800, 720, 640, 560, 480, 420, 360, 300, 250, 210, 180, 160, 140, 120, 100],
+    label: "초급",
+  },
+  intermediate: {
+    speedTable: [500, 450, 400, 350, 300, 260, 220, 190, 160, 130, 110, 100, 90, 80, 70],
+    label: "중급",
+  },
+  expert: {
+    speedTable: [300, 260, 220, 190, 160, 130, 110, 90, 75, 60, 50, 50, 50, 50, 50],
+    label: "고급",
+  },
 };
+
+export function getDropInterval(difficulty: TetrisDifficulty, level: number): number {
+  const { speedTable } = TETRIS_DIFFICULTY_CONFIGS[difficulty];
+  const index = Math.max(0, Math.min(level - 1, speedTable.length - 1));
+  return speedTable[index];
+}
 
 export type TetrominoType = "I" | "O" | "T" | "S" | "Z" | "J" | "L";
 

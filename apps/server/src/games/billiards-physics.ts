@@ -6,56 +6,64 @@ export const TABLE_HEIGHT = 1.422;
 export const BALL_RADIUS = 0.03075;
 const HALF_W = TABLE_WIDTH / 2;
 const HALF_H = TABLE_HEIGHT / 2;
-const CUSHION_HEIGHT = 0.037;
+const CUSHION_HEIGHT = 0.03575;
 export const CUSHION_THICKNESS = 0.05; // m
 
 // ─── Core Physics Constants ─────────────────────────────────────────
 const BALL_MASS = 0.21; // kg
-const BALL_BALL_RESTITUTION = 0.92; // phenolic resin measured COR (Marlow, Cross)
+const BALL_BALL_COR_LOW = 0.95; // low-speed COR (Cross 2014, ~0.5 m/s)
+const BALL_BALL_COR_SLOPE = 0.008; // COR decrease per m/s of relative speed
+const BALL_BALL_COR_MIN = 0.88; // high-speed COR floor
 export const CUSHION_BASE_RESTITUTION = 0.72; // fixed base (replaced by sigmoid in practice)
 const SLIDING_FRICTION = 0.2; // μₛ
 const ROLLING_FRICTION = 0.01; // μᵣ (Simonis 860 cloth, 0.008~0.012 range)
+const ROLLING_HERTZ_COEFF = 0.003; // Hertzian contact: μᵣ_eff = μᵣ × (1 + coeff/speed)
+const CLOTH_NAP_ANISOTROPY = 0.02; // 2% directional friction difference (nap along Z axis)
 const GRAVITY = 9.81; // m/s²
 
 // Cushion parameters
 const CUSHION_CONTACT_FRICTION = 0.14; // μ for cushion throw
+const CUSHION_COMPRESSION_DAMPING = 0.03; // tangential speed loss from rubber compression
 const CUSHION_REF_SPEED = 5.9577; // v_ref for throw calculation
-const CUSHION_CONTACT_TIME_EXP = 0.7; // exponent for speedScale
+const CUSHION_CONTACT_TIME_EXP = 0.5; // exponent for speedScale (Hertz contact theory)
 const CUSHION_TORQUE_DAMPING = 0.10; // reduced: 0.35 caused ~20 rad/s spin change per contact
-const CUSHION_MAX_SPIN = 7.0; // rad/s for throw normalization (prevents premature saturation)
-const CUSHION_MAX_THROW_DEG = 8; // degrees (real max ~5-8°)
+const CUSHION_MAX_SPIN = 80.0; // rad/s for throw normalization (full throw at strong english)
+const CUSHION_MAX_THROW_DEG = 6; // degrees (Mathavan 2010 measured max ~5-7°)
 const CUSHION_MAX_THROW_TAN = Math.tan((CUSHION_MAX_THROW_DEG * Math.PI) / 180);
 
 // Cushion sigmoid restitution
-const CUSHION_E_LOW = 0.88; // low-speed limit
+const CUSHION_E_LOW = 0.86; // low-speed limit (Cross 2005)
 const CUSHION_E_HIGH = 0.52; // high-speed limit (Marlow 1994, Cross 2005 measured)
 const CUSHION_V_MID = 2.0; // m/s
-const CUSHION_K = 1.5; // steepness
+const CUSHION_K = 2.2; // steepness (sharper transition, Cross 2005)
 
 // Cushion side-spin to rolling-spin conversion
-const CUSHION_SPIN_CONVERSION = 0.10; // moderate increase from 0.08
+const CUSHION_SPIN_CONVERSION = 0.10; // side-spin to rolling conversion (Han 2005)
+const CUSHION_SPIN_CONVERSION_CAP = 100; // max spinZ used for conversion calculation
 
 // Ball-ball contact friction (spin transfer)
 const BALL_BALL_CONTACT_FRICTION = 0.06; // Marlow 2003, Cross 2008 measured
 
 // Swerve (side-spin curve coefficient)
-const K_SWERVE = 0.0012; // Magnus force model: scales with speed (effective ~0.004 at 3 m/s)
+const K_SWERVE_SLIDING = 0.0040; // stronger swerve during sliding (asymmetric friction dominant)
+const K_SWERVE_ROLLING = 0.0015; // weaker swerve during rolling (gyroscopic only)
+const SWERVE_SPIN_CAP = 250; // defensive cap on spinZ input to swerve
 
 // Speed limits
 const MAX_SPEED = 13.89; // ~50 km/h
 const STOP_THRESHOLD = 0.02; // m/s
-const STOP_FRAMES_REQUIRED = 5; // 250ms for smoother visual stop
+const STOP_FRAMES_REQUIRED = 8; // 400ms for smoother visual stop, prevents false settle
 
 // Spin parameters
 const THEORETICAL_SPIN_SCALE = 5.0;
-const SPIN_TRANSFER_EFFICIENCY = 0.7;
-const INITIAL_SPIN_SCALE = THEORETICAL_SPIN_SCALE * SPIN_TRANSFER_EFFICIENCY; // 3.5
-const CUE_ELEVATION_RAD = (3 * Math.PI) / 180; // 3 degrees
-const SPIN_Z_FRICTION = 0.015; // μ_spin for spinZ decay (compromise: ~1.3s for 10 rad/s)
+const SPIN_TRANSFER_EFFICIENCY = 0.5; // tip deformation/slip loss (Mathavan 2014)
+const INITIAL_SPIN_SCALE = THEORETICAL_SPIN_SCALE * SPIN_TRANSFER_EFFICIENCY; // 2.5
+const CUE_ELEVATION_RAD = (5 * Math.PI) / 180; // 5 degrees (average stroke angle)
+const SPIN_Z_FRICTION = 0.011; // μ_spin for spinZ decay (~1.5-2.5s effective duration)
 
 // Cue strike parameters
 const CUE_MASS = 0.5; // kg
-const CUE_TIP_RESTITUTION = 0.7;
+const CUE_TIP_RESTITUTION = 0.65; // leather tip COR (Cross 2014)
 
 // Squirt
 const SQUIRT_COEFFICIENT = 0.035; // standard cue ~1.5-3° deflection
@@ -67,11 +75,11 @@ const CORRECTION_PERCENT = 0.8; // reduced from 0.9 for jitter stability
 const MAX_CORRECTION_PER_BALL = BALL_RADIUS * 0.45;
 
 // Energy cap per substep (Joules)
-const ENERGY_CAP_DELTA = 0.08;
+const ENERGY_CAP_DELTA = 0.04;
 
 // ─── Simulation Timing ──────────────────────────────────────────────
 const BROADCAST_INTERVAL_MS = 50;
-const SUBSTEPS = 12;
+const SUBSTEPS = 16;
 const SUBSTEP_DT = BROADCAST_INTERVAL_MS / 1000 / SUBSTEPS;
 
 // Shot input mapping
@@ -157,9 +165,9 @@ export function initBallPositions(): PhysicsBall[] {
 // 0.50 < ratio < 0.85 → P = t², t = (ratio - 0.5) / 0.35
 function checkMiscue(offsetX: number, offsetY: number): boolean {
   const ratio = Math.sqrt(offsetX * offsetX + offsetY * offsetY) / BALL_RADIUS;
-  if (ratio <= 0.5) return false;
+  if (ratio <= 0.65) return false;
   if (ratio >= 0.85) return true;
-  const t = (ratio - 0.5) / 0.35;
+  const t = (ratio - 0.65) / 0.20;
   const probability = t * t * t; // cubic curve: more forgiving at moderate offsets
   return Math.random() < probability;
 }
@@ -224,13 +232,15 @@ export function applyShotToBall(
   const R2 = R * R;
 
   // § Initial angular velocity from impact point (rigid-body impulse theory)
-  // omegaX = (3.5 × V_ball × impactOffsetY) / (2 × R²)
-  // omegaZ = (3.5 × V_ball × impactOffsetX) / (2 × R²)
-  // omegaY = omegaZ × sin(3°)
+  // Back/top spin (offsetY) is rotated by shot direction so that the spin axis
+  // is always perpendicular to the shot direction in the table plane.
+  // This ensures draw/follow works correctly regardless of shot angle.
   const V = Math.sqrt(ball.vx * ball.vx + ball.vz * ball.vz);
-  ball.spinX = (INITIAL_SPIN_SCALE * V * clampedOffsetY) / (2 * R2);
+  const backspinMag = (INITIAL_SPIN_SCALE * V * clampedOffsetY) / (2 * R2);
+  ball.spinX = backspinMag * Math.sin(rad);
+  ball.spinY = -backspinMag * Math.cos(rad);
   ball.spinZ = (INITIAL_SPIN_SCALE * V * clampedOffsetX) / (2 * R2);
-  ball.spinY = ball.spinZ * Math.sin(CUE_ELEVATION_RAD);
+  ball.spinY += ball.spinZ * Math.sin(CUE_ELEVATION_RAD);
 }
 
 // ─── 4-state friction model ─────────────────────────────────────────
@@ -358,12 +368,14 @@ function applyFriction(ball: PhysicsBall, dt: number): void {
       ball.spinX += angularDelta * slipDirY;
     }
 
-    // § Swerve effect (Magnus force model: lateral force ∝ spin × speed)
-    // At low speed the force naturally vanishes, preventing spiral trajectories
+    // § Swerve effect (sliding: stronger asymmetric friction, symplectic split)
     const speed = Math.sqrt(ball.vx * ball.vx + ball.vz * ball.vz);
     if (speed > STOP_THRESHOLD && Math.abs(ball.spinZ) > 0.01) {
-      ball.vx += K_SWERVE * ball.spinZ * (-ball.vz) * dt;
-      ball.vz += K_SWERVE * ball.spinZ * (ball.vx) * dt;
+      const cappedSpinZ = clamp(ball.spinZ, -SWERVE_SPIN_CAP, SWERVE_SPIN_CAP);
+      const svx = K_SWERVE_SLIDING * cappedSpinZ * (-ball.vz) * dt;
+      const svz = K_SWERVE_SLIDING * cappedSpinZ * (ball.vx) * dt;
+      ball.vx += svx;
+      ball.vz += svz;
     }
     return;
   }
@@ -371,11 +383,14 @@ function applyFriction(ball: PhysicsBall, dt: number): void {
   // BALL_STATE_ROLLING
   applyRollingFriction(ball, dt);
 
-  // Swerve in rolling state too (Magnus force model)
+  // Swerve in rolling state (weaker gyroscopic effect, symplectic split)
   const speed = Math.sqrt(ball.vx * ball.vx + ball.vz * ball.vz);
   if (speed > STOP_THRESHOLD && Math.abs(ball.spinZ) > 0.01) {
-    ball.vx += K_SWERVE * ball.spinZ * (-ball.vz) * dt;
-    ball.vz += K_SWERVE * ball.spinZ * (ball.vx) * dt;
+    const cappedSpinZ = clamp(ball.spinZ, -SWERVE_SPIN_CAP, SWERVE_SPIN_CAP);
+    const svx = K_SWERVE_ROLLING * cappedSpinZ * (-ball.vz) * dt;
+    const svz = K_SWERVE_ROLLING * cappedSpinZ * (ball.vx) * dt;
+    ball.vx += svx;
+    ball.vz += svz;
   }
 }
 
@@ -392,8 +407,7 @@ function snapToRolling(ball: PhysicsBall): void {
   ball.spinX = ball.vz / BALL_RADIUS;
 }
 
-/** Apply rolling friction deceleration */
-// speedAfter = max(0, speed - μᵣ × g × dt)
+/** Apply rolling friction deceleration with cloth nap anisotropy */
 function applyRollingFriction(ball: PhysicsBall, dt: number): void {
   const speed = Math.sqrt(ball.vx * ball.vx + ball.vz * ball.vz);
   if (speed < STOP_THRESHOLD) {
@@ -404,7 +418,16 @@ function applyRollingFriction(ball: PhysicsBall, dt: number): void {
     return;
   }
 
-  const speedAfter = Math.max(0, speed - ROLLING_FRICTION * GRAVITY * dt);
+  // Hertzian contact: rolling resistance increases at low speed (larger contact patch deformation)
+  const hertzFactor = 1 + ROLLING_HERTZ_COEFF / Math.max(speed, 0.05);
+
+  // Directional rolling friction: nap along Z axis creates slight anisotropy
+  const dirX = speed > 1e-8 ? Math.abs(ball.vx) / speed : 0;
+  const dirZ = speed > 1e-8 ? Math.abs(ball.vz) / speed : 0;
+  const napFactor = 1 + CLOTH_NAP_ANISOTROPY * (dirX - dirZ);
+  const muR = ROLLING_FRICTION * hertzFactor * napFactor;
+
+  const speedAfter = Math.max(0, speed - muR * GRAVITY * dt);
   const ratio = speedAfter / speed;
   ball.vx *= ratio;
   ball.vz *= ratio;
@@ -467,8 +490,8 @@ function resolveBallBallCollision(a: PhysicsBall, b: PhysicsBall): boolean {
   const relVn = (b.vx - a.vx) * nx + (b.vz - a.vz) * nz;
   if (relVn > 0) return false; // separating
 
-  // Phenolic resin balls maintain near-constant COR across speed range
-  const eEff = BALL_BALL_RESTITUTION;
+  // Speed-dependent COR: e = max(0.88, 0.95 - 0.008 × |vRel_n|)
+  const eEff = Math.max(BALL_BALL_COR_MIN, BALL_BALL_COR_LOW - BALL_BALL_COR_SLOPE * Math.abs(relVn));
 
   // § Normal impulse: impulseN = -(1 + e) × vRel_n / invMassSum
   const invMassSum = 1 / BALL_MASS + 1 / BALL_MASS;
@@ -523,7 +546,7 @@ function resolveBallBallCollision(a: PhysicsBall, b: PhysicsBall): boolean {
   const rollSpinRelN = (b.spinX - a.spinX) * nx + (b.spinY - a.spinY) * nz;
   if (Math.abs(rollSpinRelN) > 1e-6) {
     const rollImpulseRaw = -BALL_RADIUS * rollSpinRelN / tangentEffMass;
-    const rollImpulse = clamp(rollImpulseRaw, -maxFrictionImpulse * 0.5, maxFrictionImpulse * 0.5);
+    const rollImpulse = clamp(rollImpulseRaw, -maxFrictionImpulse * 0.65, maxFrictionImpulse * 0.65);
     const rollSpinDelta = (-5 * rollImpulse) / (2 * BALL_MASS * BALL_RADIUS);
     a.spinX -= rollSpinDelta * nx;
     a.spinY -= rollSpinDelta * nz;
@@ -574,8 +597,10 @@ function resolveCushionX(ball: PhysicsBall, wallSign: number): void {
   // § Sigmoid base restitution with incidence angle correction
   const speed = Math.sqrt(ball.vx * ball.vx + ball.vz * ball.vz);
   const cosIncidence = speed > 1e-6 ? vnAbs / speed : 1.0;
-  const angleCorrection = 1 - 0.12 * (1 - cosIncidence * cosIncidence);
-  const eBase = cushionRestitution(vnAbs) * angleCorrection;
+  const angleCorrection = 1 - 0.25 * (1 - cosIncidence * cosIncidence);
+  // § Contact-time damping: longer contact at lower speeds → more energy loss
+  const contactTimeDamping = 1 - 0.015 * Math.min(1.0 / Math.max(vnAbs, 0.1), 5.0);
+  const eBase = cushionRestitution(vnAbs) * angleCorrection * contactTimeDamping;
 
   // § Spin-based restitution boost
   // For X-walls, longitudinal spin along wall direction is spinX
@@ -602,15 +627,15 @@ function resolveCushionX(ball: PhysicsBall, wallSign: number): void {
   const baseTan = CUSHION_CONTACT_FRICTION * (1 + eEff) / eEff;
   const minSpeed = 0.1;
   const vnPostAbs = Math.max(Math.abs(vnPost), minSpeed);
-  // speedScale = min((v_ref / max(|vn_post|, minSpeed))^0.7, 5.0)
+  // speedScale = min((v_ref / max(|vn_post|, minSpeed))^0.5, 3.5)
   const speedScale = Math.min(
-    Math.pow(CUSHION_REF_SPEED / vnPostAbs, CUSHION_CONTACT_TIME_EXP), 5.0,
+    Math.pow(CUSHION_REF_SPEED / vnPostAbs, CUSHION_CONTACT_TIME_EXP), 3.5,
   );
   // spinScale = clamp(|effectiveSpin| / maxSpin, 0, 1)
   const spinScale = clamp(Math.abs(effectiveSpin) / CUSHION_MAX_SPIN, 0, 1);
-  const rawThrowTan = baseTan * speedScale * spinScale;
-  // throwTan = clamp(rawThrowTan, 0, tan(25°))
-  const throwTan = clamp(rawThrowTan, 0, CUSHION_MAX_THROW_TAN);
+  // § Throw: clamp base first, then scale by spin for true proportionality
+  const baseThrowTan = clamp(baseTan * speedScale, 0, CUSHION_MAX_THROW_TAN);
+  const throwTan = baseThrowTan * spinScale;
   const throwDirection = sign(effectiveSpin);
   // throwVt = throwDirection × throwTan × |vn_post|
   const throwVt = throwDirection * throwTan * Math.abs(vnPost);
@@ -619,16 +644,21 @@ function resolveCushionX(ball: PhysicsBall, wallSign: number): void {
   const vtPre = ball.vz;
   ball.vz = vtPre * (1 - CUSHION_CONTACT_FRICTION) + throwVt;
 
+  // § Cushion rubber compression: tangential damping from rubber deformation
+  // Deeper compression at higher normal speed → more tangential energy absorbed
+  const compressionDepth = clamp(vnAbs / 8.0, 0, 1); // normalized 0~1
+  ball.vz *= (1 - CUSHION_COMPRESSION_DAMPING * compressionDepth);
+
   // § Cushion contact torque
   // I = (2/5) × m × R², normalImpulse = m × (1 + e_eff) × |vn|
-  // contactTorqueSpinDelta = (h × normalImpulse / I) × 0.35
   const I = (2 / 5) * BALL_MASS * R * R;
   const normalImpulse = BALL_MASS * (1 + eEff) * vnAbs;
   const contactTorqueSpinDelta = (h * normalImpulse / I) * CUSHION_TORQUE_DAMPING;
   ball.spinX += contactTorqueSpinDelta * sign(-vn);
 
   // § Side-spin ↔ rolling spin conversion
-  const conversion = CUSHION_CONTACT_FRICTION * CUSHION_SPIN_CONVERSION * ball.spinZ;
+  const clampedSpinZConv = clamp(ball.spinZ, -CUSHION_SPIN_CONVERSION_CAP, CUSHION_SPIN_CONVERSION_CAP);
+  const conversion = CUSHION_CONTACT_FRICTION * CUSHION_SPIN_CONVERSION * clampedSpinZConv;
   ball.spinX += conversion;
 
   // § Throw spin drain (energy conservation)
@@ -639,7 +669,7 @@ function resolveCushionX(ball: PhysicsBall, wallSign: number): void {
 
   // § Speed-dependent rolling spin blending
   const blendSpeed = Math.sqrt(ball.vx * ball.vx + ball.vz * ball.vz);
-  const keepRatio = clamp(0.60 + 0.25 * (blendSpeed / 3.0), 0.60, 0.85);
+  const keepRatio = clamp(0.40 + 0.20 * (blendSpeed / 3.0), 0.40, 0.70);
   const targetSpinX = ball.vz / R;
   ball.spinX = ball.spinX * keepRatio + targetSpinX * (1 - keepRatio);
   const targetSpinY = -ball.vx / R;
@@ -662,8 +692,10 @@ function resolveCushionZ(ball: PhysicsBall, wallSign: number): void {
   // § Sigmoid base restitution with incidence angle correction
   const speed = Math.sqrt(ball.vx * ball.vx + ball.vz * ball.vz);
   const cosIncidence = speed > 1e-6 ? vnAbs / speed : 1.0;
-  const angleCorrection = 1 - 0.12 * (1 - cosIncidence * cosIncidence);
-  const eBase = cushionRestitution(vnAbs) * angleCorrection;
+  const angleCorrection = 1 - 0.25 * (1 - cosIncidence * cosIncidence);
+  // § Contact-time damping: longer contact at lower speeds → more energy loss
+  const contactTimeDamping = 1 - 0.015 * Math.min(1.0 / Math.max(vnAbs, 0.1), 5.0);
+  const eBase = cushionRestitution(vnAbs) * angleCorrection * contactTimeDamping;
 
   const maxSpinMag = Math.max(
     Math.abs(ball.spinX), Math.abs(ball.spinY), Math.abs(ball.spinZ), 0.01,
@@ -685,16 +717,21 @@ function resolveCushionZ(ball: PhysicsBall, wallSign: number): void {
   const minSpeed = 0.1;
   const vnPostAbs = Math.max(Math.abs(vnPost), minSpeed);
   const speedScale = Math.min(
-    Math.pow(CUSHION_REF_SPEED / vnPostAbs, CUSHION_CONTACT_TIME_EXP), 5.0,
+    Math.pow(CUSHION_REF_SPEED / vnPostAbs, CUSHION_CONTACT_TIME_EXP), 3.5,
   );
   const spinScale = clamp(Math.abs(effectiveSpin) / CUSHION_MAX_SPIN, 0, 1);
-  const rawThrowTan = baseTan * speedScale * spinScale;
-  const throwTan = clamp(rawThrowTan, 0, CUSHION_MAX_THROW_TAN);
+  // § Throw: clamp base first, then scale by spin for true proportionality
+  const baseThrowTan = clamp(baseTan * speedScale, 0, CUSHION_MAX_THROW_TAN);
+  const throwTan = baseThrowTan * spinScale;
   const throwDirection = sign(effectiveSpin);
   const throwVt = throwDirection * throwTan * Math.abs(vnPost);
 
   const vtPre = ball.vx;
   ball.vx = vtPre * (1 - CUSHION_CONTACT_FRICTION) + throwVt;
+
+  // § Cushion rubber compression: tangential damping from rubber deformation
+  const compressionDepthZ = clamp(vnAbs / 8.0, 0, 1);
+  ball.vx *= (1 - CUSHION_COMPRESSION_DAMPING * compressionDepthZ);
 
   const I = (2 / 5) * BALL_MASS * R * R;
   const normalImpulse = BALL_MASS * (1 + eEff) * vnAbs;
@@ -702,7 +739,8 @@ function resolveCushionZ(ball: PhysicsBall, wallSign: number): void {
   ball.spinY += contactTorqueSpinDelta * sign(-vn);
 
   // § Side-spin ↔ rolling spin conversion
-  const conversionVal = CUSHION_CONTACT_FRICTION * CUSHION_SPIN_CONVERSION * ball.spinZ;
+  const clampedSpinZConvZ = clamp(ball.spinZ, -CUSHION_SPIN_CONVERSION_CAP, CUSHION_SPIN_CONVERSION_CAP);
+  const conversionVal = CUSHION_CONTACT_FRICTION * CUSHION_SPIN_CONVERSION * clampedSpinZConvZ;
   ball.spinY += conversionVal;
 
   if (Math.abs(effectiveSpin) > 0.01) {
@@ -712,7 +750,7 @@ function resolveCushionZ(ball: PhysicsBall, wallSign: number): void {
 
   // § Speed-dependent rolling spin blending
   const blendSpeed = Math.sqrt(ball.vx * ball.vx + ball.vz * ball.vz);
-  const keepRatio = clamp(0.60 + 0.25 * (blendSpeed / 3.0), 0.60, 0.85);
+  const keepRatio = clamp(0.40 + 0.20 * (blendSpeed / 3.0), 0.40, 0.70);
   const targetSpinY = -ball.vx / R;
   ball.spinY = ball.spinY * keepRatio + targetSpinY * (1 - keepRatio);
   const targetSpinX = ball.vz / R;
@@ -756,8 +794,20 @@ function handleCushionCollisions(
     }
   }
 
-  // Process crossings in chronological order (earlier axis first)
-  if (tX <= tZ) {
+  // Process crossings: simultaneous corner hit (|tX - tZ| < 0.1) or chronological order
+  const isCornerHit = xWallSign !== 0 && zWallSign !== 0 && Math.abs(tX - tZ) < 0.1;
+
+  if (isCornerHit) {
+    // Corner: apply both cushions with reduced restitution (energy absorbed by corner)
+    ball.x = xWallSign === -1 ? -boundX : boundX;
+    ball.z = zWallSign === -1 ? -boundZ : boundZ;
+    resolveCushionX(ball, xWallSign);
+    resolveCushionZ(ball, zWallSign);
+    // Additional corner energy loss: 10% speed reduction
+    ball.vx *= 0.90;
+    ball.vz *= 0.90;
+    hit = true;
+  } else if (tX <= tZ) {
     if (xWallSign !== 0) {
       ball.x = xWallSign === -1 ? -boundX : boundX;
       resolveCushionX(ball, xWallSign);
@@ -935,6 +985,20 @@ export function simulateStep(
               a.z += a.vz * remaining;
               b.x += b.vx * remaining;
               b.z += b.vz * remaining;
+
+              // Post-advance overlap check: resolve any secondary penetration
+              const dx2 = b.x - a.x;
+              const dz2 = b.z - a.z;
+              const dist2 = Math.sqrt(dx2 * dx2 + dz2 * dz2);
+              if (dist2 < BALL_RADIUS * 2 && dist2 > 1e-8) {
+                const overlap2 = BALL_RADIUS * 2 - dist2;
+                const cx = (dx2 / dist2) * overlap2 * 0.5;
+                const cz = (dz2 / dist2) * overlap2 * 0.5;
+                a.x -= cx;
+                a.z -= cz;
+                b.x += cx;
+                b.z += cz;
+              }
             }
           } else if (shouldRewind) {
             // Collision rejected (separating) — restore positions
@@ -972,7 +1036,8 @@ export function simulateStep(
 
   // § Shot termination: all balls linear speed < 0.01 for 5 consecutive frames
   const allStopped = balls.every(
-    (b) => Math.sqrt(b.vx * b.vx + b.vz * b.vz) < STOP_THRESHOLD,
+    (b) => Math.sqrt(b.vx * b.vx + b.vz * b.vz) < STOP_THRESHOLD
+      && Math.sqrt(b.spinX * b.spinX + b.spinY * b.spinY + b.spinZ * b.spinZ) < ANGULAR_THRESHOLD,
   );
   const newStopCount = allStopped ? stopFrameCount + 1 : 0;
   const settled = newStopCount >= STOP_FRAMES_REQUIRED;

@@ -675,3 +675,26 @@ describe("chat:whisper", () => {
     );
   });
 });
+
+describe("setupChatHandler — 고스트 관전자 채팅 차단", () => {
+  it("고스트 관전자의 방 채팅 메시지가 차단된다", () => {
+    const socket = createMockSocket("ghost-admin", "admin");
+    const io = createMockIo({ withTo: true });
+    const gameManager = new GameManager();
+    const chatStore = createMockChatStore();
+    const sessionStore = createMockSessionStore();
+
+    const host = { id: "host-1", nickname: "Host", isReady: false };
+    const room = gameManager.createRoom({ name: "테스트방", gameType: "gomoku" }, host);
+
+    setupChatHandler(io as unknown as GameServer, socket as unknown as GameSocket, gameManager, chatStore, sessionStore);
+    socket.data.roomId = room.id;
+    socket.data.isSpectator = true;
+    socket.data.isGhostSpectator = true;
+
+    socket._trigger("chat:room-message", "고스트 메시지");
+
+    expect(chatStore.pushRoomMessage).not.toHaveBeenCalled();
+    expect(io._toEmit).not.toHaveBeenCalled();
+  });
+});

@@ -65,7 +65,9 @@ interface GameHubProps {
 
 export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
   const { socket, isConnected, playerCount, onlinePlayers } = useSocket();
-  const { rooms, currentRoom, isSpectating, createRoom, joinRoom, spectateRoom, leaveRoom, kickSpectators, kickPlayer, switchRole, toggleReady, updateRoomName, updateGameOptions } =
+  const [isAdmin, setIsAdmin] = useState(false);
+  const isAdminRef = useRef(false);
+  const { rooms, currentRoom, isSpectating, isGhostSpectating, createRoom, joinRoom, spectateRoom, leaveRoom, kickSpectators, kickPlayer, switchRole, toggleReady, updateRoomName, updateGameOptions } =
     useLobby(socket);
   const { lobbyMessages, roomMessages, sendLobbyMessage, sendRoomMessage, clearRoomMessages, requestLobbyHistory, requestRoomHistory, deleteMessage, sendWhisper } =
     useChat(socket);
@@ -74,8 +76,6 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
     (id: string, fields: Record<string, string | null>) => updateRequestFields({ requestId: id, ...fields }),
     [updateRequestFields],
   );
-  const [isAdmin, setIsAdmin] = useState(false);
-  const isAdminRef = useRef(false);
   const [githubRepoUrl, setGithubRepoUrl] = useState<string | undefined>();
   const isNavigatingBack = useRef(false);
   const [confirmState, setConfirmState] = useState<{
@@ -331,6 +331,17 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
     [spectateRoom, clearRoomMessages, requestRoomHistory]
   );
 
+  const wrappedGhostSpectateRoom = useCallback(
+    async (roomId: string) => {
+      clearRoomMessages();
+      const room = await spectateRoom(roomId, true);
+      requestRoomHistory();
+      history.pushState(null, "", "/room/" + room.id);
+      return room;
+    },
+    [spectateRoom, clearRoomMessages, requestRoomHistory]
+  );
+
   // SSR / hydration 전: 빈 화면 (닉네임 폼 플래시 방지)
   if (nickname === undefined) {
     return null;
@@ -398,6 +409,7 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
             socket={socket}
             nickname={nickname}
             isSpectating={isSpectating}
+            isGhostSpectating={isGhostSpectating}
             onLeave={handleLeaveRoom}
             onLeaveImmediate={doLeaveRoom}
             onToggleReady={toggleReady}
@@ -405,7 +417,7 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
             onUpdateGameOptions={updateGameOptions}
             onKickSpectators={kickSpectators}
             onKickPlayer={kickPlayer}
-            onSwitchRole={switchRole}
+            onSwitchRole={isGhostSpectating ? undefined : switchRole}
             roomMessages={roomMessages}
             onSendRoomMessage={sendRoomMessage}
             onlinePlayers={onlinePlayers}
@@ -495,7 +507,7 @@ export default function GameHub({ activeTab = "lobby" }: GameHubProps) {
 
                 <section>
                   <h2 className="text-2xl font-bold font-[family-name:var(--font-display)] tracking-wide mb-4">방 목록</h2>
-                  <RoomList rooms={rooms} onJoinRoom={wrappedJoinRoom} onSpectateRoom={wrappedSpectateRoom} />
+                  <RoomList rooms={rooms} onJoinRoom={wrappedJoinRoom} onSpectateRoom={wrappedSpectateRoom} onGhostSpectateRoom={isAdmin ? wrappedGhostSpectateRoom : undefined} />
                 </section>
               </>
             ) : (

@@ -24,7 +24,7 @@ export interface ClientToServerEvents {
   "lobby:toggle-ready": () => void;
   "lobby:update-game-options": (gameOptions: GameOptions, callback: (result: { success: boolean; error?: string }) => void) => void;
   "lobby:update-room-name": (name: string, callback: (result: { success: boolean; error?: string }) => void) => void;
-  "lobby:join-spectate": (payload: JoinRoomPayload, callback: (room: Room | null, error?: string) => void) => void;
+  "lobby:join-spectate": (payload: JoinRoomPayload & { ghost?: boolean }, callback: (room: Room | null, error?: string) => void) => void;
   "lobby:kick-spectators": (callback: (result: { success: boolean; error?: string }) => void) => void;
   "lobby:kick": (targetId: string, callback: (result: { success: boolean; error?: string }) => void) => void;
   "lobby:switch-role": (callback: (result: { success: boolean; error?: string; role?: "player" | "spectator" }) => void) => void;
@@ -154,5 +154,6 @@ export interface SocketData {
   authenticated: boolean;
   authenticatedAt: number | null;
   isSpectator?: boolean;
+  isGhostSpectator?: boolean;
   browserId?: string;
 }

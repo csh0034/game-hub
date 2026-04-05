@@ -1157,7 +1157,7 @@ describe("setupLobbyHandler — 관리자 닉네임 치환", () => {
     expect(adminPlayer.nickname).toBe("관리자");
   });
 
-  it("관리자가 관전 참가하면 spectator.nickname이 '관리자'로 표시된다", () => {
+  it("관리자가 일반 관전 참가하면 spectators에 포함된다", () => {
     const hostSocket = createMockSocket("socket-host", "Host");
     setupLobbyHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager, chatStore);
 
@@ -1171,5 +1171,104 @@ describe("setupLobbyHandler — 관리자 닉네임 치환", () => {
 
     const spectateRoom = spectateCallback.mock.calls[0][0];
     expect(spectateRoom.spectators[0].nickname).toBe("관리자");
+    expect(adminSocket.data.isGhostSpectator).toBeUndefined();
+  });
+
+  it("관리자가 고스트 관전 참가하면 spectators에 포함되지 않는다", () => {
+    const hostSocket = createMockSocket("socket-host", "Host");
+    setupLobbyHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager, chatStore);
+
+    const createCallback = vi.fn();
+    hostSocket._trigger("lobby:create-room", { gameType: "gomoku", name: "Test Room" }, createCallback);
+    const room = createCallback.mock.calls[0][0];
+
+    const spectateCallback = vi.fn();
+    adminSocket._trigger("lobby:join-spectate", { roomId: room.id, ghost: true }, spectateCallback);
+
+    const spectateRoom = spectateCallback.mock.calls[0][0];
+    expect(spectateRoom).not.toBeNull();
+    expect(spectateRoom.spectators).toHaveLength(0);
+    expect(adminSocket.data.isSpectator).toBe(true);
+    expect(adminSocket.data.isGhostSpectator).toBe(true);
+  });
+});
+
+describe("setupLobbyHandler — 고스트 관전", () => {
+  let adminSocket: ReturnType<typeof createMockSocket>;
+  let hostSocket: ReturnType<typeof createMockSocket>;
+  let io: ReturnType<typeof createMockIo>;
+  let gameManager: GameManager;
+  let chatStore: InMemoryChatStore;
+
+  beforeEach(() => {
+    adminSocket = createMockSocket("socket-admin", "admin");
+    hostSocket = createMockSocket("socket-host", "Host");
+    io = createMockIo({ withTo: true, sockets: [adminSocket as unknown as GameSocket, hostSocket as unknown as GameSocket] });
+    gameManager = new GameManager();
+    chatStore = new InMemoryChatStore();
+    setupLobbyHandler(io as unknown as GameServer, adminSocket as unknown as GameSocket, gameManager, chatStore);
+    setupLobbyHandler(io as unknown as GameServer, hostSocket as unknown as GameSocket, gameManager, chatStore);
+  });
+
+  function createRoom() {
+    const callback = vi.fn();
+    hostSocket._trigger("lobby:create-room", { gameType: "gomoku", name: "Test Room" }, callback);
+    return callback.mock.calls[0][0];
+  }
+
+  it("관전 비허용 방에도 고스트 입장 가능하다", () => {
+    const room = createRoom();
+    // spectateEnabled 기본값은 undefined (비활성)
+
+    const callback = vi.fn();
+    adminSocket._trigger("lobby:join-spectate", { roomId: room.id, ghost: true }, callback);
+
+    expect(callback.mock.calls[0][0]).not.toBeNull();
+    expect(adminSocket.data.isGhostSpectator).toBe(true);
+  });
+
+  it("고스트 입장 시 시스템 메시지가 발생하지 않는다", () => {
+    const room = createRoom();
+
+    (io._toEmit as ReturnType<typeof vi.fn>).mockClear();
+    adminSocket._trigger("lobby:join-spectate", { roomId: room.id, ghost: true }, vi.fn());
+
+    // lobby:spectator-joined, lobby:room-updated, chat:room-message 이벤트가 없어야 한다
+    expect(io._toEmit).not.toHaveBeenCalled();
+  });
+
+  it("고스트 퇴장 시 이벤트가 발생하지 않는다", () => {
+    const room = createRoom();
+    adminSocket._trigger("lobby:join-spectate", { roomId: room.id, ghost: true }, vi.fn());
+
+    (io._toEmit as ReturnType<typeof vi.fn>).mockClear();
+    adminSocket._trigger("lobby:leave-room");
+
+    // lobby:spectator-left, lobby:room-updated, chat:room-message 이벤트가 없어야 한다
+    expect(io._toEmit).not.toHaveBeenCalled();
+
+    expect(adminSocket.data.isGhostSpectator).toBe(false);
+    expect(adminSocket.data.isSpectator).toBe(false);
+  });
+
+  it("고스트는 역할 전환할 수 없다", () => {
+    const room = createRoom();
+    adminSocket._trigger("lobby:join-spectate", { roomId: room.id, ghost: true }, vi.fn());
+    adminSocket.data.roomId = room.id;
+
+    const callback = vi.fn();
+    adminSocket._trigger("lobby:switch-role", callback);
+
+    expect(callback).toHaveBeenCalledWith(
+      expect.objectContaining({ success: false })
+    );
+  });
+
+  it("존재하지 않는 방에 고스트 입장 시 에러를 반환한다", () => {
+    const callback = vi.fn();
+    adminSocket._trigger("lobby:join-spectate", { roomId: "nonexistent", ghost: true }, callback);
+
+    expect(callback.mock.calls[0][0]).toBeNull();
+    expect(callback.mock.calls[0][1]).toBe("관전할 수 없습니다.");
   });
 });

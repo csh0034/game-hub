@@ -8,7 +8,7 @@ import type { CreateRoomPayload, GameOptions, Room } from "@game-hub/shared-type
 import { toast } from "sonner";
 
 export function useLobby(socket: GameSocket | null) {
-  const { rooms, currentRoom, isSpectating, setRooms, setCurrentRoom, setIsSpectating, addRoom, updateRoom, removeRoom } =
+  const { rooms, currentRoom, isSpectating, isGhostSpectating, setRooms, setCurrentRoom, setIsSpectating, setIsGhostSpectating, addRoom, updateRoom, removeRoom } =
     useLobbyStore();
   const resetGame = useGameStore((s) => s.reset);
 
@@ -30,6 +30,7 @@ export function useLobby(socket: GameSocket | null) {
     socket.on("lobby:spectator-kicked", () => {
       setCurrentRoom(null);
       setIsSpectating(false);
+      setIsGhostSpectating(false);
       resetGame();
       toast.info("방장이 관전을 비활성화하여 로비로 이동합니다.");
     });
@@ -37,6 +38,7 @@ export function useLobby(socket: GameSocket | null) {
     socket.on("lobby:kicked", () => {
       setCurrentRoom(null);
       setIsSpectating(false);
+      setIsGhostSpectating(false);
       resetGame();
       toast.info("방장에 의해 내보내졌습니다.");
     });
@@ -49,7 +51,7 @@ export function useLobby(socket: GameSocket | null) {
       socket.off("lobby:spectator-kicked");
       socket.off("lobby:kicked");
     };
-  }, [socket, setRooms, addRoom, updateRoom, removeRoom, setCurrentRoom, setIsSpectating, resetGame]);
+  }, [socket, setRooms, addRoom, updateRoom, removeRoom, setCurrentRoom, setIsSpectating, setIsGhostSpectating, resetGame]);
 
   const createRoom = useCallback(
     (payload: CreateRoomPayload): Promise<Room> => {
@@ -83,19 +85,20 @@ export function useLobby(socket: GameSocket | null) {
   );
 
   const spectateRoom = useCallback(
-    (roomId: string): Promise<Room> => {
+    (roomId: string, ghost?: boolean): Promise<Room> => {
       return new Promise((resolve, reject) => {
         if (!socket) return reject("Not connected");
         resetGame();
-        socket.emit("lobby:join-spectate", { roomId }, (room, error) => {
+        socket.emit("lobby:join-spectate", { roomId, ghost }, (room, error) => {
           if (!room) return reject(error || "Failed to spectate");
           setCurrentRoom(room);
           setIsSpectating(true);
+          setIsGhostSpectating(!!ghost);
           resolve(room);
         });
       });
     },
-    [socket, setCurrentRoom, setIsSpectating, resetGame]
+    [socket, setCurrentRoom, setIsSpectating, setIsGhostSpectating, resetGame]
   );
 
   const leaveRoom = useCallback(() => {
@@ -103,8 +106,9 @@ export function useLobby(socket: GameSocket | null) {
     socket.emit("lobby:leave-room");
     setCurrentRoom(null);
     setIsSpectating(false);
+    setIsGhostSpectating(false);
     resetGame();
-  }, [socket, setCurrentRoom, setIsSpectating, resetGame]);
+  }, [socket, setCurrentRoom, setIsSpectating, setIsGhostSpectating, resetGame]);
 
   const kickSpectators = useCallback((): Promise<void> => {
     return new Promise((resolve, reject) => {
@@ -174,5 +178,5 @@ export function useLobby(socket: GameSocket | null) {
     [socket]
   );
 
-  return { rooms, currentRoom, isSpectating, createRoom, joinRoom, spectateRoom, leaveRoom, kickSpectators, kickPlayer, switchRole, toggleReady, updateRoomName, updateGameOptions };
+  return { rooms, currentRoom, isSpectating, isGhostSpectating, createRoom, joinRoom, spectateRoom, leaveRoom, kickSpectators, kickPlayer, switchRole, toggleReady, updateRoomName, updateGameOptions };
 }

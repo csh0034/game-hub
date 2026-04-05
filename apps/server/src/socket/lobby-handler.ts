@@ -10,7 +10,7 @@ import {
 import crypto from "node:crypto";
 import type { GameManager } from "../games/game-manager.js";
 import type { ChatStore } from "../storage/index.js";
-import { getDisplayNickname } from "../admin.js";
+import { isAdmin, getDisplayNickname } from "../admin.js";
 import { clearGomokuTimer } from "../games/gomoku-timer.js";
 import { clearTetrisTicker } from "../games/tetris-ticker.js";
 import { clearCatchMindTimer } from "../games/catch-mind-timer.js";
@@ -46,6 +46,14 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
   function cleanupPreviousRoom() {
     const prevRoomId = socket.data.roomId;
     if (!prevRoomId) return;
+
+    if (socket.data.isGhostSpectator) {
+      socket.leave(prevRoomId);
+      socket.data.roomId = null;
+      socket.data.isSpectator = false;
+      socket.data.isGhostSpectator = false;
+      return;
+    }
 
     if (socket.data.isSpectator) {
       const nickname = getDisplayNickname(socket.data.nickname);
@@ -142,6 +150,15 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
     const roomId = socket.data.roomId;
     if (!roomId) return;
 
+    if (socket.data.isGhostSpectator) {
+      socket.leave(roomId);
+      socket.data.roomId = null;
+      socket.data.isSpectator = false;
+      socket.data.isGhostSpectator = false;
+      socket.join("lobby");
+      return;
+    }
+
     if (socket.data.isSpectator) {
       const nickname = getDisplayNickname(socket.data.nickname);
       const room = gameManager.removeSpectator(roomId, socket.id!);
@@ -211,6 +228,35 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
     }
   });
 
+  function sendSpectatorGameState(roomId: string, gameType: string) {
+    const gameState = gameManager.getGameState(roomId);
+    if (gameState) {
+      socket.emit("game:started", gameState);
+    }
+    if (gameType === "liar-drawing") {
+      const liarEngine = gameManager.getLiarDrawingEngine(roomId);
+      if (liarEngine) {
+        socket.emit("game:private-state", {
+          role: "spectator" as const,
+          keyword: liarEngine.getKeyword(),
+          liarId: liarEngine.getLiarId() ?? undefined,
+        });
+      }
+    }
+    if (gameType === "typing") {
+      const typingEngine = gameManager.getTypingEngine(roomId);
+      if (typingEngine) {
+        socket.emit("game:typing-all-player-words", typingEngine.getAllPlayerWords());
+      }
+    }
+    if (gameType === "catch-mind") {
+      const cmEngine = gameManager.getCatchMindEngine(roomId);
+      if (cmEngine) {
+        socket.emit("game:private-state", { keyword: cmEngine.getKeyword()! });
+      }
+    }
+  }
+
   socket.on("lobby:join-spectate", (payload, callback) => {
     if (!socket.data.authenticated) {
       socket.emit("player:force-logout");
@@ -219,6 +265,26 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
     }
     cleanupPreviousRoom();
     socket.leave("lobby");
+
+    // 어드민 고스트 관전: spectateEnabled 무시, 방 상태에 흔적 없음
+    if (payload.ghost && isAdmin(socket.data.nickname)) {
+      const room = gameManager.getRoom(payload.roomId);
+      if (!room || room.status === "finished") {
+        callback(null, "관전할 수 없습니다.");
+        socket.join("lobby");
+        return;
+      }
+      socket.join(room.id);
+      socket.data.roomId = room.id;
+      socket.data.isSpectator = true;
+      socket.data.isGhostSpectator = true;
+      callback(room);
+      if (room.status === "playing") {
+        sendSpectatorGameState(room.id, room.gameType);
+      }
+      return;
+    }
+
     const player = {
       id: socket.id!,
       nickname: getDisplayNickname(socket.data.nickname),
@@ -239,32 +305,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
     emitSystemMessage(room.id, `${player.nickname}님이 관전을 시작했습니다.`);
     // 게임 중 관전 입장 시 현재 게임 상태 + 비공개 상태 전송
     if (room.status === "playing") {
-      const gameState = gameManager.getGameState(room.id);
-      if (gameState) {
-        socket.emit("game:started", gameState);
-      }
-      if (room.gameType === "liar-drawing") {
-        const liarEngine = gameManager.getLiarDrawingEngine(room.id);
-        if (liarEngine) {
-          socket.emit("game:private-state", {
-            role: "spectator" as const,
-            keyword: liarEngine.getKeyword(),
-            liarId: liarEngine.getLiarId() ?? undefined,
-          });
-        }
-      }
-      if (room.gameType === "typing") {
-        const typingEngine = gameManager.getTypingEngine(room.id);
-        if (typingEngine) {
-          socket.emit("game:typing-all-player-words", typingEngine.getAllPlayerWords());
-        }
-      }
-      if (room.gameType === "catch-mind") {
-        const cmEngine = gameManager.getCatchMindEngine(room.id);
-        if (cmEngine) {
-          socket.emit("game:private-state", { keyword: cmEngine.getKeyword()! });
-        }
-      }
+      sendSpectatorGameState(room.id, room.gameType);
     }
   });
 
@@ -299,6 +340,7 @@ export function setupLobbyHandler(io: IOServer, socket: IOSocket, gameManager: G
     if (!socket.data.authenticated) return callback({ success: false, error: "인증이 필요합니다." });
     const roomId = socket.data.roomId;
     if (!roomId) return callback({ success: false, error: "방에 참가하고 있지 않습니다." });
+    if (socket.data.isGhostSpectator) return callback({ success: false, error: "고스트 관전 중에는 역할을 전환할 수 없습니다." });
 
     if (socket.data.isSpectator) {
       const room = gameManager.switchToPlayer(roomId, socket.id!);

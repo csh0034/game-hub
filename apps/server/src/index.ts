@@ -102,7 +102,9 @@ async function bootstrap() {
       console.log(`[disconnect] ${socket.id}`);
       const roomId = socket.data.roomId;
       if (roomId) {
-        if (socket.data.isSpectator) {
+        if (socket.data.isGhostSpectator) {
+          // 고스트 관전자: 조용히 퇴장 (이벤트/로그 없음)
+        } else if (socket.data.isSpectator) {
           const room = gameManager.removeSpectator(roomId, socket.id);
           if (room) {
             io.to(roomId).emit("lobby:spectator-left", socket.id);

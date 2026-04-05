@@ -75,6 +75,7 @@ interface RoomViewProps {
   socket: GameSocket | null;
   nickname: string;
   isSpectating?: boolean;
+  isGhostSpectating?: boolean;
   onLeave: () => void;
   onLeaveImmediate: () => void;
   onToggleReady: () => void;
@@ -89,7 +90,7 @@ interface RoomViewProps {
   onWhisper?: (targetNickname: string, message: string) => void;
 }
 
-export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeaveImmediate, onToggleReady, onUpdateGameOptions, onUpdateRoomName, onKickSpectators, onKickPlayer, onSwitchRole, roomMessages, onSendRoomMessage, onlinePlayers, onWhisper }: RoomViewProps) {
+export function RoomView({ room, socket, nickname, isSpectating, isGhostSpectating, onLeave, onLeaveImmediate, onToggleReady, onUpdateGameOptions, onUpdateRoomName, onKickSpectators, onKickPlayer, onSwitchRole, roomMessages, onSendRoomMessage, onlinePlayers, onWhisper }: RoomViewProps) {
   const { gameState, playerLeftInfo, startGame, requestRematch, setPlayerLeftInfo } = useGame(socket);
   const [pendingOptions, setPendingOptions] = useState<GameOptions | null>(null);
   const [kickConfirmOpen, setKickConfirmOpen] = useState(false);
@@ -174,8 +175,8 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
               <ArrowLeft className="w-5 h-5" />
             </button>
             {isSpectating && (
-              <span className="text-xs bg-amber-500/20 text-amber-600 px-2 py-0.5 rounded flex items-center gap-1">
-                <Eye className="w-3 h-3" /> 관전 중
+              <span className={`text-xs px-2 py-0.5 rounded flex items-center gap-1 ${isGhostSpectating ? "bg-purple-500/20 text-purple-400" : "bg-amber-500/20 text-amber-600"}`}>
+                <Eye className="w-3 h-3" /> {isGhostSpectating ? "고스트 관전" : "관전 중"}
               </span>
             )}
           </div>
@@ -216,8 +217,8 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
               {config.name}
             </span>
             {isSpectating && (
-              <span className="text-xs bg-amber-500/20 text-amber-600 px-2 py-0.5 rounded flex items-center gap-1">
-                <Eye className="w-3 h-3" /> 관전 중
+              <span className={`text-xs px-2 py-0.5 rounded flex items-center gap-1 ${isGhostSpectating ? "bg-purple-500/20 text-purple-400" : "bg-amber-500/20 text-amber-600"}`}>
+                <Eye className="w-3 h-3" /> {isGhostSpectating ? "고스트 관전" : "관전 중"}
               </span>
             )}
           </div>
@@ -258,10 +259,10 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
               <ChatPanel
                 messages={roomMessages}
                 onSendMessage={onSendRoomMessage}
-                placeholder={isSpectating && !spectateChatEnabled ? "관전자 채팅이 허용되지 않습니다" : "게임 채팅... (@닉네임으로 귓속말)"}
+                placeholder={isGhostSpectating ? "고스트 관전은 귓속말만 가능합니다 (@닉네임 메시지)" : isSpectating && !spectateChatEnabled ? "관전자 채팅이 허용되지 않습니다" : "게임 채팅... (@닉네임으로 귓속말)"}
                 myNickname={nickname}
                 mySocketId={socket?.id}
-                disabled={isSpectating && !spectateChatEnabled}
+                disabled={!isGhostSpectating && isSpectating && !spectateChatEnabled}
                 onlinePlayers={onlinePlayers}
                 onWhisper={onWhisper}
               />
@@ -1022,10 +1023,10 @@ export function RoomView({ room, socket, nickname, isSpectating, onLeave, onLeav
           <ChatPanel
             messages={roomMessages}
             onSendMessage={onSendRoomMessage}
-            placeholder={isSpectating && !spectateChatEnabled ? "관전자 채팅이 허용되지 않습니다" : "방 채팅... (@닉네임으로 귓속말)"}
+            placeholder={isGhostSpectating ? "고스트 관전은 귓속말만 가능합니다 (@닉네임 메시지)" : isSpectating && !spectateChatEnabled ? "관전자 채팅이 허용되지 않습니다" : "방 채팅... (@닉네임으로 귓속말)"}
             myNickname={nickname}
             mySocketId={socket?.id}
-            disabled={isSpectating && !spectateChatEnabled}
+            disabled={!isGhostSpectating && isSpectating && !spectateChatEnabled}
             onlinePlayers={onlinePlayers}
             onWhisper={onWhisper}
           />

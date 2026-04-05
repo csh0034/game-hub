@@ -37,6 +37,7 @@ export function setupChatHandler(io: IOServer, socket: IOSocket, gameManager: Ga
   socket.on("chat:room-message", (message) => {
     const roomId = socket.data.roomId;
     if (!roomId) return;
+    if (socket.data.isGhostSpectator) return;
 
     const room = gameManager.getRoom(roomId);
 

@@ -9,9 +9,10 @@ interface RoomListProps {
   rooms: Room[];
   onJoinRoom: (roomId: string) => Promise<Room>;
   onSpectateRoom?: (roomId: string) => Promise<Room>;
+  onGhostSpectateRoom?: (roomId: string) => Promise<Room>;
 }
 
-export function RoomList({ rooms, onJoinRoom, onSpectateRoom }: RoomListProps) {
+export function RoomList({ rooms, onJoinRoom, onSpectateRoom, onGhostSpectateRoom }: RoomListProps) {
   if (rooms.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground border border-border rounded-xl">
@@ -32,6 +33,7 @@ export function RoomList({ rooms, onJoinRoom, onSpectateRoom }: RoomListProps) {
         const spectatorsFull = room.spectators.length >= MAX_SPECTATORS;
         const spectateInGameEnabled = room.gameOptions?.spectateInGameEnabled;
         const canSpectate = spectateEnabled && !spectatorsFull && (room.status === "waiting" || (room.status === "playing" && spectateInGameEnabled));
+        const canGhostSpectate = onGhostSpectateRoom && (room.status === "waiting" || room.status === "playing");
 
         return (
           <div
@@ -120,6 +122,14 @@ export function RoomList({ rooms, onJoinRoom, onSpectateRoom }: RoomListProps) {
                 >
                   <Eye className="w-3 h-3" />
                   관전
+                </button>
+              )}
+              {canGhostSpectate && (
+                <button
+                  onClick={() => onGhostSpectateRoom(room.id)}
+                  className="border border-purple-500/30 hover:border-purple-500/60 hover:bg-purple-500/10 text-purple-400 px-3 py-1.5 rounded text-xs font-medium transition-all flex items-center gap-1"
+                >
+                  👻
                 </button>
               )}
             </div>

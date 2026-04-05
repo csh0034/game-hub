@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Game Hub - Kawaii Pastel Concept</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fef7ff;
+    --bg-card: #ffffff;
+    --pink: #ff6b9d;
+    --pink-light: #ffd1e3;
+    --purple: #c084fc;
+    --purple-light: #ede4ff;
+    --blue: #60a5fa;
+    --blue-light: #dbeafe;
+    --mint: #6ee7b7;
+    --mint-light: #d1fae5;
+    --peach: #fda4af;
+    --yellow: #fcd34d;
+    --yellow-light: #fef3c7;
+    --orange: #fb923c;
+    --text: #4a3560;
+    --text-light: #9b8ab8;
+    --border: #f0e0f7;
+    --shadow: rgba(192, 132, 252, 0.12);
+    --font: 'Nunito', 'Noto Sans KR', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Floating shapes BG */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background:
+      radial-gradient(circle at 10% 20%, rgba(255,107,157,0.08) 0%, transparent 40%),
+      radial-gradient(circle at 90% 80%, rgba(192,132,252,0.08) 0%, transparent 40%),
+      radial-gradient(circle at 50% 50%, rgba(110,231,183,0.06) 0%, transparent 40%);
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  /* Floating decorations */
+  .float-deco {
+    position: fixed;
+    pointer-events: none;
+    z-index: 0;
+    font-size: 30px;
+    opacity: 0.15;
+    animation: float-around 8s ease-in-out infinite;
+  }
+
+  .float-deco:nth-child(1) { top: 10%; left: 5%; animation-delay: 0s; }
+  .float-deco:nth-child(2) { top: 30%; right: 8%; animation-delay: 2s; font-size: 24px; }
+  .float-deco:nth-child(3) { bottom: 20%; left: 10%; animation-delay: 4s; font-size: 36px; }
+  .float-deco:nth-child(4) { top: 60%; right: 5%; animation-delay: 1s; }
+  .float-deco:nth-child(5) { bottom: 10%; right: 15%; animation-delay: 3s; font-size: 20px; }
+
+  @keyframes float-around {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    25% { transform: translateY(-15px) rotate(5deg); }
+    50% { transform: translateY(-8px) rotate(-3deg); }
+    75% { transform: translateY(-20px) rotate(2deg); }
+  }
+
+  /* Nav */
+  nav {
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 2px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  nav .inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-icon {
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, var(--pink), var(--purple));
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    box-shadow: 0 4px 14px var(--shadow);
+    transform: rotate(-5deg);
+  }
+
+  .logo-text {
+    font-size: 22px;
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--pink), var(--purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.5px;
+  }
+
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .online-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--mint-light);
+    color: #059669;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .online-dot {
+    width: 8px;
+    height: 8px;
+    background: #10b981;
+    border-radius: 50%;
+    animation: bounce-dot 1.5s ease-in-out infinite;
+  }
+
+  @keyframes bounce-dot {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.4); }
+  }
+
+  .user-pill {
+    background: linear-gradient(135deg, var(--pink-light), var(--purple-light));
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    border: 2px solid #fff;
+    box-shadow: 0 2px 10px var(--shadow);
+  }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    padding: 56px 0 40px;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--yellow-light);
+    color: #b45309;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+
+  .hero h1 {
+    font-size: 42px;
+    font-weight: 900;
+    line-height: 1.3;
+    margin-bottom: 12px;
+  }
+
+  .hero h1 .pink { color: var(--pink); }
+  .hero h1 .purple { color: var(--purple); }
+
+  .hero p {
+    color: var(--text-light);
+    font-size: 15px;
+    max-width: 440px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+
+  .tab {
+    padding: 10px 24px;
+    border-radius: 24px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-light);
+    background: var(--bg-card);
+    border: 2px solid var(--border);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .tab:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px var(--shadow);
+    border-color: var(--purple);
+    color: var(--purple);
+  }
+
+  .tab.active {
+    background: linear-gradient(135deg, var(--pink), var(--purple));
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 4px 20px rgba(255,107,157,0.3);
+    transform: translateY(-2px);
+  }
+
+  /* Game Cards */
+  .game-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+
+  .game-card {
+    background: var(--bg-card);
+    border-radius: 20px;
+    padding: 24px;
+    border: 2px solid var(--border);
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+  }
+
+  .game-card:hover {
+    transform: translateY(-8px) rotate(-1deg);
+    box-shadow: 0 16px 40px var(--shadow);
+    border-color: var(--purple);
+  }
+
+  .game-card:nth-child(even):hover {
+    transform: translateY(-8px) rotate(1deg);
+  }
+
+  .card-color-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    border-radius: 20px 20px 0 0;
+  }
+
+  .game-card:nth-child(1) .card-color-bar { background: linear-gradient(90deg, #4b5563, #1f2937); }
+  .game-card:nth-child(2) .card-color-bar { background: linear-gradient(90deg, var(--mint), var(--blue)); }
+  .game-card:nth-child(3) .card-color-bar { background: linear-gradient(90deg, var(--blue), var(--purple)); }
+  .game-card:nth-child(4) .card-color-bar { background: linear-gradient(90deg, var(--purple), var(--pink)); }
+  .game-card:nth-child(5) .card-color-bar { background: linear-gradient(90deg, var(--pink), var(--orange)); }
+  .game-card:nth-child(6) .card-color-bar { background: linear-gradient(90deg, var(--orange), var(--yellow)); }
+
+  .card-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    margin-bottom: 14px;
+  }
+
+  .game-card:nth-child(1) .card-icon { background: #f3f4f6; }
+  .game-card:nth-child(2) .card-icon { background: var(--mint-light); }
+  .game-card:nth-child(3) .card-icon { background: var(--blue-light); }
+  .game-card:nth-child(4) .card-icon { background: var(--purple-light); }
+  .game-card:nth-child(5) .card-icon { background: var(--pink-light); }
+  .game-card:nth-child(6) .card-icon { background: var(--yellow-light); }
+
+  .card-title {
+    font-size: 18px;
+    font-weight: 800;
+    margin-bottom: 6px;
+  }
+
+  .card-desc {
+    font-size: 13px;
+    color: var(--text-light);
+    line-height: 1.5;
+    margin-bottom: 14px;
+  }
+
+  .card-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .player-badge {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-light);
+    background: #f8f0ff;
+    padding: 4px 10px;
+    border-radius: 10px;
+  }
+
+  .new-sticker {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: var(--mint);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 4px 10px;
+    border-radius: 10px;
+    transform: rotate(5deg);
+    box-shadow: 0 2px 8px rgba(110,231,183,0.4);
+  }
+
+  .quick-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, var(--pink), var(--purple));
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(255,107,157,0.3);
+  }
+
+  .quick-btn:hover {
+    transform: scale(1.06);
+    box-shadow: 0 6px 20px rgba(255,107,157,0.4);
+  }
+
+  /* Room List */
+  .rooms-section {
+    margin-bottom: 40px;
+  }
+
+  .section-title {
+    font-size: 20px;
+    font-weight: 800;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .room-card {
+    background: var(--bg-card);
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    padding: 14px 20px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+
+  .room-card:hover {
+    border-color: var(--pink);
+    box-shadow: 0 4px 16px var(--shadow);
+    transform: translateX(4px);
+  }
+
+  .room-info { display: flex; align-items: center; gap: 12px; }
+
+  .room-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+
+  .room-card:nth-child(1) .room-icon { background: var(--blue-light); }
+  .room-card:nth-child(2) .room-icon { background: #f3f4f6; }
+  .room-card:nth-child(3) .room-icon { background: var(--pink-light); }
+
+  .room-name { font-weight: 700; font-size: 14px; }
+  .room-detail { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+
+  .room-right { display: flex; align-items: center; gap: 12px; }
+
+  .room-players {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--purple);
+  }
+
+  .join-btn {
+    padding: 8px 20px;
+    background: var(--purple);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .join-btn:hover {
+    background: var(--pink);
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(255,107,157,0.3);
+  }
+
+  /* Chat */
+  .chat-section {
+    background: var(--bg-card);
+    border: 2px solid var(--border);
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 40px;
+  }
+
+  .chat-header {
+    font-size: 16px;
+    font-weight: 800;
+    margin-bottom: 14px;
+  }
+
+  .chat-msg {
+    padding: 8px 0;
+    font-size: 13px;
+    line-height: 1.5;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .chat-msg:last-of-type { border: none; }
+  .chat-msg .nick { font-weight: 800; color: var(--purple); }
+  .chat-msg .time { font-size: 11px; color: var(--text-light); }
+
+  .chat-input-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .chat-input {
+    flex: 1;
+    background: var(--bg);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-family: var(--font);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .chat-input:focus { border-color: var(--pink); }
+
+  .chat-send {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, var(--pink), var(--purple));
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  /* Ranking Banner */
+  .ranking-banner {
+    background: linear-gradient(135deg, var(--purple-light), var(--pink-light), var(--yellow-light));
+    border-radius: 20px;
+    padding: 28px;
+    margin-bottom: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    border: 2px solid var(--border);
+  }
+
+  .rank-item { text-align: center; }
+
+  .rank-medal {
+    font-size: 36px;
+    display: block;
+    margin-bottom: 6px;
+    animation: wiggle 3s ease-in-out infinite;
+  }
+
+  .rank-item:nth-child(2) .rank-medal { animation-delay: 0.5s; }
+  .rank-item:nth-child(3) .rank-medal { animation-delay: 1s; }
+
+  @keyframes wiggle {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(8deg); }
+    75% { transform: rotate(-8deg); }
+  }
+
+  .rank-name { font-weight: 800; font-size: 15px; }
+  .rank-score { font-size: 12px; color: var(--text-light); }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    padding: 32px 20px;
+    color: var(--text-light);
+    font-size: 13px;
+    border-top: 2px solid var(--border);
+  }
+
+  footer .brand {
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--pink), var(--purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  @media (max-width: 768px) {
+    .game-grid { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 28px; }
+    .ranking-banner { flex-direction: column; gap: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="float-deco">⭐</div>
+<div class="float-deco">🎮</div>
+<div class="float-deco">💜</div>
+<div class="float-deco">🎲</div>
+<div class="float-deco">✨</div>
+
+<nav>
+  <div class="inner">
+    <div class="logo">
+      <div class="logo-icon">🎮</div>
+      <span class="logo-text">Game Hub</span>
+    </div>
+    <div class="nav-right">
+      <div class="online-pill">
+        <div class="online-dot"></div>
+        12명 접속 중
+      </div>
+      <div class="user-pill">🌸 고수플레이어</div>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="hero">
+    <div class="hero-badge">✨ 새로운 게임 추가!</div>
+    <h1>
+      친구들과 함께<br>
+      <span class="pink">신나는</span> <span class="purple">게임타임!</span>
+    </h1>
+    <p>방을 만들고 친구를 초대해서 다양한 게임을 즐겨보세요. 혼자서도 재밌는 퍼즐 게임도 있어요!</p>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active">🎮 게임</div>
+    <div class="tab">🏠 방 목록</div>
+    <div class="tab">🏆 랭킹</div>
+    <div class="tab">📝 요청사항</div>
+  </div>
+
+  <div class="game-grid">
+    <div class="game-card">
+      <div class="card-color-bar"></div>
+      <div class="card-icon">⚫</div>
+      <div class="card-title">오목</div>
+      <div class="card-desc">15×15 보드에서 5개를 연속으로! 렌주룰 적용.</div>
+      <div class="card-bottom">
+        <span class="player-badge">👤 2명</span>
+        <button class="quick-btn">⚡ 빠른시작</button>
+      </div>
+    </div>
+    <div class="game-card">
+      <div class="card-color-bar"></div>
+      <div class="new-sticker">NEW ✨</div>
+      <div class="card-icon">🧩</div>
+      <div class="card-title">노노그램</div>
+      <div class="card-desc">숫자 힌트로 숨겨진 그림을 완성하세요!</div>
+      <div class="card-bottom">
+        <span class="player-badge">👤 1명</span>
+        <button class="quick-btn">⚡ 빠른시작</button>
+      </div>
+    </div>
+    <div class="game-card">
+      <div class="card-color-bar"></div>
+      <div class="card-icon">🎱</div>
+      <div class="card-title">3쿠션 당구</div>
+      <div class="card-desc">물리엔진 리얼 당구! 쿠션 3번에 도전하세요.</div>
+      <div class="card-bottom">
+        <span class="player-badge">👤 2명</span>
+        <button class="quick-btn">⚡ 빠른시작</button>
+      </div>
+    </div>
+    <div class="game-card">
+      <div class="card-color-bar"></div>
+      <div class="card-icon">🟦</div>
+      <div class="card-title">테트리스</div>
+      <div class="card-desc">클래식 테트리스 대전! 라인 공격으로 승리!</div>
+      <div class="card-bottom">
+        <span class="player-badge">👤 2명</span>
+        <button class="quick-btn">⚡ 빠른시작</button>
+      </div>
+    </div>
+    <div class="game-card">
+      <div class="card-color-bar"></div>
+      <div class="card-icon">🎨</div>
+      <div class="card-title">캐치마인드</div>
+      <div class="card-desc">그림으로 단어를 맞히는 파티 게임!</div>
+      <div class="card-bottom">
+        <span class="player-badge">👤 2-8명</span>
+        <button class="quick-btn">⚡ 빠른시작</button>
+      </div>
+    </div>
+    <div class="game-card">
+      <div class="card-color-bar"></div>
+      <div class="card-icon">⌨️</div>
+      <div class="card-title">타자 게임</div>
+      <div class="card-desc">쏟아지는 단어를 빠르게 타이핑!</div>
+      <div class="card-bottom">
+        <span class="player-badge">👤 2명</span>
+        <button class="quick-btn">⚡ 빠른시작</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title">🏠 열린 방</div>
+
+  <div class="rooms-section">
+    <div class="room-card">
+      <div class="room-info">
+        <div class="room-icon">🎱</div>
+        <div>
+          <div class="room-name">초보만 오세요~</div>
+          <div class="room-detail">3쿠션 당구 · 10점 선승</div>
+        </div>
+      </div>
+      <div class="room-right">
+        <span class="room-players">1 / 2</span>
+        <button class="join-btn">입장</button>
+      </div>
+    </div>
+    <div class="room-card">
+      <div class="room-info">
+        <div class="room-icon">⚫</div>
+        <div>
+          <div class="room-name">오목 고수 구함</div>
+          <div class="room-detail">오목 · 렌주룰 · 30초</div>
+        </div>
+      </div>
+      <div class="room-right">
+        <span class="room-players">1 / 2</span>
+        <button class="join-btn">입장</button>
+      </div>
+    </div>
+    <div class="room-card">
+      <div class="room-info">
+        <div class="room-icon">🎨</div>
+        <div>
+          <div class="room-name">캐치마인드 같이해요</div>
+          <div class="room-detail">캐치마인드 · 60초 · 3라운드</div>
+        </div>
+      </div>
+      <div class="room-right">
+        <span class="room-players">3 / 8</span>
+        <button class="join-btn">입장</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="chat-section">
+    <div class="chat-header">💬 로비 채팅</div>
+    <div class="chat-msg"><span class="nick">김코딩:</span> 오목 한판 하실분? <span class="time">15:42</span></div>
+    <div class="chat-msg"><span class="nick">박게임:</span> 저요저요! 방 만들어주세요 <span class="time">15:42</span></div>
+    <div class="chat-msg"><span class="nick">이프로:</span> 당구 재밌다 ㅋㅋ <span class="time">15:43</span></div>
+    <div class="chat-input-row">
+      <input class="chat-input" placeholder="메시지를 입력하세요... 💬">
+      <button class="chat-send">전송</button>
+    </div>
+  </div>
+
+  <div class="ranking-banner">
+    <div class="rank-item">
+      <span class="rank-medal">🥇</span>
+      <div class="rank-name">김프로</div>
+      <div class="rank-score">오목 · 9,850점</div>
+    </div>
+    <div class="rank-item">
+      <span class="rank-medal">🥈</span>
+      <div class="rank-name">박고수</div>
+      <div class="rank-score">테트리스 · 8,200점</div>
+    </div>
+    <div class="rank-item">
+      <span class="rank-medal">🥉</span>
+      <div class="rank-name">이달인</div>
+      <div class="rank-score">타자게임 · 7,430점</div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span class="brand">Game Hub</span> — 함께 즐기는 온라인 게임 🎮 &copy; 2026
+</footer>
+</body>
+</html>

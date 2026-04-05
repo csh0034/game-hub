@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Game Hub - Gradient Glass Concept</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #06060f;
+    --glass: rgba(255,255,255,0.04);
+    --glass-border: rgba(255,255,255,0.08);
+    --glass-hover: rgba(255,255,255,0.08);
+    --text: #f0f0f5;
+    --text-muted: rgba(255,255,255,0.4);
+    --text-dim: rgba(255,255,255,0.6);
+    --accent-1: #ff3c78;
+    --accent-2: #7b61ff;
+    --accent-3: #00d4aa;
+    --accent-4: #ffaa00;
+    --font: 'Outfit', 'Noto Sans KR', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated gradient mesh background */
+  .mesh-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  .mesh-blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(120px);
+    opacity: 0.35;
+    animation: drift 20s ease-in-out infinite;
+  }
+
+  .mesh-blob:nth-child(1) {
+    width: 600px; height: 600px;
+    background: var(--accent-1);
+    top: -10%; left: -5%;
+    animation-duration: 25s;
+  }
+
+  .mesh-blob:nth-child(2) {
+    width: 500px; height: 500px;
+    background: var(--accent-2);
+    top: 40%; right: -10%;
+    animation-duration: 20s;
+    animation-delay: -5s;
+  }
+
+  .mesh-blob:nth-child(3) {
+    width: 450px; height: 450px;
+    background: var(--accent-3);
+    bottom: -10%; left: 30%;
+    animation-duration: 22s;
+    animation-delay: -10s;
+  }
+
+  .mesh-blob:nth-child(4) {
+    width: 350px; height: 350px;
+    background: var(--accent-4);
+    top: 20%; left: 50%;
+    animation-duration: 18s;
+    animation-delay: -3s;
+    opacity: 0.2;
+  }
+
+  @keyframes drift {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(60px, -40px) scale(1.1); }
+    50% { transform: translate(-30px, 50px) scale(0.95); }
+    75% { transform: translate(40px, 20px) scale(1.05); }
+  }
+
+  /* Grain overlay */
+  .grain {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+    background-size: 128px 128px;
+  }
+
+  .container {
+    position: relative;
+    z-index: 2;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* Nav — floating glass pill */
+  nav {
+    position: sticky;
+    top: 16px;
+    z-index: 100;
+    margin: 16px auto;
+    max-width: 1200px;
+    padding: 0 24px;
+  }
+
+  .nav-glass {
+    background: rgba(255,255,255,0.06);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-mark {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    box-shadow: 0 4px 16px rgba(255,60,120,0.3);
+  }
+
+  .logo-text {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+
+  .nav-center {
+    display: flex;
+    gap: 4px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 12px;
+    padding: 4px;
+  }
+
+  .nav-tab {
+    padding: 8px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .nav-tab:hover {
+    color: var(--text-dim);
+    background: rgba(255,255,255,0.04);
+  }
+
+  .nav-tab.active {
+    background: rgba(255,255,255,0.1);
+    color: var(--text);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .online-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .pulse-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--accent-3);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--accent-3);
+    position: relative;
+  }
+
+  .pulse-dot::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 1px solid var(--accent-3);
+    opacity: 0;
+    animation: ripple 2s ease-out infinite;
+  }
+
+  @keyframes ripple {
+    0% { transform: scale(0.8); opacity: 0.6; }
+    100% { transform: scale(2); opacity: 0; }
+  }
+
+  .user-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent-2), var(--accent-3));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s;
+    border: 2px solid rgba(255,255,255,0.1);
+  }
+
+  .user-avatar:hover { transform: scale(1.1); }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    padding: 80px 0 56px;
+  }
+
+  .hero-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    padding: 6px 18px 6px 8px;
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-bottom: 24px;
+    backdrop-filter: blur(12px);
+  }
+
+  .hero-tag .dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, var(--accent-3), var(--accent-2));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+  }
+
+  .hero h1 {
+    font-size: 72px;
+    font-weight: 900;
+    line-height: 1.05;
+    letter-spacing: -3px;
+    margin-bottom: 16px;
+    background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 50%, var(--accent-2) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .hero p {
+    font-size: 17px;
+    color: var(--text-muted);
+    max-width: 480px;
+    margin: 0 auto;
+    line-height: 1.6;
+    font-weight: 300;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 32px;
+  }
+
+  .btn-primary {
+    padding: 14px 32px;
+    background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+    border: none;
+    border-radius: 14px;
+    color: #fff;
+    font-family: var(--font);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 8px 32px rgba(255,60,120,0.3);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(255,60,120,0.4);
+  }
+
+  .btn-secondary {
+    padding: 14px 32px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    backdrop-filter: blur(12px);
+    transition: all 0.3s;
+  }
+
+  .btn-secondary:hover {
+    background: rgba(255,255,255,0.1);
+    transform: translateY(-2px);
+  }
+
+  /* Stats strip */
+  .stats-strip {
+    display: flex;
+    justify-content: center;
+    gap: 48px;
+    padding: 32px 0;
+    margin-bottom: 48px;
+    border-top: 1px solid var(--glass-border);
+    border-bottom: 1px solid var(--glass-border);
+  }
+
+  .stat-item {
+    text-align: center;
+  }
+
+  .stat-num {
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, var(--text), var(--accent-2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-top: 4px;
+  }
+
+  /* Section header */
+  .section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+
+  .section-head h2 {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+
+  .section-head .see-all {
+    font-size: 13px;
+    color: var(--accent-2);
+    cursor: pointer;
+    font-weight: 500;
+  }
+
+  /* Game Grid — Bento style */
+  .game-bento {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: auto auto;
+    gap: 16px;
+    margin-bottom: 56px;
+  }
+
+  .game-bento .featured {
+    grid-column: span 2;
+    grid-row: span 2;
+  }
+
+  .game-card {
+    background: var(--glass);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 28px;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+
+  .game-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 20px;
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+
+  .game-card:hover {
+    border-color: rgba(255,255,255,0.15);
+    transform: translateY(-4px);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  }
+
+  .game-card:hover::before { opacity: 1; }
+
+  .game-card:nth-child(1)::before { background: linear-gradient(180deg, rgba(255,60,120,0.08), transparent); }
+  .game-card:nth-child(2)::before { background: linear-gradient(180deg, rgba(123,97,255,0.08), transparent); }
+  .game-card:nth-child(3)::before { background: linear-gradient(180deg, rgba(0,212,170,0.08), transparent); }
+  .game-card:nth-child(4)::before { background: linear-gradient(180deg, rgba(255,170,0,0.08), transparent); }
+  .game-card:nth-child(5)::before { background: linear-gradient(180deg, rgba(255,60,120,0.06), transparent); }
+  .game-card:nth-child(6)::before { background: linear-gradient(180deg, rgba(123,97,255,0.06), transparent); }
+
+  .card-glow {
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.15;
+    top: -40px;
+    right: -40px;
+    pointer-events: none;
+  }
+
+  .game-card:nth-child(1) .card-glow { background: var(--accent-1); }
+  .game-card:nth-child(2) .card-glow { background: var(--accent-2); }
+  .game-card:nth-child(3) .card-glow { background: var(--accent-3); }
+  .game-card:nth-child(4) .card-glow { background: var(--accent-4); }
+  .game-card:nth-child(5) .card-glow { background: var(--accent-1); }
+  .game-card:nth-child(6) .card-glow { background: var(--accent-2); }
+
+  .card-emoji {
+    font-size: 48px;
+    margin-bottom: 20px;
+    display: block;
+  }
+
+  .featured .card-emoji { font-size: 80px; margin-bottom: 32px; }
+
+  .card-tag {
+    display: inline-flex;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    width: fit-content;
+  }
+
+  .tag-new { background: rgba(0,212,170,0.15); color: var(--accent-3); }
+  .tag-hot { background: rgba(255,60,120,0.15); color: var(--accent-1); }
+  .tag-beta { background: rgba(255,170,0,0.15); color: var(--accent-4); }
+
+  .card-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    letter-spacing: -0.3px;
+  }
+
+  .featured .card-title { font-size: 28px; }
+
+  .card-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin-bottom: 16px;
+    font-weight: 300;
+  }
+
+  .card-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: auto;
+  }
+
+  .player-pill {
+    font-size: 12px;
+    color: var(--text-dim);
+    background: rgba(255,255,255,0.06);
+    padding: 4px 12px;
+    border-radius: 8px;
+    font-weight: 500;
+  }
+
+  .play-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.06);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .play-btn:hover {
+    background: rgba(255,255,255,0.12);
+    border-color: rgba(255,255,255,0.2);
+  }
+
+  .play-btn .arrow {
+    transition: transform 0.2s;
+  }
+
+  .play-btn:hover .arrow { transform: translateX(3px); }
+
+  /* Room + Chat two-col */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 20px;
+    margin-bottom: 56px;
+  }
+
+  .glass-panel {
+    background: var(--glass);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 28px;
+  }
+
+  .panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .panel-title {
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .panel-badge {
+    font-size: 11px;
+    background: rgba(255,255,255,0.06);
+    padding: 4px 10px;
+    border-radius: 8px;
+    color: var(--text-muted);
+  }
+
+  /* Room cards */
+  .room-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-radius: 14px;
+    margin-bottom: 8px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid transparent;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+
+  .room-item:hover {
+    background: rgba(255,255,255,0.05);
+    border-color: var(--glass-border);
+  }
+
+  .room-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .room-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+
+  .room-item:nth-child(1) .room-icon { background: rgba(255,60,120,0.12); }
+  .room-item:nth-child(2) .room-icon { background: rgba(123,97,255,0.12); }
+  .room-item:nth-child(3) .room-icon { background: rgba(0,212,170,0.12); }
+
+  .room-name { font-weight: 600; font-size: 14px; }
+  .room-detail { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  .room-right { display: flex; align-items: center; gap: 12px; }
+
+  .room-slots {
+    font-size: 12px;
+    color: var(--text-dim);
+    font-weight: 500;
+  }
+
+  .room-join {
+    padding: 6px 16px;
+    border-radius: 10px;
+    background: rgba(123,97,255,0.15);
+    color: var(--accent-2);
+    border: none;
+    font-family: var(--font);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .room-join:hover {
+    background: var(--accent-2);
+    color: #fff;
+  }
+
+  /* Chat */
+  .chat-messages {
+    max-height: 240px;
+    overflow-y: auto;
+    margin-bottom: 14px;
+  }
+
+  .chat-msg {
+    padding: 8px 0;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .chat-msg .nick { font-weight: 600; color: var(--accent-2); }
+  .chat-msg .text { color: var(--text-dim); font-weight: 300; margin-left: 4px; }
+  .chat-msg .time { font-size: 11px; color: var(--text-muted); margin-left: 6px; }
+
+  .chat-input-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .chat-input {
+    flex: 1;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-family: var(--font);
+    font-size: 13px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .chat-input::placeholder { color: var(--text-muted); }
+  .chat-input:focus { border-color: rgba(123,97,255,0.4); }
+
+  .chat-send {
+    padding: 12px 20px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--accent-2), var(--accent-1));
+    border: none;
+    color: #fff;
+    font-family: var(--font);
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .chat-send:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 16px rgba(123,97,255,0.3);
+  }
+
+  /* Ranking strip */
+  .ranking-strip {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 56px;
+  }
+
+  .rank-card {
+    flex: 1;
+    background: var(--glass);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 24px;
+    text-align: center;
+    transition: all 0.3s;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .rank-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(255,255,255,0.15);
+  }
+
+  .rank-card:nth-child(1) { border-top: 2px solid var(--accent-4); }
+  .rank-card:nth-child(2) { border-top: 2px solid var(--text-muted); }
+  .rank-card:nth-child(3) { border-top: 2px solid #cd7f32; }
+
+  .rank-medal { font-size: 36px; margin-bottom: 10px; display: block; }
+
+  .rank-name {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .rank-score {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  /* Footer */
+  footer {
+    border-top: 1px solid var(--glass-border);
+    padding: 32px 0;
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 300;
+  }
+
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 40px; letter-spacing: -1px; }
+    .game-bento { grid-template-columns: 1fr; }
+    .game-bento .featured { grid-column: span 1; grid-row: span 1; }
+    .two-col { grid-template-columns: 1fr; }
+    .nav-center { display: none; }
+    .ranking-strip { flex-direction: column; }
+    .stats-strip { gap: 24px; flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+
+<div class="mesh-bg">
+  <div class="mesh-blob"></div>
+  <div class="mesh-blob"></div>
+  <div class="mesh-blob"></div>
+  <div class="mesh-blob"></div>
+</div>
+<div class="grain"></div>
+
+<nav>
+  <div class="nav-glass">
+    <div class="logo">
+      <div class="logo-mark">🎮</div>
+      <span class="logo-text">Game Hub</span>
+    </div>
+    <div class="nav-center">
+      <div class="nav-tab active">게임</div>
+      <div class="nav-tab">방 목록</div>
+      <div class="nav-tab">랭킹</div>
+      <div class="nav-tab">요청사항</div>
+    </div>
+    <div class="nav-right">
+      <div class="online-badge">
+        <div class="pulse-dot"></div>
+        <span>12 online</span>
+      </div>
+      <div class="user-avatar">고</div>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="hero">
+    <div class="hero-tag">
+      <span class="dot">✨</span>
+      노노그램 게임이 새로 추가되었어요
+    </div>
+    <h1>Play Games<br>Together.</h1>
+    <p>친구들과 함께 즐기는 멀티플레이 게임 허브. 방을 만들거나 열린 방에 참가하세요.</p>
+    <div class="hero-actions">
+      <button class="btn-primary">방 만들기</button>
+      <button class="btn-secondary">게임 둘러보기</button>
+    </div>
+  </div>
+
+  <div class="stats-strip">
+    <div class="stat-item">
+      <div class="stat-num">8</div>
+      <div class="stat-label">Games</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">12</div>
+      <div class="stat-label">Online</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">3</div>
+      <div class="stat-label">Open Rooms</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">2.4K</div>
+      <div class="stat-label">Games Played</div>
+    </div>
+  </div>
+
+  <div class="section-head">
+    <h2>게임</h2>
+    <span class="see-all">전체 보기 →</span>
+  </div>
+
+  <div class="game-bento">
+    <div class="game-card featured">
+      <div class="card-glow"></div>
+      <span class="card-emoji">⚫</span>
+      <div class="card-tag tag-hot">HOT</div>
+      <div class="card-title">오목</div>
+      <div class="card-desc">15×15 보드에서 전략적으로 돌을 놓아 5개를 연속으로 만드세요. 렌주룰이 적용되어 공정한 대국을 즐길 수 있습니다.</div>
+      <div class="card-bottom">
+        <span class="player-pill">👤 2명</span>
+        <button class="play-btn">빠른시작 <span class="arrow">→</span></button>
+      </div>
+    </div>
+    <div class="game-card">
+      <div class="card-glow"></div>
+      <span class="card-emoji">🧩</span>
+      <div class="card-tag tag-new">NEW</div>
+      <div class="card-title">노노그램</div>
+      <div class="card-desc">숫자 힌트로 그림을 완성하는 퍼즐</div>
+      <div class="card-bottom">
+        <span class="player-pill">👤 1명</span>
+        <button class="play-btn">시작 <span class="arrow">→</span></button>
+      </div>
+    </div>
+    <div class="game-card">
+      <div class="card-glow"></div>
+      <span class="card-emoji">🎱</span>
+      <div class="card-tag tag-beta">BETA</div>
+      <div class="card-title">3쿠션 당구</div>
+      <div class="card-desc">물리엔진 기반 리얼 시뮬레이션</div>
+      <div class="card-bottom">
+        <span class="player-pill">👤 2명</span>
+        <button class="play-btn">시작 <span class="arrow">→</span></button>
+      </div>
+    </div>
+    <div class="game-card">
+      <div class="card-glow"></div>
+      <span class="card-emoji">🟦</span>
+      <div class="card-title">테트리스</div>
+      <div class="card-desc">클래식 테트리스 대전</div>
+      <div class="card-bottom">
+        <span class="player-pill">👤 2명</span>
+        <button class="play-btn">시작 <span class="arrow">→</span></button>
+      </div>
+    </div>
+    <div class="game-card">
+      <div class="card-glow"></div>
+      <span class="card-emoji">🎨</span>
+      <div class="card-title">캐치마인드</div>
+      <div class="card-desc">그림으로 단어 맞히기</div>
+      <div class="card-bottom">
+        <span class="player-pill">👤 2-8명</span>
+        <button class="play-btn">시작 <span class="arrow">→</span></button>
+      </div>
+    </div>
+    <div class="game-card">
+      <div class="card-glow"></div>
+      <span class="card-emoji">⌨️</span>
+      <div class="card-title">타자 게임</div>
+      <div class="card-desc">타이핑 서바이벌 배틀</div>
+      <div class="card-bottom">
+        <span class="player-pill">👤 2명</span>
+        <button class="play-btn">시작 <span class="arrow">→</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="glass-panel">
+      <div class="panel-head">
+        <span class="panel-title">열린 방</span>
+        <span class="panel-badge">3 rooms</span>
+      </div>
+      <div class="room-item">
+        <div class="room-left">
+          <div class="room-icon">🎱</div>
+          <div>
+            <div class="room-name">초보만 오세요~</div>
+            <div class="room-detail">3쿠션 당구 · 10점 선승</div>
+          </div>
+        </div>
+        <div class="room-right">
+          <span class="room-slots">1/2</span>
+          <button class="room-join">입장</button>
+        </div>
+      </div>
+      <div class="room-item">
+        <div class="room-left">
+          <div class="room-icon">⚫</div>
+          <div>
+            <div class="room-name">오목 고수 구함</div>
+            <div class="room-detail">오목 · 렌주룰 · 30초</div>
+          </div>
+        </div>
+        <div class="room-right">
+          <span class="room-slots">1/2</span>
+          <button class="room-join">입장</button>
+        </div>
+      </div>
+      <div class="room-item">
+        <div class="room-left">
+          <div class="room-icon">🎨</div>
+          <div>
+            <div class="room-name">캐치마인드 같이해요</div>
+            <div class="room-detail">캐치마인드 · 60초 · 3라운드</div>
+          </div>
+        </div>
+        <div class="room-right">
+          <span class="room-slots">3/8</span>
+          <button class="room-join">입장</button>
+        </div>
+      </div>
+    </div>
+    <div class="glass-panel">
+      <div class="panel-head">
+        <span class="panel-title">로비 채팅</span>
+      </div>
+      <div class="chat-messages">
+        <div class="chat-msg"><span class="nick">김코딩</span><span class="text">오목 한판 하실분?</span><span class="time">15:42</span></div>
+        <div class="chat-msg"><span class="nick">박게임</span><span class="text">저요저요! 방 만들어주세요</span><span class="time">15:42</span></div>
+        <div class="chat-msg"><span class="nick">이프로</span><span class="text">당구 재밌다 ㅋㅋ</span><span class="time">15:43</span></div>
+      </div>
+      <div class="chat-input-row">
+        <input class="chat-input" placeholder="메시지를 입력하세요...">
+        <button class="chat-send">전송</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-head">
+    <h2>랭킹</h2>
+    <span class="see-all">전체 보기 →</span>
+  </div>
+
+  <div class="ranking-strip">
+    <div class="rank-card">
+      <span class="rank-medal">🥇</span>
+      <div class="rank-name">김프로</div>
+      <div class="rank-score">오목 · 9,850점</div>
+    </div>
+    <div class="rank-card">
+      <span class="rank-medal">🥈</span>
+      <div class="rank-name">박고수</div>
+      <div class="rank-score">테트리스 · 8,200점</div>
+    </div>
+    <div class="rank-card">
+      <span class="rank-medal">🥉</span>
+      <div class="rank-name">이달인</div>
+      <div class="rank-score">타자게임 · 7,430점</div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="container">
+    Game Hub — 함께 즐기는 멀티플레이 게임 © 2026
+  </div>
+</footer>
+</body>
+</html>

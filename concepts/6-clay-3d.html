@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Game Hub - Clay 3D Concept</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #e8e4dc;
+    --surface: #f5f2ec;
+    --white: #ffffff;
+    --text: #1a1a2e;
+    --text-muted: #8a8a9a;
+    --blue: #4361ee;
+    --blue-light: #d5dcff;
+    --coral: #ff6b6b;
+    --coral-light: #ffd5d5;
+    --green: #2ec4b6;
+    --green-light: #c5f0ec;
+    --purple: #7b2ff7;
+    --purple-light: #e2d5ff;
+    --yellow: #ffc145;
+    --yellow-light: #fff0cc;
+    --orange: #ff8a47;
+    --shadow-sm: 0 2px 4px rgba(26,26,46,0.06);
+    --shadow-md: 0 8px 24px rgba(26,26,46,0.08);
+    --shadow-lg: 0 16px 48px rgba(26,26,46,0.12);
+    --shadow-xl: 0 24px 64px rgba(26,26,46,0.16);
+    --font: 'Bricolage Grotesque', 'Noto Sans KR', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Subtle dot pattern */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image: radial-gradient(circle, rgba(26,26,46,0.04) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* Nav */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    padding: 12px 0;
+    background: rgba(232,228,220,0.8);
+    backdrop-filter: blur(16px);
+  }
+
+  .nav-inner {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .nav-pill {
+    background: var(--white);
+    border-radius: 50px;
+    padding: 8px 8px 8px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: var(--shadow-md);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-sphere {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, var(--blue), var(--purple));
+    box-shadow:
+      inset -4px -4px 8px rgba(0,0,0,0.15),
+      inset 4px 4px 8px rgba(255,255,255,0.3),
+      0 4px 12px rgba(67,97,238,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+
+  .logo-text {
+    font-size: 19px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+
+  .nav-divider {
+    width: 1px;
+    height: 20px;
+    background: #e0dcd4;
+  }
+
+  .nav-tabs {
+    display: flex;
+    gap: 4px;
+  }
+
+  .nav-tab {
+    padding: 8px 18px;
+    border-radius: 24px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .nav-tab:hover { color: var(--text); background: rgba(26,26,46,0.04); }
+
+  .nav-tab.active {
+    background: var(--text);
+    color: var(--white);
+    box-shadow: 0 2px 8px rgba(26,26,46,0.2);
+  }
+
+  .nav-right-pill {
+    background: var(--white);
+    border-radius: 50px;
+    padding: 6px 6px 6px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: var(--shadow-md);
+  }
+
+  .online-tag {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+
+  .online-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--green);
+    border-radius: 50%;
+    box-shadow: 0 0 0 3px rgba(46,196,182,0.2);
+    animation: breathe 2s ease-in-out infinite;
+  }
+
+  @keyframes breathe {
+    0%, 100% { box-shadow: 0 0 0 3px rgba(46,196,182,0.2); }
+    50% { box-shadow: 0 0 0 6px rgba(46,196,182,0.1); }
+  }
+
+  .user-bubble {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, var(--coral), var(--orange));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 800;
+    color: #fff;
+    cursor: pointer;
+    box-shadow:
+      inset -3px -3px 6px rgba(0,0,0,0.12),
+      inset 3px 3px 6px rgba(255,255,255,0.25),
+      0 2px 8px rgba(255,107,107,0.3);
+    transition: transform 0.2s;
+  }
+
+  .user-bubble:hover { transform: scale(1.1) rotate(5deg); }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    padding: 72px 0 48px;
+  }
+
+  .hero-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--white);
+    border-radius: 24px;
+    padding: 6px 18px 6px 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 24px;
+  }
+
+  .hero-pill .icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--green-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+  }
+
+  .hero h1 {
+    font-size: 60px;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -2px;
+    margin-bottom: 16px;
+  }
+
+  .hero h1 .blue { color: var(--blue); }
+  .hero h1 .coral { color: var(--coral); }
+
+  .hero p {
+    font-size: 17px;
+    color: var(--text-muted);
+    max-width: 460px;
+    margin: 0 auto;
+    line-height: 1.6;
+    font-weight: 500;
+  }
+
+  .hero-btns {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 32px;
+  }
+
+  .btn-3d {
+    padding: 14px 32px;
+    border-radius: 16px;
+    font-family: var(--font);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+  }
+
+  .btn-3d-primary {
+    background: var(--blue);
+    color: #fff;
+    box-shadow:
+      0 4px 0 #3350cc,
+      0 8px 24px rgba(67,97,238,0.3);
+  }
+
+  .btn-3d-primary:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 6px 0 #3350cc,
+      0 12px 32px rgba(67,97,238,0.4);
+  }
+
+  .btn-3d-primary:active {
+    transform: translateY(2px);
+    box-shadow:
+      0 2px 0 #3350cc,
+      0 4px 12px rgba(67,97,238,0.3);
+  }
+
+  .btn-3d-secondary {
+    background: var(--white);
+    color: var(--text);
+    box-shadow:
+      0 4px 0 #d5d1c9,
+      0 8px 24px rgba(0,0,0,0.06);
+  }
+
+  .btn-3d-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 6px 0 #d5d1c9,
+      0 12px 32px rgba(0,0,0,0.08);
+  }
+
+  /* Game Cards — Claymorphism */
+  .section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .section-head h2 {
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+
+  .section-head .tag {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    background: var(--white);
+    padding: 6px 14px;
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .game-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+
+  .clay-card {
+    background: var(--white);
+    border-radius: 24px;
+    padding: 28px 24px;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow:
+      var(--shadow-md),
+      inset 0 -2px 4px rgba(0,0,0,0.03),
+      inset 0 2px 4px rgba(255,255,255,0.8);
+  }
+
+  .clay-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: var(--shadow-xl);
+  }
+
+  .card-sphere {
+    width: 56px;
+    height: 56px;
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    margin-bottom: 16px;
+    box-shadow:
+      inset -4px -4px 8px rgba(0,0,0,0.08),
+      inset 4px 4px 8px rgba(255,255,255,0.6);
+  }
+
+  .clay-card:nth-child(1) .card-sphere { background: linear-gradient(145deg, #f0f0f0, #d5d5d5); }
+  .clay-card:nth-child(2) .card-sphere { background: linear-gradient(145deg, var(--green-light), #a5e8e0); }
+  .clay-card:nth-child(3) .card-sphere { background: linear-gradient(145deg, var(--blue-light), #b0bfff); }
+  .clay-card:nth-child(4) .card-sphere { background: linear-gradient(145deg, var(--purple-light), #c5a8ff); }
+  .clay-card:nth-child(5) .card-sphere { background: linear-gradient(145deg, var(--coral-light), #ffb5b5); }
+  .clay-card:nth-child(6) .card-sphere { background: linear-gradient(145deg, var(--yellow-light), #ffe08a); }
+
+  .card-title {
+    font-size: 19px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    letter-spacing: -0.3px;
+  }
+
+  .card-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin-bottom: 16px;
+    font-weight: 500;
+  }
+
+  .card-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .player-tag {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    background: var(--surface);
+    padding: 4px 12px;
+    border-radius: 10px;
+  }
+
+  .new-bubble {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--green);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow:
+      inset -3px -3px 6px rgba(0,0,0,0.1),
+      inset 3px 3px 6px rgba(255,255,255,0.2),
+      0 4px 12px rgba(46,196,182,0.4);
+    transform: rotate(12deg);
+    letter-spacing: 0.5px;
+  }
+
+  .play-pill {
+    padding: 8px 18px;
+    border-radius: 12px;
+    font-family: var(--font);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+  }
+
+  .clay-card:nth-child(1) .play-pill { background: var(--text); color: #fff; box-shadow: 0 3px 0 #111122; }
+  .clay-card:nth-child(2) .play-pill { background: var(--green); color: #fff; box-shadow: 0 3px 0 #209f93; }
+  .clay-card:nth-child(3) .play-pill { background: var(--blue); color: #fff; box-shadow: 0 3px 0 #3350cc; }
+  .clay-card:nth-child(4) .play-pill { background: var(--purple); color: #fff; box-shadow: 0 3px 0 #6220d0; }
+  .clay-card:nth-child(5) .play-pill { background: var(--coral); color: #fff; box-shadow: 0 3px 0 #e04f4f; }
+  .clay-card:nth-child(6) .play-pill { background: var(--orange); color: #fff; box-shadow: 0 3px 0 #e07030; }
+
+  .play-pill:hover { transform: translateY(-2px); }
+  .play-pill:active { transform: translateY(1px); }
+
+  /* Room + Chat */
+  .lower {
+    display: grid;
+    grid-template-columns: 1.3fr 0.7fr;
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+
+  .clay-panel {
+    background: var(--white);
+    border-radius: 24px;
+    padding: 28px;
+    box-shadow: var(--shadow-md);
+  }
+
+  .panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+  }
+
+  .panel-title { font-size: 17px; font-weight: 700; }
+
+  .panel-tag {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--blue);
+    background: var(--blue-light);
+    padding: 4px 12px;
+    border-radius: 10px;
+  }
+
+  /* Room list */
+  .room-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    border-radius: 16px;
+    margin-bottom: 8px;
+    background: var(--surface);
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+
+  .room-item:hover {
+    background: var(--bg);
+    transform: translateX(4px);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .room-left { display: flex; align-items: center; gap: 12px; }
+
+  .room-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    box-shadow: inset -2px -2px 4px rgba(0,0,0,0.06), inset 2px 2px 4px rgba(255,255,255,0.5);
+  }
+
+  .room-item:nth-child(1) .room-icon { background: var(--blue-light); }
+  .room-item:nth-child(2) .room-icon { background: #f0f0f0; }
+  .room-item:nth-child(3) .room-icon { background: var(--coral-light); }
+
+  .room-name { font-weight: 700; font-size: 14px; }
+  .room-detail { font-size: 12px; color: var(--text-muted); font-weight: 500; margin-top: 2px; }
+
+  .room-right { display: flex; align-items: center; gap: 12px; }
+  .room-slots { font-size: 13px; color: var(--text-muted); font-weight: 700; }
+
+  .room-join {
+    padding: 7px 18px;
+    border-radius: 12px;
+    background: var(--blue);
+    color: #fff;
+    border: none;
+    font-family: var(--font);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 3px 0 #3350cc;
+    transition: all 0.2s;
+  }
+
+  .room-join:hover { transform: translateY(-2px); }
+
+  /* Chat */
+  .chat-msg {
+    padding: 8px 0;
+    font-size: 13px;
+    line-height: 1.5;
+    font-weight: 500;
+  }
+
+  .chat-msg .nick { font-weight: 700; color: var(--blue); }
+  .chat-msg .time { font-size: 11px; color: var(--text-muted); margin-left: 6px; }
+
+  .chat-input-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .chat-input {
+    flex: 1;
+    background: var(--surface);
+    border: none;
+    border-radius: 14px;
+    padding: 12px 16px;
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 500;
+    outline: none;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.04);
+    transition: box-shadow 0.2s;
+  }
+
+  .chat-input:focus {
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.04), 0 0 0 3px rgba(67,97,238,0.15);
+  }
+
+  .chat-send {
+    padding: 12px 20px;
+    border-radius: 14px;
+    background: var(--coral);
+    color: #fff;
+    border: none;
+    font-family: var(--font);
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    box-shadow: 0 3px 0 #e04f4f;
+    transition: all 0.2s;
+  }
+
+  .chat-send:hover { transform: translateY(-2px); }
+
+  /* Ranking — spheres */
+  .ranking-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+
+  .rank-bubble {
+    flex: 1;
+    background: var(--white);
+    border-radius: 24px;
+    padding: 28px;
+    text-align: center;
+    box-shadow: var(--shadow-md);
+    transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    cursor: pointer;
+  }
+
+  .rank-bubble:hover {
+    transform: translateY(-8px) rotate(-2deg);
+    box-shadow: var(--shadow-xl);
+  }
+
+  .rank-bubble:nth-child(2):hover { transform: translateY(-8px) rotate(2deg); }
+
+  .rank-medal-sphere {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    margin: 0 auto 14px;
+  }
+
+  .rank-bubble:nth-child(1) .rank-medal-sphere {
+    background: linear-gradient(145deg, var(--yellow-light), #ffd860);
+    box-shadow: inset -4px -4px 8px rgba(0,0,0,0.08), inset 4px 4px 8px rgba(255,255,255,0.5), 0 6px 16px rgba(255,193,69,0.3);
+  }
+
+  .rank-bubble:nth-child(2) .rank-medal-sphere {
+    background: linear-gradient(145deg, #eee, #ccc);
+    box-shadow: inset -4px -4px 8px rgba(0,0,0,0.06), inset 4px 4px 8px rgba(255,255,255,0.5), 0 6px 16px rgba(0,0,0,0.08);
+  }
+
+  .rank-bubble:nth-child(3) .rank-medal-sphere {
+    background: linear-gradient(145deg, #f0d5b0, #c9956a);
+    box-shadow: inset -4px -4px 8px rgba(0,0,0,0.1), inset 4px 4px 8px rgba(255,255,255,0.3), 0 6px 16px rgba(201,149,106,0.3);
+  }
+
+  .rank-name { font-weight: 800; font-size: 16px; margin-bottom: 4px; }
+  .rank-score { font-size: 13px; color: var(--text-muted); font-weight: 600; }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    padding: 32px 0;
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+
+  footer .brand { color: var(--text); font-weight: 800; }
+
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 36px; }
+    .game-grid { grid-template-columns: 1fr; }
+    .lower { grid-template-columns: 1fr; }
+    .ranking-row { flex-direction: column; }
+    .nav-tabs { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <div class="nav-pill">
+      <div class="logo">
+        <div class="logo-sphere">🎮</div>
+        <span class="logo-text">Game Hub</span>
+      </div>
+      <div class="nav-divider"></div>
+      <div class="nav-tabs">
+        <div class="nav-tab active">게임</div>
+        <div class="nav-tab">방 목록</div>
+        <div class="nav-tab">랭킹</div>
+        <div class="nav-tab">요청사항</div>
+      </div>
+    </div>
+    <div class="nav-right-pill">
+      <div class="online-tag">
+        <div class="online-dot"></div>
+        12명
+      </div>
+      <div class="user-bubble">고</div>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="hero">
+    <div class="hero-pill">
+      <span class="icon">✨</span>
+      노노그램 신규 출시!
+    </div>
+    <h1>게임은 <span class="blue">같이</span> 해야<br><span class="coral">재밌잖아요</span></h1>
+    <p>친구들과 함께 오목, 당구, 테트리스, 캐치마인드 등 다양한 게임을 온라인으로 즐기세요.</p>
+    <div class="hero-btns">
+      <button class="btn-3d btn-3d-primary">방 만들기</button>
+      <button class="btn-3d btn-3d-secondary">둘러보기</button>
+    </div>
+  </div>
+
+  <div class="section-head">
+    <h2>게임</h2>
+    <span class="tag">8개 게임</span>
+  </div>
+
+  <div class="game-grid">
+    <div class="clay-card">
+      <div class="card-sphere">⚫</div>
+      <div class="card-title">오목</div>
+      <div class="card-desc">15×15 보드에서 전략적으로 5개를 연속! 렌주룰 적용.</div>
+      <div class="card-bottom">
+        <span class="player-tag">👤 2명</span>
+        <button class="play-pill">빠른시작</button>
+      </div>
+    </div>
+    <div class="clay-card">
+      <div class="new-bubble">NEW</div>
+      <div class="card-sphere">🧩</div>
+      <div class="card-title">노노그램</div>
+      <div class="card-desc">숫자 힌트로 숨겨진 그림을 완성하는 퍼즐 게임.</div>
+      <div class="card-bottom">
+        <span class="player-tag">👤 1명</span>
+        <button class="play-pill">빠른시작</button>
+      </div>
+    </div>
+    <div class="clay-card">
+      <div class="card-sphere">🎱</div>
+      <div class="card-title">3쿠션 당구</div>
+      <div class="card-desc">물리엔진 기반 리얼 시뮬레이션. 정밀한 큐 컨트롤.</div>
+      <div class="card-bottom">
+        <span class="player-tag">👤 2명</span>
+        <button class="play-pill">빠른시작</button>
+      </div>
+    </div>
+    <div class="clay-card">
+      <div class="card-sphere">🟦</div>
+      <div class="card-title">테트리스</div>
+      <div class="card-desc">클래식 테트리스 대전. 라인을 지워 상대를 압박!</div>
+      <div class="card-bottom">
+        <span class="player-tag">👤 2명</span>
+        <button class="play-pill">빠른시작</button>
+      </div>
+    </div>
+    <div class="clay-card">
+      <div class="card-sphere">🎨</div>
+      <div class="card-title">캐치마인드</div>
+      <div class="card-desc">그림으로 단어를 맞히는 파티 게임!</div>
+      <div class="card-bottom">
+        <span class="player-tag">👤 2-8명</span>
+        <button class="play-pill">빠른시작</button>
+      </div>
+    </div>
+    <div class="clay-card">
+      <div class="card-sphere">⌨️</div>
+      <div class="card-title">타자 게임</div>
+      <div class="card-desc">쏟아지는 단어를 빠르게 타이핑하세요!</div>
+      <div class="card-bottom">
+        <span class="player-tag">👤 2명</span>
+        <button class="play-pill">빠른시작</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-head">
+    <h2>열린 방</h2>
+    <span class="tag">3개 방</span>
+  </div>
+
+  <div class="lower">
+    <div class="clay-panel">
+      <div class="room-item">
+        <div class="room-left">
+          <div class="room-icon">🎱</div>
+          <div>
+            <div class="room-name">초보만 오세요~</div>
+            <div class="room-detail">3쿠션 당구 · 10점 선승</div>
+          </div>
+        </div>
+        <div class="room-right">
+          <span class="room-slots">1/2</span>
+          <button class="room-join">입장</button>
+        </div>
+      </div>
+      <div class="room-item">
+        <div class="room-left">
+          <div class="room-icon">⚫</div>
+          <div>
+            <div class="room-name">오목 고수 구함</div>
+            <div class="room-detail">오목 · 렌주룰 · 30초</div>
+          </div>
+        </div>
+        <div class="room-right">
+          <span class="room-slots">1/2</span>
+          <button class="room-join">입장</button>
+        </div>
+      </div>
+      <div class="room-item">
+        <div class="room-left">
+          <div class="room-icon">🎨</div>
+          <div>
+            <div class="room-name">캐치마인드 같이해요</div>
+            <div class="room-detail">캐치마인드 · 60초 · 3라운드</div>
+          </div>
+        </div>
+        <div class="room-right">
+          <span class="room-slots">3/8</span>
+          <button class="room-join">입장</button>
+        </div>
+      </div>
+    </div>
+    <div class="clay-panel">
+      <div class="panel-head">
+        <span class="panel-title">로비 채팅</span>
+      </div>
+      <div class="chat-msg"><span class="nick">김코딩:</span> 오목 한판 하실분? <span class="time">15:42</span></div>
+      <div class="chat-msg"><span class="nick">박게임:</span> 저요저요! 방 만들어주세요 <span class="time">15:42</span></div>
+      <div class="chat-msg"><span class="nick">이프로:</span> 당구 재밌다 ㅋㅋ <span class="time">15:43</span></div>
+      <div class="chat-input-row">
+        <input class="chat-input" placeholder="메시지를 입력하세요...">
+        <button class="chat-send">전송</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-head">
+    <h2>랭킹</h2>
+    <span class="tag">Top 3</span>
+  </div>
+
+  <div class="ranking-row">
+    <div class="rank-bubble">
+      <div class="rank-medal-sphere">🥇</div>
+      <div class="rank-name">김프로</div>
+      <div class="rank-score">오목 · 9,850점</div>
+    </div>
+    <div class="rank-bubble">
+      <div class="rank-medal-sphere">🥈</div>
+      <div class="rank-name">박고수</div>
+      <div class="rank-score">테트리스 · 8,200점</div>
+    </div>
+    <div class="rank-bubble">
+      <div class="rank-medal-sphere">🥉</div>
+      <div class="rank-name">이달인</div>
+      <div class="rank-score">타자게임 · 7,430점</div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span class="brand">Game Hub</span> — 함께 즐기는 온라인 게임 © 2026
+</footer>
+</body>
+</html>

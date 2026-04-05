@@ -1031,9 +1031,13 @@ export function RoomView({ room, socket, nickname, isSpectating, isGhostSpectati
             onWhisper={onWhisper}
           />
         </div>
-        {(room.gameType === "minesweeper" || (room.gameType === "tetris" && room.players.length <= 1 && room.gameOptions?.tetrisMode === "speed-race")) && (
+        {(room.gameType === "minesweeper" || (room.gameType === "tetris" && room.players.length <= 1)) && (
           <RankingCard
-            gameType={room.gameType as RankingGameType}
+            gameType={
+              room.gameType === "tetris"
+                ? room.gameOptions?.tetrisMode === "speed-race" ? "tetris" : "tetris-classic"
+                : room.gameType as RankingGameType
+            }
             difficulty={
               (room.gameType === "minesweeper"
                 ? room.gameOptions?.minesweeperDifficulty ?? "beginner"

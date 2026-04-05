@@ -814,4 +814,50 @@ describe("TetrisEngine", () => {
       expect(result!.reason).toContain("클리어 시간:");
     });
   });
+
+  describe("getValidatedClassicScore", () => {
+    it("클래식 솔로 게임오버 시 최소 점수 이상이면 점수를 반환한다", () => {
+      const classicEngine = new TetrisEngine("beginner", "classic");
+      classicEngine.initState(mockPlayers);
+
+      type PS = { score: number; status: string };
+      const ps = (classicEngine as never as { playerStates: Map<string, PS> }).playerStates.get("player1");
+      ps!.score = 500;
+      ps!.status = "gameover";
+
+      expect(classicEngine.getValidatedClassicScore()).toBe(500);
+    });
+
+    it("클래식 솔로 게임오버 시 최소 점수 미만이면 null을 반환한다", () => {
+      const classicEngine = new TetrisEngine("beginner", "classic");
+      classicEngine.initState(mockPlayers);
+
+      type PS = { score: number; status: string };
+      const ps = (classicEngine as never as { playerStates: Map<string, PS> }).playerStates.get("player1");
+      ps!.score = 50;
+      ps!.status = "gameover";
+
+      expect(classicEngine.getValidatedClassicScore()).toBeNull();
+    });
+
+    it("스피드레이스 모드에서는 null을 반환한다", () => {
+      const srEngine = new TetrisEngine("beginner", "speed-race");
+      srEngine.initState(mockPlayers);
+      expect(srEngine.getValidatedClassicScore()).toBeNull();
+    });
+
+    it("게임오버가 아닌 상태에서는 null을 반환한다", () => {
+      const classicEngine = new TetrisEngine("beginner", "classic");
+      classicEngine.initState(mockPlayers);
+
+      expect(classicEngine.getValidatedClassicScore()).toBeNull();
+    });
+
+    it("대전 모드에서는 null을 반환한다", () => {
+      const classicEngine = new TetrisEngine("beginner", "classic");
+      classicEngine.initState(mockVersusPlayers);
+
+      expect(classicEngine.getValidatedClassicScore()).toBeNull();
+    });
+  });
 });

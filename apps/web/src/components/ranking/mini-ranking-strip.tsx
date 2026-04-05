@@ -14,8 +14,15 @@ const DIFFICULTY_LABELS: Record<string, string> = {
   expert: "고급",
 };
 
+const RANKING_GAME_ICONS: Record<RankingGameType, string> = {
+  minesweeper: GAME_CONFIGS.minesweeper.icon,
+  "tetris-classic": GAME_CONFIGS.tetris.icon,
+  tetris: GAME_CONFIGS.tetris.icon,
+};
+
 const RANKING_GAMES: { type: RankingGameType; label: string; difficulties: RankingDifficulty[] }[] = [
   { type: "minesweeper", label: "지뢰찾기", difficulties: ["beginner", "intermediate", "expert"] },
+  { type: "tetris-classic", label: "테트리스 클래식", difficulties: ["beginner", "intermediate", "expert"] },
   { type: "tetris", label: "테트리스 스피드", difficulties: ["beginner", "intermediate", "expert"] },
 ];
 
@@ -63,7 +70,7 @@ export default function MiniRankingStrip({ socket }: MiniRankingStripProps) {
             className="bg-card border border-border rounded-xl p-4"
           >
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-xl leading-none">{GAME_CONFIGS[game.type].icon}</span>
+              <span className="text-xl leading-none">{RANKING_GAME_ICONS[game.type]}</span>
               <span className="font-semibold font-[family-name:var(--font-display)] tracking-wide">{game.label}</span>
             </div>
             <div className="space-y-1.5">

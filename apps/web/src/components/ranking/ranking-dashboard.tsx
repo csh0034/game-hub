@@ -8,11 +8,19 @@ import { GAME_CONFIGS } from "@game-hub/shared-types";
 
 const RANKING_GAME_LABELS: Record<RankingGameType, string> = {
   minesweeper: "지뢰찾기",
+  "tetris-classic": "테트리스 클래식",
   tetris: "테트리스 스피드",
+};
+
+const RANKING_GAME_ICONS: Record<RankingGameType, string> = {
+  minesweeper: GAME_CONFIGS.minesweeper.icon,
+  "tetris-classic": GAME_CONFIGS.tetris.icon,
+  tetris: GAME_CONFIGS.tetris.icon,
 };
 
 const RANKING_GAMES: { type: RankingGameType; difficulties: RankingDifficulty[] }[] = [
   { type: "minesweeper", difficulties: ["beginner", "intermediate", "expert"] },
+  { type: "tetris-classic", difficulties: ["beginner", "intermediate", "expert"] },
   { type: "tetris", difficulties: ["beginner", "intermediate", "expert"] },
 ];
 
@@ -44,7 +52,7 @@ export default function RankingDashboard({ myNickname, socket, isAdmin }: Rankin
                 : "bg-secondary/50 text-muted-foreground hover:bg-secondary border border-transparent"
             }`}
           >
-            <span className="text-lg leading-none">{GAME_CONFIGS[g.type].icon}</span>
+            <span className="text-lg leading-none">{RANKING_GAME_ICONS[g.type]}</span>
             {RANKING_GAME_LABELS[g.type]}
           </button>
         ))}

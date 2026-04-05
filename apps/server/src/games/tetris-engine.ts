@@ -34,6 +34,13 @@ const MIN_COMPLETION_TIME: Record<TetrisDifficulty, number> = {
   expert: 10000,
 };
 
+// 클래식 모드: 난이도별 최소 점수 — 너무 낮은 점수는 랭킹 등록 거부
+const MIN_CLASSIC_SCORE: Record<TetrisDifficulty, number> = {
+  beginner: 100,
+  intermediate: 100,
+  expert: 100,
+};
+
 // Tetromino shapes: [row, col] offsets for each rotation state
 const TETROMINO_SHAPES: Record<TetrominoType, [number, number][][]> = {
   I: [
@@ -324,6 +331,14 @@ export class TetrisEngine implements GameEngine {
     const time = this.completedAt - this.startedAt;
     if (time < MIN_COMPLETION_TIME[this.difficulty]) return null;
     return time;
+  }
+
+  getValidatedClassicScore(): number | null {
+    if (!this.isSolo() || this.gameMode !== "classic") return null;
+    const ps = this.playerStates.get(this.playerIds[0]);
+    if (!ps || ps.status !== "gameover") return null;
+    if (ps.score < MIN_CLASSIC_SCORE[this.difficulty]) return null;
+    return ps.score;
   }
 
   // --- Internal methods ---

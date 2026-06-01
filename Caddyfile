@@ -1,0 +1,29 @@
+# Caddy 리버스 프록시 + 자동 HTTPS (Let's Encrypt)
+# DOMAIN, ACME_EMAIL 환경변수는 docker-compose.prod.yml에서 주입한다.
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMAIN} {
+	encode gzip zstd
+
+	# Socket.IO (WebSocket 업그레이드 포함) → 서버(3001)
+	handle /socket.io/* {
+		reverse_proxy app:3001
+	}
+
+	# 헬스체크 → 서버(3001)
+	handle /health {
+		reverse_proxy app:3001
+	}
+
+	# 디자인 컨셉 정적 파일 → 서버(3001)
+	handle /concepts/* {
+		reverse_proxy app:3001
+	}
+
+	# 그 외 모든 요청 → Next.js(3000)
+	handle {
+		reverse_proxy app:3000
+	}
+}

@@ -2,11 +2,19 @@ import { io } from "socket.io-client";
 import type { Socket } from "socket.io-client";
 import type { ClientToServerEvents, ServerToClientEvents } from "@game-hub/shared-types";
 
-const SOCKET_URL =
-  process.env.NEXT_PUBLIC_SOCKET_URL ||
-  (typeof window !== "undefined"
-    ? `${window.location.protocol}//${window.location.hostname}:3001`
-    : "http://localhost:3001");
+function resolveSocketUrl(): string {
+  if (process.env.NEXT_PUBLIC_SOCKET_URL) return process.env.NEXT_PUBLIC_SOCKET_URL;
+  if (typeof window === "undefined") return "http://localhost:3001";
+  const { protocol, hostname, origin } = window.location;
+  // 로컬 개발: web(3000)과 server(3001)가 분리 실행 → 3001로 직접 접속
+  if (hostname === "localhost" || hostname === "127.0.0.1") {
+    return `${protocol}//${hostname}:3001`;
+  }
+  // 운영(리버스 프록시): 같은 도메인의 /socket.io/ 경로로 접속 (Caddy가 서버로 프록시)
+  return origin;
+}
+
+const SOCKET_URL = resolveSocketUrl();
 
 export type GameSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 

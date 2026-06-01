@@ -1,0 +1,73 @@
+# 운영 배포용 compose
+#   caddy : 80/443 리버스 프록시 + 자동 HTTPS
+#   app   : web(3000) + server(3001) 단일 이미지 (concurrently 실행, 외부 미노출)
+#   redis : 데이터 영속화 (외부 미노출)
+#
+# 사용:
+#   cp .env.prod.example .env   # DOMAIN, ACME_EMAIL 채우기
+#   docker compose -f docker-compose.prod.yml pull
+#   docker compose -f docker-compose.prod.yml up -d
+
+services:
+  app:
+    container_name: gamehub-app
+    image: shchoi1/game-hub:latest
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "3001"
+      REDIS_URL: redis://redis:6379
+      # same-origin 접속이므로 운영 도메인을 허용 origin으로 지정
+      CORS_ORIGIN: https://${DOMAIN}
+    depends_on:
+      redis:
+        condition: service_healthy
+    expose:
+      - "3000"
+      - "3001"
+    networks:
+      - gamehub
+
+  redis:
+    container_name: gamehub-redis
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - gamehub
+
+  caddy:
+    container_name: gamehub-caddy
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp" # HTTP/3
+    environment:
+      DOMAIN: ${DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - app
+    networks:
+      - gamehub
+
+volumes:
+  redis-data:
+  caddy-data:
+  caddy-config:
+
+networks:
+  gamehub:
+    driver: bridge

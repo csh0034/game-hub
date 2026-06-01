@@ -183,7 +183,18 @@ UI에서 날짜·시간을 표시할 때는 `lib/utils.ts`의 `formatDateTime`�
 
 ## 배포
 
-Docker 멀티스테이지 빌드로 프로덕션 이미지를 생성한다. `Dockerfile`에서 의존성 설치 → 빌드 → 프로덕션 이미지 3단계로 구성되며, Next.js standalone 출력과 Express 서버를 concurrently로 동시 실행한다. non-root 사용자(gamehub)로 실행하고, 헬스체크는 서버의 `/health` 엔드포인트를 사용한다.
+Docker 멀티스테이지 빌드로 프로덕션 이미지를 생성한다. `Dockerfile`에서 의존성 설치 → 빌드 → 프로덕션 이미지 3단계로 구성되며, Next.js standalone 출력과 Express 서버를 concurrently로 동시 실행한다. non-root 사용자(gamehub)로 실행하고, 헬스체크는 서버의 `/health` 엔드포인트를 사용한다. 이미지는 GitHub Actions에서 빌드·푸시되며(`COMMIT_HASH` 빌드 타임 주입), 운영에서는 `shchoi1/game-hub:latest`를 pull 하여 실행한다.
+
+### 운영 compose (docker-compose.prod.yml)
+
+`caddy`(80/443) + `app`(이미지 실행) + `redis` 3개 서비스로 구성한다.
+
+- `caddy`만 80/443을 외부에 노출하고, `app`(web 3000 / server 3001)과 `redis`는 내부 네트워크 전용이다
+- Caddy가 자동 HTTPS(Let's Encrypt)를 처리하며 인증서는 `caddy-data` 볼륨에 영속화된다
+- 경로 라우팅: `/socket.io/*`, `/health`, `/concepts/*` → `app:3001`, 그 외 → `app:3000`
+- 같은 도메인이므로 클라이언트 소켓은 same-origin(`window.location.origin`)으로 접속한다. `socket.ts`는 `localhost`/`127.0.0.1`에서만 `:3001`로 직접 접속하고, 그 외 호스트에서는 same-origin을 사용한다
+- 환경변수는 `.env`(`.env.prod.example` 참고)에서 `DOMAIN`, `ACME_EMAIL`을 주입한다
+- 실행: `docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d`
 
 ### 운영 환경 제약
 

@@ -15,7 +15,6 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      PORT: "3001"
       REDIS_URL: redis://redis:6379
       # same-origin 접속이므로 운영 도메인을 허용 origin으로 지정
       CORS_ORIGIN: https://${DOMAIN}
